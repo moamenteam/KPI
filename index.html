@@ -99,14 +99,19 @@
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root" style="padding:40px;color:#4A6466">Loading…</div>
+<script>
+window.addEventListener("error",e=>{document.getElementById("root").innerHTML='<pre style="padding:20px;color:#C4472B;white-space:pre-wrap">'+(e.message||e.error)+'\n'+(e.filename||'')+':'+(e.lineno||'')+'</pre>'});
+window.addEventListener("unhandledrejection",e=>{document.getElementById("root").innerHTML='<pre style="padding:20px;color:#C4472B;white-space:pre-wrap">'+(e.reason&&e.reason.message||e.reason)+'</pre>'});
+</script>
 <script type="text/babel" data-presets="react">
 /* ================= CONFIG ================= */
-const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
-const SUPABASE_KEY = "YOUR-ANON-KEY";
+const SUPABASE_URL = "https://occubmnoepgdysbyacgj.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
 const BRANCHES = ["Sawarmah","Mojour","Sabya","Kharish","Makrmyah","Dehmah","Naseem","Dahya"];
 /* ========================================== */
 
+if(SUPABASE_URL.includes("YOUR-PROJECT")||SUPABASE_KEY.includes("YOUR-ANON")) throw new Error("Set SUPABASE_URL and SUPABASE_KEY at the top of index.html (Supabase → Project Settings → API).");
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const { useState, useEffect, useMemo, useCallback } = React;
 
