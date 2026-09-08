@@ -6,10 +6,10 @@
 <title>First Brand KPI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <style>
   :root{
     --paper:#F4F7F5; --card:#FFFFFF; --ink:#14383A; --ink-2:#4A6466; --line:#D7E2DE;
@@ -35,6 +35,397 @@
   .tab{background:transparent;border:0;color:#CFE0DC;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
   .tab.on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
   .bar .who{font-size:13px;color:#CFE0DC;white-space:nowrap}
+  .ghost{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 18px 80px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .g3{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+
+  /* forms */
+  label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--ink-2);flex:1;min-width:140px}
+  input,select,textarea{border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:#fff;width:100%}
+  input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+  input[type=number]{font-variant-numeric:tabular-nums}
+  .check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);flex:0}
+  .check input{width:auto}
+  .btn{background:var(--teal);color:#fff;border:0;border-radius:9px;padding:10px 16px;font-weight:600;cursor:pointer}
+  .btn.sec{background:var(--teal-soft);color:var(--teal)}
+  .btn.warn{background:var(--bad-soft);color:var(--bad)}
+  .btn:disabled{opacity:.5;cursor:default}
+  .toast{position:fixed;bottom:20px;inset-inline-start:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;z-index:9}
+  [dir=rtl] .toast{transform:translateX(50%)}
+  .err{background:var(--bad-soft);color:var(--bad);border-radius:9px;padding:9px 12px;font-size:14px}
+
+  /* login */
+  .login{min-height:100vh;display:grid;place-items:center;padding:20px}
+  .login .card{width:100%;max-width:400px;padding:28px}
+  .login h1{font-size:22px;margin-bottom:4px}
+
+  /* chips / table */
+  .chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:500;background:var(--teal-soft);color:var(--teal)}
+  .chip.amber{background:var(--amber-soft);color:#8A5A0E}
+  .chip.bad{background:var(--bad-soft);color:var(--bad)}
+  .chip.grey{background:#EDF1EF;color:var(--ink-2)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:start;font-weight:500;color:var(--ink-2);font-size:13px;padding:8px 6px;border-bottom:1px solid var(--line)}
+  td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  td input,td select{padding:6px 8px}
+
+  /* dashboard hero: momentum */
+  .hero{display:grid;grid-template-columns:1fr 2fr;gap:14px}
+  @media(max-width:720px){.hero{grid-template-columns:1fr}}
+  .mo{background:var(--ink);color:#fff;border-radius:var(--r);padding:20px;display:flex;flex-direction:column;justify-content:space-between;min-height:170px}
+  .mo .big{font-size:56px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+  .mo .big small{font-size:22px;font-weight:500;color:#CFE0DC}
+  .delta{font-size:14px;font-weight:600}
+  .delta.up{color:#7FD9B5}.delta.down{color:#F59A82}.delta.flat{color:#CFE0DC}
+  .strip{display:grid;grid-template-columns:repeat(28,1fr);gap:4px;margin-top:10px}
+  .strip i{display:block;height:14px;border-radius:3px;background:#EDF1EF}
+  .strip i.on{background:var(--teal)}
+  .strip i.today{outline:2px solid var(--amber);outline-offset:-2px}
+  .kpi-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .pct{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+  .pct.good{color:var(--good)}.pct.mid{color:var(--amber)}.pct.bad{color:var(--bad)}
+  .bar-track{height:8px;background:#EDF1EF;border-radius:99px;overflow:hidden;margin:10px 0 6px}
+  .bar-fill{height:100%;border-radius:99px;background:var(--teal)}
+  .bar-fill.good{background:var(--good)}.bar-fill.mid{background:var(--amber)}.bar-fill.bad{background:var(--bad)}
+  .spark{width:100%;height:44px;display:block;margin-top:8px}
+  .empty{padding:36px;text-align:center;color:var(--ink-2)}
+  @media(prefers-reduced-motion:no-preference){.bar-fill{transition:width .5s ease}}
+</style>
+</head>
+<body>
+<div id="root" style="padding:40px;color:#4A6466">Loading…</div>
+<script>
+window.addEventListener("error",e=>{document.getElementById("root").innerHTML='<pre style="padding:20px;color:#C4472B;white-space:pre-wrap">'+(e.message||e.error)+'\n'+(e.filename||'')+':'+(e.lineno||'')+'</pre>'});
+window.addEventListener("unhandledrejection",e=>{document.getElementById("root").innerHTML='<pre style="padding:20px;color:#C4472B;white-space:pre-wrap">'+(e.reason&&e.reason.message||e.reason)+'</pre>'});
+</script>
+<script type="text/babel" data-presets="react">
+/* ================= CONFIG ================= */
+const SUPABASE_URL = "https://occubmnoepgdysbyacgj.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
+const BRANCHES = ["Sawarmah","Mojour","Sabya","Kharish","Makrmyah","Dehmah","Naseem","Dahya"];
+/* ========================================== */
+
+if(SUPABASE_URL.includes("YOUR-PROJECT")||SUPABASE_KEY.includes("YOUR-ANON")) throw new Error("Set SUPABASE_URL and SUPABASE_KEY at the top of index.html (Supabase → Project Settings → API).");
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const { useState, useEffect, useMemo, useCallback } = React;
+
+const T = {
+  en:{ app:"First Brand", kpi:"KPI", login:"Sign in", signup:"Create account", email:"Email", pass:"Password", name:"Full name", branch:"Branch",
+    haveAcc:"Already have an account? Sign in", noAcc:"New here? Create an account", out:"Sign out",
+    dash:"Dashboard", record:"Record", deploy:"Deploy KPIs", team:"Team", lang:"العربية",
+    momentum:"Momentum", vsPrev:"vs previous period", last28:"Last 28 days of activity", noKpi:"No KPIs deployed to this pharmacist yet.",
+    pharmacist:"Pharmacist", date:"Date", value:"Value", note:"Note", save:"Save entries", saved:"Saved", target:"Target",
+    selfOnly:"You can record only the KPIs marked self-record.", nothingToRecord:"Nothing to record for this date.",
+    newKpi:"New KPI", editKpi:"Edit KPI", nameEn:"Name (English)", nameAr:"Name (Arabic)", desc:"Description", unit:"Unit", direction:"Direction",
+    up:"Higher is better", down:"Lower is better", freq:"Frequency", daily:"Daily", weekly:"Weekly", monthly:"Monthly",
+    selfRecord:"Pharmacists record this themselves", active:"Active", deployTo:"Deploy to", all:"All pharmacists", byBranch:"A branch", byUser:"Specific pharmacists",
+    saveKpi:"Save KPI", cancel:"Cancel", deployed:"Deployed KPIs", inactive:"Inactive", role:"Role", status:"Status",
+    admin:"Admin", supervisor:"Supervisor", count:"count", percent:"%", sar:"SAR", minutes:"min",
+    thisPeriod:"this period", entries:"entries", of:"of", week:"wk", noEntries:"No entries yet. Recorded values will appear here.",
+    achievedOn:"achieved", filter:"All branches" },
+  ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل", branch:"الفرع",
+    haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج",
+    dash:"لوحة المتابعة", record:"تسجيل", deploy:"نشر المؤشرات", team:"الفريق", lang:"English",
+    momentum:"الزخم", vsPrev:"مقارنة بالفترة السابقة", last28:"نشاط آخر ٢٨ يومًا", noKpi:"لم يتم نشر مؤشرات لهذا الصيدلي بعد.",
+    pharmacist:"الصيدلي", date:"التاريخ", value:"القيمة", note:"ملاحظة", save:"حفظ القيم", saved:"تم الحفظ", target:"الهدف",
+    selfOnly:"يمكنك تسجيل المؤشرات المخصصة للتسجيل الذاتي فقط.", nothingToRecord:"لا يوجد ما يُسجَّل لهذا التاريخ.",
+    newKpi:"مؤشر جديد", editKpi:"تعديل المؤشر", nameEn:"الاسم (إنجليزي)", nameAr:"الاسم (عربي)", desc:"الوصف", unit:"الوحدة", direction:"الاتجاه",
+    up:"الأعلى أفضل", down:"الأقل أفضل", freq:"التكرار", daily:"يومي", weekly:"أسبوعي", monthly:"شهري",
+    selfRecord:"يسجّله الصيادلة بأنفسهم", active:"فعّال", deployTo:"نشر إلى", all:"كل الصيادلة", byBranch:"فرع محدد", byUser:"صيادلة محددون",
+    saveKpi:"حفظ المؤشر", cancel:"إلغاء", deployed:"المؤشرات المنشورة", inactive:"موقوف", role:"الدور", status:"الحالة",
+    admin:"مدير", supervisor:"مشرف", count:"عدد", percent:"٪", sar:"ريال", minutes:"دقيقة",
+    thisPeriod:"هذه الفترة", entries:"إدخال", of:"من", week:"أسبوع", noEntries:"لا توجد إدخالات بعد. ستظهر القيم المسجلة هنا.",
+    achievedOn:"تحقق", filter:"كل الفروع" }
+};
+
+/* ---------- date helpers ---------- */
+const iso = d => d.toISOString().slice(0,10);
+const today = () => iso(new Date());
+const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+const startOfWeek = d => { const x=new Date(d); const day=(x.getDay()+1)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; }; // Saturday start
+const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
+function periodStart(freq, d){ return freq==="daily"? new Date(new Date(d).setHours(0,0,0,0)) : freq==="weekly"? startOfWeek(d) : startOfMonth(d); }
+function prevPeriodStart(freq, s){ return freq==="daily"? addDays(s,-1) : freq==="weekly"? addDays(s,-7) : new Date(s.getFullYear(), s.getMonth()-1, 1); }
+
+/* ---------- scoring ---------- */
+function achievement(sum, target, direction){
+  if(!target) return sum>0?1:0;
+  if(direction==="up") return Math.min(sum/target, 1.5);
+  if(sum===0) return 1;
+  return Math.min(target/sum, 1.5);
+}
+function bucketize(kpi, entries){
+  // returns last 8 period sums, newest last
+  const out=[]; let s=periodStart(kpi.frequency,new Date());
+  for(let i=0;i<8;i++){
+    const startIso=iso(s); const nextStart = i===0? "9999-12-31" : iso(out[out.length-1].start);
+    const sum = entries.filter(x=>x.kpi_id===kpi.kpi_id && x.entry_date>=startIso && x.entry_date<nextStart).reduce((a,b)=>a+Number(b.value),0);
+    out.push({start:s, sum});
+    s=prevPeriodStart(kpi.frequency,s);
+  }
+  return out.reverse();
+}
+const tone = p => p>=1?"good": p>=0.7?"mid":"bad";
+
+/* ---------- tiny components ---------- */
+function Spark({points}){
+  const w=300,h=44,max=Math.max(1,...points);
+  const pts=points.map((v,i)=>`${(i/(points.length-1))*w},${h-4-(v/max)*(h-8)}`).join(" ");
+  return <svg className="spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+    <polyline fill="none" stroke="var(--teal)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" points={pts}/>
+    {points.map((v,i)=><circle key={i} cx={(i/(points.length-1))*w} cy={h-4-(v/max)*(h-8)} r={i===points.length-1?4:2.5} fill={i===points.length-1?"var(--amber)":"var(--teal)"}/>)}
+  </svg>;
+}
+function Toast({msg}){ return msg? <div className="toast">{msg}</div> : null; }
+
+/* ================= LOGIN ================= */
+function Login({t,lang,setLang}){
+  const [mode,setMode]=useState("in"); const [f,setF]=useState({email:"",pass:"",name:"",branch:BRANCHES[0]});
+  const [err,setErr]=useState(""); const [busy,setBusy]=useState(false);
+  const go=async()=>{
+    setBusy(true); setErr("");
+    const r = mode==="in"
+      ? await sb.auth.signInWithPassword({email:f.email,password:f.pass})
+      : await sb.auth.signUp({email:f.email,password:f.pass,options:{data:{full_name:f.name,branch:f.branch}}});
+    if(r.error) setErr(r.error.message);
+    setBusy(false);
+  };
+  const set=k=>e=>setF({...f,[k]:e.target.value});
+  return <div className="login"><div className="card">
+    <div className="row" style={{justifyContent:"space-between",marginBottom:18}}>
+      <div className="brand" style={{color:"var(--ink)",fontSize:18}}>{t.app} <span>{t.kpi}</span></div>
+      <button className="btn sec" style={{padding:"5px 10px"}} onClick={()=>setLang(lang==="en"?"ar":"en")}>{t.lang}</button>
+    </div>
+    <h1>{mode==="in"?t.login:t.signup}</h1>
+    <div className="grid" style={{marginTop:16}}>
+      {mode==="up" && <label className="f">{t.name}<input value={f.name} onChange={set("name")}/></label>}
+      {mode==="up" && <label className="f">{t.branch}<select value={f.branch} onChange={set("branch")}>{BRANCHES.map(b=><option key={b}>{b}</option>)}</select></label>}
+      <label className="f">{t.email}<input type="email" value={f.email} onChange={set("email")} dir="ltr"/></label>
+      <label className="f">{t.pass}<input type="password" value={f.pass} onChange={set("pass")} onKeyDown={e=>e.key==="Enter"&&go()} dir="ltr"/></label>
+      {err && <div className="err">{err}</div>}
+      <button className="btn" disabled={busy} onClick={go}>{mode==="in"?t.login:t.signup}</button>
+      <button className="btn sec" onClick={()=>setMode(mode==="in"?"up":"in")}>{mode==="in"?t.noAcc:t.haveAcc}</button>
+    </div>
+  </div></div>;
+}
+
+/* ================= DEPLOY ================= */
+const blank = {name_en:"",name_ar:"",description:"",unit:"count",target:0,direction:"up",frequency:"daily",self_record:false,active:true};
+function Deploy({t,me,people,toast}){
+  const [kpis,setKpis]=useState([]); const [asg,setAsg]=useState([]);
+  const [form,setForm]=useState(null); const [scope,setScope]=useState("all"); const [scBranch,setScBranch]=useState(BRANCHES[0]); const [scUsers,setScUsers]=useState([]);
+  const pharmacists = people.filter(p=>p.role==="pharmacist"&&p.active);
+  const load=useCallback(async()=>{
+    const [k,a]=await Promise.all([sb.from("kpis").select("*").order("created_at"), sb.from("kpi_assignments").select("*")]);
+    setKpis(k.data||[]); setAsg(a.data||[]);
+  },[]);
+  useEffect(()=>{load()},[load]);
+  const edit=k=>{ setForm(k? {...k} : {...blank}); const a=asg.filter(x=>x.kpi_id===k?.id);
+    if(a.length){ setScope(a[0].scope); if(a[0].scope==="branch") setScBranch(a[0].branch); if(a[0].scope==="user") setScUsers(a.map(x=>x.user_id)); } else { setScope("all"); setScUsers([]); } };
+  const save=async()=>{
+    const payload={...form,target:Number(form.target),created_by:me.id}; delete payload.created_at; delete payload.id;
+    let id=form.id;
+    if(id){ const r=await sb.from("kpis").update(payload).eq("id",id); if(r.error) return toast(r.error.message); }
+    else { const r=await sb.from("kpis").insert(payload).select().single(); if(r.error) return toast(r.error.message); id=r.data.id; }
+    await sb.from("kpi_assignments").delete().eq("kpi_id",id);
+    const rows = scope==="all"? [{kpi_id:id,scope:"all"}] : scope==="branch"? [{kpi_id:id,scope:"branch",branch:scBranch}] : scUsers.map(u=>({kpi_id:id,scope:"user",user_id:u}));
+    if(rows.length){ const r=await sb.from("kpi_assignments").insert(rows); if(r.error) return toast(r.error.message); }
+    toast(t.saved); setForm(null); load();
+  };
+  const set=k=>e=>setForm({...form,[k]:e.target.type==="checkbox"?e.target.checked:e.target.value});
+  const scopeLabel=k=>{ const a=asg.filter(x=>x.kpi_id===k.id); if(!a.length) return "—"; if(a[0].scope==="all") return t.all; if(a[0].scope==="branch") return a[0].branch; return a.map(x=>people.find(p=>p.id===x.user_id)?.full_name||"?").join(", "); };
+
+  return <div className="grid">
+    <div className="row" style={{justifyContent:"space-between"}}><h1>{t.deploy}</h1>{!form && <button className="btn" onClick={()=>edit(null)}>{t.newKpi}</button>}</div>
+    {form && <div className="card grid">
+      <h2>{form.id?t.editKpi:t.newKpi}</h2>
+      <div className="row"><label className="f">{t.nameEn}<input value={form.name_en} onChange={set("name_en")}/></label><label className="f">{t.nameAr}<input value={form.name_ar} onChange={set("name_ar")} dir="rtl"/></label></div>
+      <label className="f">{t.desc}<textarea rows="2" value={form.description||""} onChange={set("description")}/></label>
+      <div className="row">
+        <label className="f">{t.target}<input type="number" step="any" value={form.target} onChange={set("target")}/></label>
+        <label className="f">{t.unit}<select value={form.unit} onChange={set("unit")}><option value="count">{t.count}</option><option value="percent">{t.percent}</option><option value="sar">{t.sar}</option><option value="minutes">{t.minutes}</option></select></label>
+        <label className="f">{t.freq}<select value={form.frequency} onChange={set("frequency")}><option value="daily">{t.daily}</option><option value="weekly">{t.weekly}</option><option value="monthly">{t.monthly}</option></select></label>
+        <label className="f">{t.direction}<select value={form.direction} onChange={set("direction")}><option value="up">{t.up}</option><option value="down">{t.down}</option></select></label>
+      </div>
+      <div className="row">
+        <label className="check"><input type="checkbox" checked={form.self_record} onChange={set("self_record")}/>{t.selfRecord}</label>
+        <label className="check"><input type="checkbox" checked={form.active} onChange={set("active")}/>{t.active}</label>
+      </div>
+      <div className="row">
+        <label className="f">{t.deployTo}<select value={scope} onChange={e=>setScope(e.target.value)}><option value="all">{t.all}</option><option value="branch">{t.byBranch}</option><option value="user">{t.byUser}</option></select></label>
+        {scope==="branch" && <label className="f">{t.branch}<select value={scBranch} onChange={e=>setScBranch(e.target.value)}>{BRANCHES.map(b=><option key={b}>{b}</option>)}</select></label>}
+      </div>
+      {scope==="user" && <div className="row">{pharmacists.map(p=><label key={p.id} className="check"><input type="checkbox" checked={scUsers.includes(p.id)} onChange={e=>setScUsers(e.target.checked?[...scUsers,p.id]:scUsers.filter(x=>x!==p.id))}/>{p.full_name} <span className="muted small">({p.branch||"—"})</span></label>)}</div>}
+      <div className="row"><button className="btn" onClick={save} disabled={!form.name_en}>{t.saveKpi}</button><button className="btn sec" onClick={()=>setForm(null)}>{t.cancel}</button></div>
+    </div>}
+    <div className="card">
+      <h2 style={{marginBottom:10}}>{t.deployed}</h2>
+      {kpis.length===0 ? <div className="empty">—</div> :
+      <table><thead><tr><th>{t.kpi}</th><th>{t.target}</th><th>{t.freq}</th><th>{t.deployTo}</th><th></th></tr></thead><tbody>
+        {kpis.map(k=><tr key={k.id} style={{opacity:k.active?1:.55}}>
+          <td><strong>{k.name_en}</strong>{k.name_ar && <div className="muted small">{k.name_ar}</div>}{k.self_record && <span className="chip amber">{t.selfRecord}</span>}{!k.active && <span className="chip grey">{t.inactive}</span>}</td>
+          <td>{k.target} <span className="muted small">{t[k.unit]}</span>{k.direction==="down"&&" ↓"}</td>
+          <td>{t[k.frequency]}</td><td className="small">{scopeLabel(k)}</td>
+          <td><button className="btn sec" style={{padding:"5px 10px"}} onClick={()=>edit(k)}>{t.editKpi}</button></td>
+        </tr>)}
+      </tbody></table>}
+    </div>
+  </div>;
+}
+
+/* ================= RECORD ================= */
+function Record({t,me,people,toast,lang}){
+  const isMgr = me.role!=="pharmacist";
+  const targets = isMgr ? people.filter(p=>p.role==="pharmacist"&&p.active&&(me.role==="admin"||!me.branch||p.branch===me.branch)) : [me];
+  const [uid,setUid]=useState(targets[0]?.id||""); const [date,setDate]=useState(today());
+  const [kpis,setKpis]=useState([]); const [vals,setVals]=useState({}); const [busy,setBusy]=useState(false);
+  useEffect(()=>{ if(!uid) return; (async()=>{
+    const [k,e]=await Promise.all([sb.from("v_user_kpis").select("*").eq("user_id",uid), sb.from("kpi_entries").select("*").eq("user_id",uid).eq("entry_date",date)]);
+    let list=k.data||[]; if(!isMgr) list=list.filter(x=>x.self_record); setKpis(list);
+    const v={}; (e.data||[]).forEach(x=>v[x.kpi_id]={value:x.value,note:x.note||""}); setVals(v);
+  })(); },[uid,date]);
+  const save=async()=>{
+    setBusy(true);
+    const rows=kpis.filter(k=>vals[k.kpi_id]?.value!==undefined&&vals[k.kpi_id].value!=="").map(k=>({kpi_id:k.kpi_id,user_id:uid,recorded_by:me.id,entry_date:date,value:Number(vals[k.kpi_id].value),note:vals[k.kpi_id].note||null}));
+    const r=await sb.from("kpi_entries").upsert(rows,{onConflict:"kpi_id,user_id,entry_date"});
+    setBusy(false); toast(r.error?r.error.message:t.saved);
+  };
+  const setV=(id,k,v)=>setVals({...vals,[id]:{...(vals[id]||{}),[k]:v}});
+  return <div className="grid">
+    <h1>{t.record}</h1>
+    {!isMgr && <div className="muted small">{t.selfOnly}</div>}
+    <div className="card row">
+      {isMgr && <label className="f">{t.pharmacist}<select value={uid} onChange={e=>setUid(e.target.value)}>{targets.map(p=><option key={p.id} value={p.id}>{p.full_name} — {p.branch||"—"}</option>)}</select></label>}
+      <label className="f">{t.date}<input type="date" value={date} max={today()} onChange={e=>setDate(e.target.value)}/></label>
+    </div>
+    <div className="card">
+      {kpis.length===0 ? <div className="empty">{t.nothingToRecord}</div> :
+      <table><thead><tr><th>{t.kpi}</th><th>{t.target}</th><th style={{width:130}}>{t.value}</th><th>{t.note}</th></tr></thead><tbody>
+        {kpis.map(k=><tr key={k.kpi_id}>
+          <td><strong>{lang==="ar"&&k.name_ar?k.name_ar:k.name_en}</strong><div className="muted small">{t[k.frequency]}</div></td>
+          <td className="muted">{k.target} {t[k.unit]}</td>
+          <td><input type="number" step="any" inputMode="decimal" value={vals[k.kpi_id]?.value??""} onChange={e=>setV(k.kpi_id,"value",e.target.value)}/></td>
+          <td><input value={vals[k.kpi_id]?.note??""} onChange={e=>setV(k.kpi_id,"note",e.target.value)}/></td>
+        </tr>)}
+      </tbody></table>}
+      {kpis.length>0 && <div style={{marginTop:14}}><button className="btn" disabled={busy} onClick={save}>{t.save}</button></div>}
+    </div>
+  </div>;
+}
+
+/* ================= DASHBOARD ================= */
+function Dashboard({t,me,people,lang}){
+  const isMgr = me.role!=="pharmacist";
+  const [branch,setBranch]=useState(me.role==="supervisor"?(me.branch||""):"");
+  const pool = isMgr ? people.filter(p=>p.role==="pharmacist"&&p.active&&(!branch||p.branch===branch)) : [me];
+  const [uid,setUid]=useState(isMgr?(pool[0]?.id||""):me.id);
+  useEffect(()=>{ if(isMgr && !pool.find(p=>p.id===uid)) setUid(pool[0]?.id||""); },[branch]);
+  const [kpis,setKpis]=useState([]); const [entries,setEntries]=useState([]);
+  useEffect(()=>{ if(!uid) return; (async()=>{
+    const since=iso(addDays(new Date(),-240));
+    const [k,e]=await Promise.all([sb.from("v_user_kpis").select("*").eq("user_id",uid), sb.from("kpi_entries").select("kpi_id,entry_date,value").eq("user_id",uid).gte("entry_date",since)]);
+    setKpis(k.data||[]); setEntries(e.data||[]);
+  })(); },[uid]);
+
+  const stats = useMemo(()=>kpis.map(k=>{ const b=bucketize(k,entries); const cur=b[b.length-1].sum, prev=b[b.length-2].sum;
+    return {k, buckets:b, cur, prev, ach:achievement(cur,k.target,k.direction), prevAch:achievement(prev,k.target,k.direction)}; }),[kpis,entries]);
+  const momentum = stats.length? stats.reduce((a,s)=>a+Math.min(s.ach,1),0)/stats.length : 0;
+  const prevMomentum = stats.length? stats.reduce((a,s)=>a+Math.min(s.prevAch,1),0)/stats.length : 0;
+  const delta = Math.round((momentum-prevMomentum)*100);
+  const days = Array.from({length:28},(_,i)=>iso(addDays(new Date(),i-27)));
+  const activeDays = new Set(entries.map(e=>e.entry_date));
+  const person = people.find(p=>p.id===uid)||me;
+
+  return <div className="grid">
+    <div className="row" style={{justifyContent:"space-between"}}>
+      <h1>{t.dash}</h1>
+      {isMgr && <div className="row">
+        {me.role==="admin" && <select value={branch} onChange={e=>setBranch(e.target.value)} style={{width:"auto"}}><option value="">{t.filter}</option>{BRANCHES.map(b=><option key={b}>{b}</option>)}</select>}
+        <select value={uid} onChange={e=>setUid(e.target.value)} style={{width:"auto"}}>{pool.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>
+      </div>}
+    </div>
+    {!uid ? <div className="card empty">{t.noKpi}</div> : <>
+    <div className="hero">
+      <div className="mo">
+        <div><div className="small" style={{color:"#CFE0DC"}}>{person.full_name} · {person.branch||"—"}</div><div style={{fontWeight:600,marginTop:6}}>{t.momentum}</div></div>
+        <div><div className="big">{Math.round(momentum*100)}<small>%</small></div>
+          <div className={"delta "+(delta>0?"up":delta<0?"down":"flat")}>{delta>0?"▲":delta<0?"▼":"■"} {Math.abs(delta)} <span style={{fontWeight:400,color:"#CFE0DC"}}>{t.vsPrev}</span></div></div>
+      </div>
+      <div className="card">
+        <div className="row" style={{justifyContent:"space-between"}}><h3>{t.last28}</h3><span className="muted small">{activeDays.size} {t.entries}</span></div>
+        <div className="strip">{days.map(d=><i key={d} className={(activeDays.has(d)?"on ":"")+(d===today()?"today":"")} title={d}/>)}</div>
+        <div className="muted small" style={{marginTop:12}}>{stats.length} {t.kpi} · {entries.length} {t.entries}</div>
+      </div>
+    </div>
+    {stats.length===0 ? <div className="card empty">{t.noKpi}</div> :
+    <div className="grid g3">{stats.map(s=><div key={s.k.kpi_id} className="card">
+      <div className="kpi-head"><div><strong>{lang==="ar"&&s.k.name_ar?s.k.name_ar:s.k.name_en}</strong><div className="muted small">{t[s.k.frequency]} · {t.target} {s.k.target} {t[s.k.unit]}</div></div>
+        <div className={"pct "+tone(s.ach)}>{Math.round(s.ach*100)}%</div></div>
+      <div className="bar-track"><div className={"bar-fill "+tone(s.ach)} style={{width:Math.min(100,s.ach*100)+"%"}}/></div>
+      <div className="small muted">{s.cur} {t.of} {s.k.target} {t.thisPeriod}</div>
+      <Spark points={s.buckets.map(b=>b.sum)}/>
+    </div>)}</div>}
+    </>}
+  </div>;
+}
+
+/* ================= TEAM (admin) ================= */
+function Team({t,people,reload,toast}){
+  const upd=async(id,patch)=>{ const r=await sb.from("profiles").update(patch).eq("id",id); toast(r.error?r.error.message:t.saved); reload(); };
+  return <div className="grid"><h1>{t.team}</h1><div className="card">
+    <table><thead><tr><th>{t.name}</th><th>{t.role}</th><th>{t.branch}</th><th>{t.status}</th></tr></thead><tbody>
+      {people.map(p=><tr key={p.id}>
+        <td>{p.full_name}</td>
+        <td><select value={p.role} onChange={e=>upd(p.id,{role:e.target.value})}><option value="pharmacist">{t.pharmacist}</option><option value="supervisor">{t.supervisor}</option><option value="admin">{t.admin}</option></select></td>
+        <td><select value={p.branch||""} onChange={e=>upd(p.id,{branch:e.target.value||null})}><option value="">—</option>{BRANCHES.map(b=><option key={b}>{b}</option>)}</select></td>
+        <td><label className="check"><input type="checkbox" checked={p.active} onChange={e=>upd(p.id,{active:e.target.checked})}/>{t.active}</label></td>
+      </tr>)}
+    </tbody></table></div></div>;
+}
+
+/* ================= APP ================= */
+function App(){
+  const [lang,setLang]=useState(localStorage.getItem("lang")||"en"); const t=T[lang];
+  useEffect(()=>{ document.documentElement.lang=lang; document.documentElement.dir=lang==="ar"?"rtl":"ltr"; localStorage.setItem("lang",lang); },[lang]);
+  const [session,setSession]=useState(undefined); const [me,setMe]=useState(null); const [people,setPeople]=useState([]);
+  const [page,setPage]=useState("dash"); const [msg,setMsg]=useState("");
+  const toast=m=>{ setMsg(m); setTimeout(()=>setMsg(""),2200); };
+  useEffect(()=>{ sb.auth.getSession().then(({data})=>setSession(data.session)); const {data:sub}=sb.auth.onAuthStateChange((_,s)=>setSession(s)); return ()=>sub.subscription.unsubscribe(); },[]);
+  const loadPeople=useCallback(async()=>{ const r=await sb.from("profiles").select("*").order("full_name"); setPeople(r.data||[]); return r.data||[]; },[]);
+  useEffect(()=>{ if(!session){setMe(null);return;} loadPeople().then(ps=>setMe(ps.find(p=>p.id===session.user.id)||null)); },[session]);
+
+  if(session===undefined) return null;
+  if(!session) return <Login t={t} lang={lang} setLang={setLang}/>;
+  if(!me) return <div className="empty">…</div>;
+
+  const tabs=[["dash",t.dash],["record",t.record]]; if(me.role==="admin") tabs.push(["deploy",t.deploy],["team",t.team]);
+  return <>
+    <div className="bar">
+      <div className="brand">{t.app} <span>{t.kpi}</span></div>
+      <div className="tabs">{tabs.map(([k,l])=><button key={k} className={"tab"+(page===k?" on":"")} onClick={()=>setPage(k)}>{l}</button>)}</div>
+      <div className="who">{me.full_name} · {t[me.role]||me.role}</div>
+      <button className="ghost" onClick={()=>setLang(lang==="en"?"ar":"en")}>{t.lang}</button>
+      <button className="ghost" onClick={()=>sb.auth.signOut()}>{t.out}</button>
+    </div>
+    <div className="wrap">
+      {page==="dash"   && <Dashboard key={me.id} t={t} me={me} people={people} lang={lang}/>}
+      {page==="record" && <Record t={t} me={me} people={people} toast={toast} lang={lang}/>}
+      {page==="deploy" && me.role==="admin" && <Deploy t={t} me={me} people={people} toast={toast}/>}
+      {page==="team"   && me.role==="admin" && <Team t={t} people={people} reload={loadPeople} toast={toast}/>}
+    </div>
+    <Toast msg={msg}/>
+  </>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>  .bar .who{font-size:13px;color:#CFE0DC;white-space:nowrap}
   .ghost{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
 
   .wrap{max-width:1080px;margin:0 auto;padding:22px 18px 80px}
