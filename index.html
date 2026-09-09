@@ -104,109 +104,156 @@
 window.addEventListener("error",e=>{document.getElementById("root").innerHTML='<pre style="padding:20px;color:#C4472B;white-space:pre-wrap">'+(e.message||e.error)+'\n'+(e.filename||'')+':'+(e.lineno||'')+'</pre>'});
 window.addEventListener("unhandledrejection",e=>{document.getElementById("root").innerHTML='<pre style="padding:20px;color:#C4472B;white-space:pre-wrap">'+(e.reason&&e.reason.message||e.reason)+'</pre>'});
 </script>
+<style>
+  .score-row{display:grid;grid-template-columns:1.4fr 1fr 70px 90px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+  .score-row:last-child{border-bottom:0}
+  @media(max-width:560px){.score-row{grid-template-columns:1fr 70px 90px}.score-row .sub{display:none}}
+  .pts{font-weight:700;font-variant-numeric:tabular-nums;text-align:end}
+  .pts small{font-weight:400;color:var(--ink-2)}
+  .rank td:first-child{width:36px;color:var(--ink-2)}
+  .subtabs{display:flex;gap:6px;flex-wrap:wrap}
+  .subtabs button{background:#EDF1EF;border:0;border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--ink-2)}
+  .subtabs button.on{background:var(--teal);color:#fff}
+  .num{font-variant-numeric:tabular-nums;text-align:end}
+  .checkrow{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .checkrow input{width:20px;height:20px;margin-top:2px}
+  .na{color:var(--ink-2);font-size:12px}
+  pre.csv{white-space:pre-wrap;font-size:12px;background:#EDF1EF;padding:10px;border-radius:9px}
+</style>
 <script type="text/babel" data-presets="react">
 /* ================= CONFIG ================= */
 const SUPABASE_URL = "https://occubmnoepgdysbyacgj.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
 /* ========================================== */
-
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const { useState, useEffect, useMemo, useCallback } = React;
 
 const T = {
   en:{ app:"First Brand", kpi:"KPI", login:"Sign in", signup:"Create account", email:"Email", pass:"Password", name:"Full name",
     haveAcc:"Already have an account? Sign in", noAcc:"New here? Create an account", out:"Sign out",
-    dash:"Dashboard", record:"Record", deploy:"Deploy KPIs", team:"Team", accounts:"Accounts", lang:"العربية",
-    momentum:"Momentum", vsPrev:"vs previous period", last28:"Last 28 days of activity", noKpi:"No KPIs deployed to this pharmacist yet.",
-    pharmacist:"Pharmacist", pharmacists:"Pharmacists", date:"Date", value:"Value", note:"Note", save:"Save entries", saved:"Saved", target:"Target",
-    selfOnly:"You can record only the KPIs marked self-record.", nothingToRecord:"Nothing to record for this date.",
-    newKpi:"New KPI", editKpi:"Edit KPI", nameEn:"Name (English)", nameAr:"Name (Arabic)", desc:"Description", unit:"Unit", direction:"Direction",
-    up:"Higher is better", down:"Lower is better", freq:"Frequency", daily:"Daily", weekly:"Weekly", monthly:"Monthly",
-    selfRecord:"Pharmacists record this themselves", active:"Active", deployTo:"Deploy to", all:"All pharmacists", byBranch:"A branch", byUser:"Specific pharmacists",
-    saveKpi:"Save KPI", cancel:"Cancel", deployed:"Deployed KPIs", inactive:"Inactive", role:"Role", status:"Status",
-    admin:"Admin", supervisor:"Supervisor", count:"count", percent:"%", sar:"SAR", minutes:"min",
-    thisPeriod:"this period", entries:"entries", of:"of", noEntries:"No entries yet.", filter:"All branches",
-    branch:"Branch", branches:"Branches", newBranch:"New branch name", add:"Add", remove:"Remove", empCode:"Emp. code",
-    addPharmacist:"Add pharmacist", pharmacistName:"Pharmacist name", noBranch:"No branch", scope:"Scope (supervisors)", allBranches:"All branches",
-    linkedTo:"Linked pharmacist", notLinked:"— not linked —", unlinked:"Unlinked", linkHint:"Login accounts are linked here to confidential pharmacist records. Unlinked accounts cannot see any data.",
-    notLinkedMsg:"Your account is not linked to a pharmacist record yet. Ask your supervisor.", confirmRemove:"Remove? Recorded entries will be deleted too.",
-    deleteBranchBlocked:"Move or remove its pharmacists first.", moveTo:"Move to" },
+    dash:"Dashboard", targets:"Targets", visits:"Visits", data:"Data", team:"Team", accounts:"Accounts", settings:"Settings", lang:"العربية",
+    pharmacist:"Pharmacist", pharmacists:"Pharmacists", branch:"Branch", branches:"Branches", company:"Company", month:"Month", quarter:"Quarter",
+    score:"Score", vsPrev:"vs last month", qAvg:"Quarter average", momentum:"Momentum (monthly score)", actual:"Actual", target:"Target", ach:"Ach.", pts:"pts",
+    noData:"No data for this month yet.", asOf:"as of", saved:"Saved", cancel:"Cancel", save:"Save", add:"Add", remove:"Remove", active:"Active",
+    weight:"Weight", cap:"Cap", noCap:"No cap", level:"Level", role:"Role", status:"Status", admin:"Admin", supervisor:"Supervisor",
+    branchKpis:"Branch KPIs", phKpis:"Pharmacist KPIs", qTotal:"Quarter total", split:"Split ÷3", regRate:"Registration rate target",
+    visitDate:"Visit date", notes:"Notes", submit:"Submit visit", recentVisits:"Recent visits", noItems:"No checklist items yet — add them in Settings.",
+    checklist:"Visit checklist", itemEn:"Item (English)", itemAr:"Item (Arabic)",
+    addSnapshot:"Add snapshot", value:"Value", numerator:"Bills with customer no.", denominator:"Cash bills", source:"Source", importCsv:"Import CSV",
+    csvHint:"Columns: kpi_code, subject (branch or pharmacist name), month (YYYY-MM), as_of (YYYY-MM-DD), value, numerator, denominator",
+    importRun:"Import rows", latest:"Latest snapshots", history:"History",
+    newBranch:"New branch name", empCode:"Emp. code", addPharmacist:"Add pharmacist", pharmacistName:"Pharmacist name", noBranch:"No branch", allBranches:"All branches",
+    moveTo:"Move to", effective:"Effective", move:"Move", confirmRemove:"Remove? All their data will be deleted.", deleteBranchBlocked:"Move or remove its pharmacists first.",
+    scope:"Scope (supervisors)", linkedTo:"Linked pharmacist", notLinked:"— not linked —", unlinked:"Unlinked",
+    linkHint:"Login accounts are linked here to confidential pharmacist records. Unlinked accounts cannot see any data.", notLinkedMsg:"Your account is not linked to a pharmacist record yet. Ask your supervisor.",
+    ranking:"Ranking", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
     haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج",
-    dash:"لوحة المتابعة", record:"تسجيل", deploy:"نشر المؤشرات", team:"الفريق", accounts:"الحسابات", lang:"English",
-    momentum:"الزخم", vsPrev:"مقارنة بالفترة السابقة", last28:"نشاط آخر ٢٨ يومًا", noKpi:"لم يتم نشر مؤشرات لهذا الصيدلي بعد.",
-    pharmacist:"الصيدلي", pharmacists:"الصيادلة", date:"التاريخ", value:"القيمة", note:"ملاحظة", save:"حفظ القيم", saved:"تم الحفظ", target:"الهدف",
-    selfOnly:"يمكنك تسجيل المؤشرات المخصصة للتسجيل الذاتي فقط.", nothingToRecord:"لا يوجد ما يُسجَّل لهذا التاريخ.",
-    newKpi:"مؤشر جديد", editKpi:"تعديل المؤشر", nameEn:"الاسم (إنجليزي)", nameAr:"الاسم (عربي)", desc:"الوصف", unit:"الوحدة", direction:"الاتجاه",
-    up:"الأعلى أفضل", down:"الأقل أفضل", freq:"التكرار", daily:"يومي", weekly:"أسبوعي", monthly:"شهري",
-    selfRecord:"يسجّله الصيادلة بأنفسهم", active:"فعّال", deployTo:"نشر إلى", all:"كل الصيادلة", byBranch:"فرع محدد", byUser:"صيادلة محددون",
-    saveKpi:"حفظ المؤشر", cancel:"إلغاء", deployed:"المؤشرات المنشورة", inactive:"موقوف", role:"الدور", status:"الحالة",
-    admin:"مدير", supervisor:"مشرف", count:"عدد", percent:"٪", sar:"ريال", minutes:"دقيقة",
-    thisPeriod:"هذه الفترة", entries:"إدخال", of:"من", noEntries:"لا توجد إدخالات بعد.", filter:"كل الفروع",
-    branch:"الفرع", branches:"الفروع", newBranch:"اسم فرع جديد", add:"إضافة", remove:"حذف", empCode:"الرقم الوظيفي",
-    addPharmacist:"إضافة صيدلي", pharmacistName:"اسم الصيدلي", noBranch:"بدون فرع", scope:"النطاق (للمشرفين)", allBranches:"كل الفروع",
-    linkedTo:"الصيدلي المرتبط", notLinked:"— غير مرتبط —", unlinked:"غير مرتبط", linkHint:"هنا يتم ربط حسابات الدخول بسجلات الصيادلة السرية. الحسابات غير المرتبطة لا ترى أي بيانات.",
-    notLinkedMsg:"حسابك غير مرتبط بسجل صيدلي بعد. تواصل مع المشرف.", confirmRemove:"حذف؟ سيتم حذف القيم المسجلة أيضًا.",
-    deleteBranchBlocked:"انقل أو احذف صيادلة الفرع أولاً.", moveTo:"نقل إلى" }
+    dash:"لوحة المتابعة", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
+    pharmacist:"الصيدلي", pharmacists:"الصيادلة", branch:"الفرع", branches:"الفروع", company:"الشركة", month:"الشهر", quarter:"الربع",
+    score:"النقاط", vsPrev:"مقارنة بالشهر الماضي", qAvg:"متوسط الربع", momentum:"الزخم (نقاط شهرية)", actual:"الفعلي", target:"الهدف", ach:"التحقق", pts:"نقطة",
+    noData:"لا توجد بيانات لهذا الشهر بعد.", asOf:"حتى", saved:"تم الحفظ", cancel:"إلغاء", save:"حفظ", add:"إضافة", remove:"حذف", active:"فعّال",
+    weight:"الوزن", cap:"الحد الأقصى", noCap:"بدون حد", level:"المستوى", role:"الدور", status:"الحالة", admin:"مدير", supervisor:"مشرف",
+    branchKpis:"مؤشرات الفرع", phKpis:"مؤشرات الصيدلي", qTotal:"إجمالي الربع", split:"قسّم ÷٣", regRate:"هدف نسبة التسجيل",
+    visitDate:"تاريخ الزيارة", notes:"ملاحظات", submit:"إرسال الزيارة", recentVisits:"آخر الزيارات", noItems:"لا توجد بنود بعد — أضفها من الإعدادات.",
+    checklist:"قائمة فحص الزيارة", itemEn:"البند (إنجليزي)", itemAr:"البند (عربي)",
+    addSnapshot:"إضافة قراءة", value:"القيمة", numerator:"فواتير برقم عميل", denominator:"الفواتير النقدية", source:"المصدر", importCsv:"استيراد CSV",
+    csvHint:"الأعمدة: kpi_code, subject (اسم الفرع أو الصيدلي), month (YYYY-MM), as_of (YYYY-MM-DD), value, numerator, denominator",
+    importRun:"استيراد", latest:"آخر القراءات", history:"السجل",
+    newBranch:"اسم فرع جديد", empCode:"الرقم الوظيفي", addPharmacist:"إضافة صيدلي", pharmacistName:"اسم الصيدلي", noBranch:"بدون فرع", allBranches:"كل الفروع",
+    moveTo:"نقل إلى", effective:"اعتبارًا من", move:"نقل", confirmRemove:"حذف؟ ستُحذف كل بياناته.", deleteBranchBlocked:"انقل أو احذف صيادلة الفرع أولاً.",
+    scope:"النطاق (للمشرفين)", linkedTo:"الصيدلي المرتبط", notLinked:"— غير مرتبط —", unlinked:"غير مرتبط",
+    linkHint:"هنا يتم ربط حسابات الدخول بسجلات الصيادلة السرية. الحسابات غير المرتبطة لا ترى أي بيانات.", notLinkedMsg:"حسابك غير مرتبط بسجل صيدلي بعد. تواصل مع المشرف.",
+    ranking:"الترتيب", expired:"المنتهي (بالتكلفة)", ofSales:"من المبيعات", rate:"نسبة", count:"عدد", sar:"ريال" }
 };
 
-/* ---------- dates ---------- */
+/* ---------- helpers ---------- */
 const iso = d => d.toISOString().slice(0,10);
 const today = () => iso(new Date());
-const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
-const startOfWeek = d => { const x=new Date(d); const day=(x.getDay()+1)%7; x.setDate(x.getDate()-day); x.setHours(0,0,0,0); return x; };
-const startOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
-function periodStart(freq, d){ return freq==="daily"? new Date(new Date(d).setHours(0,0,0,0)) : freq==="weekly"? startOfWeek(d) : startOfMonth(d); }
-function prevPeriodStart(freq, s){ return freq==="daily"? addDays(s,-1) : freq==="weekly"? addDays(s,-7) : new Date(s.getFullYear(), s.getMonth()-1, 1); }
-
-/* ---------- scoring ---------- */
-function achievement(sum, target, direction){
-  if(!target) return sum>0?1:0;
-  if(direction==="up") return Math.min(sum/target, 1.5);
-  if(sum===0) return 1;
-  return Math.min(target/sum, 1.5);
-}
-function bucketize(kpi, entries){
-  const out=[]; let s=periodStart(kpi.frequency,new Date());
-  for(let i=0;i<8;i++){
-    const startIso=iso(s); const nextStart = i===0? "9999-12-31" : iso(out[out.length-1].start);
-    const sum = entries.filter(x=>x.kpi_id===kpi.kpi_id && x.entry_date>=startIso && x.entry_date<nextStart).reduce((a,b)=>a+Number(b.value),0);
-    out.push({start:s, sum});
-    s=prevPeriodStart(kpi.frequency,s);
-  }
-  return out.reverse();
-}
-const tone = p => p>=1?"good": p>=0.7?"mid":"bad";
-
-function Spark({points}){
-  const w=300,h=44,max=Math.max(1,...points);
-  const pts=points.map((v,i)=>`${(i/(points.length-1))*w},${h-4-(v/max)*(h-8)}`).join(" ");
-  return <svg className="spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
-    <polyline fill="none" stroke="var(--teal)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" points={pts}/>
-    {points.map((v,i)=><circle key={i} cx={(i/(points.length-1))*w} cy={h-4-(v/max)*(h-8)} r={i===points.length-1?4:2.5} fill={i===points.length-1?"var(--amber)":"var(--teal)"}/>)}
-  </svg>;
-}
-function Toast({msg}){ return msg? <div className="toast">{msg}</div> : null; }
+const monthKey = d => d.slice(0,7)+"-01";
+const thisMonth = () => monthKey(today());
+const addMonths = (mk,n) => { const [y,m]=mk.split("-").map(Number); const d=new Date(Date.UTC(y,m-1+n,1)); return d.toISOString().slice(0,10); };
+const qOf = mk => { const m=Number(mk.slice(5,7)); return {year:Number(mk.slice(0,4)), quarter:Math.floor((m-1)/3)+1, idx:(m-1)%3}; };
+const daysInMonth = mk => { const [y,m]=mk.split("-").map(Number); return new Date(y,m,0).getDate(); };
+const monthLabel = (mk,lang) => new Date(mk+"T00:00:00").toLocaleDateString(lang==="ar"?"ar-SA":"en-GB",{month:"long",year:"numeric"});
+const fmt = (n,unit) => n==null? "—" : unit==="rate"? (n*100).toFixed(1)+"%" : Number(n).toLocaleString("en",{maximumFractionDigits:0});
+const kname = (k,lang) => lang==="ar"&&k.name_ar?k.name_ar:k.name_en;
 const bname = (branches,id) => branches.find(b=>b.id===id)?.name || "—";
+const tone = p => p==null?"":p>=1?"good": p>=0.7?"mid":"bad";
+
+/* ---------- scoring engine ---------- */
+function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, targets, snaps, visits}
+  const tgt=(code,mk,bid,pid)=>{ const q=qOf(mk); const r=D.targets.find(x=>x.kpi_code===code&&x.year===q.year&&x.quarter===q.quarter&&(bid?x.branch_id===bid:x.pharmacist_id===pid)); return r? Number(r["m"+(q.idx+1)]) : null; };
+  const snap=(code,mk,bid,pid)=>D.snaps.find(s=>s.kpi_code===code&&s.month===mk&&(bid?s.branch_id===bid:s.pharmacist_id===pid))||null;
+  const kpi=code=>D.kpis.find(k=>k.code===code);
+  // branch shares for a pharmacist in a month: [{branch_id, share}]
+  const shares=(pid,mk)=>{ const start=mk, end=addMonths(mk,1), n=daysInMonth(mk); const out={};
+    D.assignments.filter(a=>a.pharmacist_id===pid&&a.from_date<end&&(!a.to_date||a.to_date>=start)).forEach(a=>{
+      const f=a.from_date>start?a.from_date:start; const t=a.to_date&&a.to_date<end?addDaysIso(a.to_date,1):end;
+      const d=Math.max(0,(new Date(t)-new Date(f))/864e5); out[a.branch_id]=(out[a.branch_id]||0)+d/n; });
+    return Object.entries(out).map(([branch_id,share])=>({branch_id,share})); };
+  const addDaysIso=(s,n)=>{ const d=new Date(s+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+
+  function branchKpi(code,bid,mk){ const k=kpi(code); const s=snap(code,mk,bid,null);
+    if(code==="expire"){ const sales=snap("sales",mk,bid,null); if(!s||!sales||!Number(sales.value)) return {ach:null};
+      const ratio=Number(s.value)/Number(sales.value); return {ach: ratio<=Number(k.threshold)?1:0, actual:Number(s.value), ratio, asOf:s.as_of}; }
+    const t=tgt(code,mk,bid,null); if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
+    return {ach:Number(s.value)/t, actual:Number(s.value), target:t, asOf:s.as_of}; }
+
+  function phKpi(code,pid,mk){ const k=kpi(code);
+    if(k.level==="branch"){ const sh=shares(pid,mk); if(!sh.length) return {ach:null};
+      let ach=0, any=false, detail=[]; sh.forEach(x=>{ const r=branchKpi(code,x.branch_id,mk); if(r.ach!=null){ ach+=r.ach*x.share; any=true; } detail.push({...r,...x}); });
+      const d0=detail[0]; return any? {ach, actual:d0.actual, target:d0.target, ratio:d0.ratio, asOf:d0.asOf, mixed:sh.length>1} : {ach:null}; }
+    if(k.rule==="visit"){ const vs=D.visits.filter(v=>v.pharmacist_id===pid&&monthKey(v.visit_date)===mk); if(!vs.length) return {ach:null};
+      const avg=vs.reduce((a,v)=>a+Number(v.score),0)/vs.length; return {ach:avg, actual:avg, target:1, unit:"rate", n:vs.length}; }
+    const s=snap(code,mk,null,pid);
+    if(k.rule==="rate"){ const t=tgt(code,mk,null,pid)||Number(k.threshold); if(!s||!Number(s.denominator)) return {ach:null,target:t,unit:"rate"};
+      const rate=Number(s.numerator)/Number(s.denominator); return {ach:rate/t, actual:rate, target:t, unit:"rate", asOf:s.as_of}; }
+    const t=tgt(code,mk,null,pid); if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
+    return {ach:Number(s.value)/t, actual:Number(s.value), target:t, asOf:s.as_of}; }
+
+  const pts=(k,ach)=> ach==null? null : Number(k.weight)*Math.min(ach, k.cap==null?Infinity:Number(k.cap));
+  function pharmacistScore(pid,mk){ const rows=D.kpis.filter(k=>k.active).map(k=>{ const r=phKpi(k.code,pid,mk); return {k,...r,pts:pts(k,r.ach)}; });
+    const has=rows.filter(r=>r.pts!=null); return {rows, total: has.length? has.reduce((a,r)=>a+r.pts,0):null, covered: has.reduce((a,r)=>a+Number(r.k.weight),0)}; }
+  function branchScore(bid,mk){ const phs=D.pharmacists.filter(p=>shares(p.id,mk).some(s=>s.branch_id===bid));
+    const rows=D.kpis.filter(k=>k.active).map(k=>{ if(k.level==="branch"){ const r=branchKpi(k.code,bid,mk); return {k,...r,pts:pts(k,r.ach)}; }
+      const vals=phs.map(p=>{ const r=phKpi(k.code,p.id,mk); return pts(k,r.ach); }).filter(v=>v!=null); return {k, ach:null, pts: vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : null, n:vals.length}; });
+    const has=rows.filter(r=>r.pts!=null); return {rows, total: has.length? has.reduce((a,r)=>a+r.pts,0):null, phs}; }
+  function quarterAvg(fn,id,mk){ const q=qOf(mk); const ms=[0,1,2].map(i=>addMonths(mk,i-q.idx)).map(m=>fn(id,m).total).filter(x=>x!=null); return ms.length? ms.reduce((a,b)=>a+b,0)/ms.length : null; }
+  return {shares, pharmacistScore, branchScore, quarterAvg};
+}
+
+/* ---------- small components ---------- */
+function Spark({points}){ const w=300,h=44; const vals=points.map(p=>p??0); const max=Math.max(1,...vals);
+  const pt=(v,i)=>`${(i/(points.length-1))*w},${h-4-(v/max)*(h-8)}`;
+  return <svg className="spark" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden="true">
+    <polyline fill="none" stroke="var(--teal)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" points={vals.map(pt).join(" ")}/>
+    {vals.map((v,i)=><circle key={i} cx={(i/(points.length-1))*w} cy={h-4-(v/max)*(h-8)} r={i===points.length-1?4:2.5} fill={points[i]==null?"#C9D3D0":i===points.length-1?"var(--amber)":"var(--teal)"}/>)}
+  </svg>; }
+function Toast({msg}){ return msg? <div className="toast">{msg}</div> : null; }
+function MonthPicker({mk,set,lang}){ return <div className="row" style={{gap:6}}>
+  <button className="btn sec" style={{padding:"6px 10px"}} onClick={()=>set(addMonths(mk,-1))}>‹</button>
+  <strong style={{minWidth:150,textAlign:"center"}}>{monthLabel(mk,lang)}</strong>
+  <button className="btn sec" style={{padding:"6px 10px"}} onClick={()=>set(addMonths(mk,1))} disabled={mk>=thisMonth()}>›</button></div>; }
+function ScoreRows({rows,t,lang}){ return <div>{rows.map(r=>{ const cap=r.k.cap==null?null:Number(r.k.cap); const maxPts=Number(r.k.weight)*(cap??1.5);
+  return <div key={r.k.code} className="score-row">
+    <div><strong>{kname(r.k,lang)}</strong><div className="muted small">{r.k.level==="branch"?t.branch:t.pharmacist} · {t.weight} {r.k.weight}{r.mixed&&" · ⇄"}</div></div>
+    <div className="sub small muted">{r.ach==null? <span className="na">{t.noData}</span> :
+      r.k.code==="expire"? <>{fmt(r.actual)} {t.sar} · {(r.ratio*100).toFixed(2)}% {t.ofSales}</> :
+      r.k.rule==="visit"? <>{r.n} {t.visits.toLowerCase()} · {fmt(r.actual,"rate")}</> :
+      r.ach!=null&&r.actual!=null? <>{fmt(r.actual,r.unit)} / {fmt(r.target,r.unit)}{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}</> : null}</div>
+    <div className={"pct "+tone(r.ach)} style={{fontSize:18}}>{r.ach==null?"—":Math.round(r.ach*100)+"%"}</div>
+    <div className="pts">{r.pts==null?"—":r.pts.toFixed(1)}<small> / {r.k.weight}</small>
+      <div className="bar-track" style={{margin:"4px 0 0"}}><div className={"bar-fill "+tone(r.ach)} style={{width:(r.pts==null?0:Math.min(100,r.pts/maxPts*100))+"%"}}/></div></div>
+  </div>; })}</div>; }
 
 /* ================= LOGIN ================= */
 function Login({t,lang,setLang}){
-  const [mode,setMode]=useState("in"); const [f,setF]=useState({email:"",pass:"",name:""});
-  const [err,setErr]=useState(""); const [busy,setBusy]=useState(false);
-  const go=async()=>{
-    setBusy(true); setErr("");
-    const r = mode==="in"
-      ? await sb.auth.signInWithPassword({email:f.email,password:f.pass})
-      : await sb.auth.signUp({email:f.email,password:f.pass,options:{data:{full_name:f.name}}});
-    if(r.error) setErr(r.error.message);
-    setBusy(false);
-  };
+  const [mode,setMode]=useState("in"); const [f,setF]=useState({email:"",pass:"",name:""}); const [err,setErr]=useState(""); const [busy,setBusy]=useState(false);
+  const go=async()=>{ setBusy(true); setErr(""); const r= mode==="in"? await sb.auth.signInWithPassword({email:f.email,password:f.pass}) : await sb.auth.signUp({email:f.email,password:f.pass,options:{data:{full_name:f.name}}}); if(r.error) setErr(r.error.message); setBusy(false); };
   const set=k=>e=>setF({...f,[k]:e.target.value});
   return <div className="login"><div className="card">
-    <div className="row" style={{justifyContent:"space-between",marginBottom:18}}>
-      <div className="brand" style={{color:"var(--ink)",fontSize:18}}>{t.app} <span>{t.kpi}</span></div>
-      <button className="btn sec" style={{padding:"5px 10px"}} onClick={()=>setLang(lang==="en"?"ar":"en")}>{t.lang}</button>
-    </div>
+    <div className="row" style={{justifyContent:"space-between",marginBottom:18}}><div className="brand" style={{color:"var(--ink)",fontSize:18}}>{t.app} <span>{t.kpi}</span></div><button className="btn sec" style={{padding:"5px 10px"}} onClick={()=>setLang(lang==="en"?"ar":"en")}>{t.lang}</button></div>
     <h1>{mode==="in"?t.login:t.signup}</h1>
     <div className="grid" style={{marginTop:16}}>
       {mode==="up" && <label className="f">{t.name}<input value={f.name} onChange={set("name")}/></label>}
@@ -215,242 +262,235 @@ function Login({t,lang,setLang}){
       {err && <div className="err">{err}</div>}
       <button className="btn" disabled={busy} onClick={go}>{mode==="in"?t.login:t.signup}</button>
       <button className="btn sec" onClick={()=>setMode(mode==="in"?"up":"in")}>{mode==="in"?t.noAcc:t.haveAcc}</button>
-    </div>
-  </div></div>;
-}
-
-/* ================= DEPLOY ================= */
-const blank = {name_en:"",name_ar:"",description:"",unit:"count",target:0,direction:"up",frequency:"daily",self_record:false,active:true};
-function Deploy({t,me,branches,pharmacists,toast}){
-  const [kpis,setKpis]=useState([]); const [asg,setAsg]=useState([]);
-  const [form,setForm]=useState(null); const [scope,setScope]=useState("all"); const [scBranch,setScBranch]=useState(""); const [scPh,setScPh]=useState([]);
-  const load=useCallback(async()=>{
-    const [k,a]=await Promise.all([sb.from("kpis").select("*").order("created_at"), sb.from("kpi_assignments").select("*")]);
-    setKpis(k.data||[]); setAsg(a.data||[]);
-  },[]);
-  useEffect(()=>{load()},[load]);
-  const edit=k=>{ setForm(k? {...k} : {...blank}); const a=asg.filter(x=>x.kpi_id===k?.id);
-    setScope(a[0]?.scope||"all"); setScBranch(a[0]?.branch_id||branches[0]?.id||""); setScPh(a.filter(x=>x.scope==="pharmacist").map(x=>x.pharmacist_id)); };
-  const save=async()=>{
-    const payload={...form,target:Number(form.target),created_by:me.id}; delete payload.created_at; delete payload.id;
-    let id=form.id;
-    if(id){ const r=await sb.from("kpis").update(payload).eq("id",id); if(r.error) return toast(r.error.message); }
-    else { const r=await sb.from("kpis").insert(payload).select().single(); if(r.error) return toast(r.error.message); id=r.data.id; }
-    await sb.from("kpi_assignments").delete().eq("kpi_id",id);
-    const rows = scope==="all"? [{kpi_id:id,scope:"all"}] : scope==="branch"? [{kpi_id:id,scope:"branch",branch_id:scBranch}] : scPh.map(p=>({kpi_id:id,scope:"pharmacist",pharmacist_id:p}));
-    if(rows.length){ const r=await sb.from("kpi_assignments").insert(rows); if(r.error) return toast(r.error.message); }
-    toast(t.saved); setForm(null); load();
-  };
-  const set=k=>e=>setForm({...form,[k]:e.target.type==="checkbox"?e.target.checked:e.target.value});
-  const scopeLabel=k=>{ const a=asg.filter(x=>x.kpi_id===k.id); if(!a.length) return "—"; if(a[0].scope==="all") return t.all; if(a[0].scope==="branch") return bname(branches,a[0].branch_id); return a.map(x=>pharmacists.find(p=>p.id===x.pharmacist_id)?.full_name||"?").join(", "); };
-
-  return <div className="grid">
-    <div className="row" style={{justifyContent:"space-between"}}><h1>{t.deploy}</h1>{!form && <button className="btn" onClick={()=>edit(null)}>{t.newKpi}</button>}</div>
-    {form && <div className="card grid">
-      <h2>{form.id?t.editKpi:t.newKpi}</h2>
-      <div className="row"><label className="f">{t.nameEn}<input value={form.name_en} onChange={set("name_en")}/></label><label className="f">{t.nameAr}<input value={form.name_ar} onChange={set("name_ar")} dir="rtl"/></label></div>
-      <label className="f">{t.desc}<textarea rows="2" value={form.description||""} onChange={set("description")}/></label>
-      <div className="row">
-        <label className="f">{t.target}<input type="number" step="any" value={form.target} onChange={set("target")}/></label>
-        <label className="f">{t.unit}<select value={form.unit} onChange={set("unit")}><option value="count">{t.count}</option><option value="percent">{t.percent}</option><option value="sar">{t.sar}</option><option value="minutes">{t.minutes}</option></select></label>
-        <label className="f">{t.freq}<select value={form.frequency} onChange={set("frequency")}><option value="daily">{t.daily}</option><option value="weekly">{t.weekly}</option><option value="monthly">{t.monthly}</option></select></label>
-        <label className="f">{t.direction}<select value={form.direction} onChange={set("direction")}><option value="up">{t.up}</option><option value="down">{t.down}</option></select></label>
-      </div>
-      <div className="row">
-        <label className="check"><input type="checkbox" checked={form.self_record} onChange={set("self_record")}/>{t.selfRecord}</label>
-        <label className="check"><input type="checkbox" checked={form.active} onChange={set("active")}/>{t.active}</label>
-      </div>
-      <div className="row">
-        <label className="f">{t.deployTo}<select value={scope} onChange={e=>setScope(e.target.value)}><option value="all">{t.all}</option><option value="branch">{t.byBranch}</option><option value="pharmacist">{t.byUser}</option></select></label>
-        {scope==="branch" && <label className="f">{t.branch}<select value={scBranch} onChange={e=>setScBranch(e.target.value)}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}
-      </div>
-      {scope==="pharmacist" && <div className="row">{pharmacists.filter(p=>p.active).map(p=><label key={p.id} className="check"><input type="checkbox" checked={scPh.includes(p.id)} onChange={e=>setScPh(e.target.checked?[...scPh,p.id]:scPh.filter(x=>x!==p.id))}/>{p.full_name} <span className="muted small">({bname(branches,p.branch_id)})</span></label>)}</div>}
-      <div className="row"><button className="btn" onClick={save} disabled={!form.name_en||(scope==="branch"&&!scBranch)}>{t.saveKpi}</button><button className="btn sec" onClick={()=>setForm(null)}>{t.cancel}</button></div>
-    </div>}
-    <div className="card">
-      <h2 style={{marginBottom:10}}>{t.deployed}</h2>
-      {kpis.length===0 ? <div className="empty">—</div> :
-      <table><thead><tr><th>{t.kpi}</th><th>{t.target}</th><th>{t.freq}</th><th>{t.deployTo}</th><th></th></tr></thead><tbody>
-        {kpis.map(k=><tr key={k.id} style={{opacity:k.active?1:.55}}>
-          <td><strong>{k.name_en}</strong>{k.name_ar && <div className="muted small">{k.name_ar}</div>}{k.self_record && <span className="chip amber">{t.selfRecord}</span>}{!k.active && <span className="chip grey">{t.inactive}</span>}</td>
-          <td>{k.target} <span className="muted small">{t[k.unit]}</span>{k.direction==="down"&&" ↓"}</td>
-          <td>{t[k.frequency]}</td><td className="small">{scopeLabel(k)}</td>
-          <td><button className="btn sec" style={{padding:"5px 10px"}} onClick={()=>edit(k)}>{t.editKpi}</button></td>
-        </tr>)}
-      </tbody></table>}
-    </div>
-  </div>;
-}
-
-/* ================= RECORD ================= */
-function Record({t,me,branches,pharmacists,toast,lang}){
-  const isMgr = me.role!=="pharmacist";
-  const targets = isMgr ? pharmacists.filter(p=>p.active&&(me.role==="admin"||!me.branch_id||p.branch_id===me.branch_id)) : pharmacists.filter(p=>p.id===me.pharmacist_id);
-  const [pid,setPid]=useState(targets[0]?.id||""); const [date,setDate]=useState(today());
-  const [kpis,setKpis]=useState([]); const [vals,setVals]=useState({}); const [busy,setBusy]=useState(false);
-  useEffect(()=>{ if(!pid) return; (async()=>{
-    const [k,e]=await Promise.all([sb.from("v_pharmacist_kpis").select("*").eq("pharmacist_id",pid), sb.from("kpi_entries").select("*").eq("pharmacist_id",pid).eq("entry_date",date)]);
-    let list=k.data||[]; if(!isMgr) list=list.filter(x=>x.self_record); setKpis(list);
-    const v={}; (e.data||[]).forEach(x=>v[x.kpi_id]={value:x.value,note:x.note||""}); setVals(v);
-  })(); },[pid,date]);
-  const save=async()=>{
-    setBusy(true);
-    const rows=kpis.filter(k=>vals[k.kpi_id]?.value!==undefined&&vals[k.kpi_id].value!=="").map(k=>({kpi_id:k.kpi_id,pharmacist_id:pid,recorded_by:me.id,entry_date:date,value:Number(vals[k.kpi_id].value),note:vals[k.kpi_id].note||null}));
-    const r=await sb.from("kpi_entries").upsert(rows,{onConflict:"kpi_id,pharmacist_id,entry_date"});
-    setBusy(false); toast(r.error?r.error.message:t.saved);
-  };
-  const setV=(id,k,v)=>setVals({...vals,[id]:{...(vals[id]||{}),[k]:v}});
-  return <div className="grid">
-    <h1>{t.record}</h1>
-    {!isMgr && <div className="muted small">{t.selfOnly}</div>}
-    <div className="card row">
-      {isMgr && <label className="f">{t.pharmacist}<select value={pid} onChange={e=>setPid(e.target.value)}>{targets.map(p=><option key={p.id} value={p.id}>{p.full_name} — {bname(branches,p.branch_id)}</option>)}</select></label>}
-      <label className="f">{t.date}<input type="date" value={date} max={today()} onChange={e=>setDate(e.target.value)}/></label>
-    </div>
-    <div className="card">
-      {kpis.length===0 ? <div className="empty">{t.nothingToRecord}</div> :
-      <table><thead><tr><th>{t.kpi}</th><th>{t.target}</th><th style={{width:130}}>{t.value}</th><th>{t.note}</th></tr></thead><tbody>
-        {kpis.map(k=><tr key={k.kpi_id}>
-          <td><strong>{lang==="ar"&&k.name_ar?k.name_ar:k.name_en}</strong><div className="muted small">{t[k.frequency]}</div></td>
-          <td className="muted">{k.target} {t[k.unit]}</td>
-          <td><input type="number" step="any" inputMode="decimal" value={vals[k.kpi_id]?.value??""} onChange={e=>setV(k.kpi_id,"value",e.target.value)}/></td>
-          <td><input value={vals[k.kpi_id]?.note??""} onChange={e=>setV(k.kpi_id,"note",e.target.value)}/></td>
-        </tr>)}
-      </tbody></table>}
-      {kpis.length>0 && <div style={{marginTop:14}}><button className="btn" disabled={busy} onClick={save}>{t.save}</button></div>}
-    </div>
-  </div>;
+    </div></div></div>;
 }
 
 /* ================= DASHBOARD ================= */
-function Dashboard({t,me,branches,pharmacists,lang}){
-  const isMgr = me.role!=="pharmacist";
-  const [branch,setBranch]=useState(me.role==="supervisor"?(me.branch_id||""):"");
-  const pool = isMgr ? pharmacists.filter(p=>p.active&&(!branch||p.branch_id===branch)) : pharmacists.filter(p=>p.id===me.pharmacist_id);
-  const [pid,setPid]=useState(pool[0]?.id||"");
-  useEffect(()=>{ if(!pool.find(p=>p.id===pid)) setPid(pool[0]?.id||""); },[branch,pharmacists]);
-  const [kpis,setKpis]=useState([]); const [entries,setEntries]=useState([]);
-  useEffect(()=>{ if(!pid) return; (async()=>{
-    const since=iso(addDays(new Date(),-240));
-    const [k,e]=await Promise.all([sb.from("v_pharmacist_kpis").select("*").eq("pharmacist_id",pid), sb.from("kpi_entries").select("kpi_id,entry_date,value").eq("pharmacist_id",pid).gte("entry_date",since)]);
-    setKpis(k.data||[]); setEntries(e.data||[]);
-  })(); },[pid]);
+function Dashboard({t,me,D,E,lang}){
+  const isMgr=me.role!=="pharmacist"; const [mk,setMk]=useState(thisMonth());
+  const [view,setView]=useState(isMgr?"branch":"pharmacist");
+  const [bid,setBid]=useState(me.role==="supervisor"?(me.branch_id||D.branches[0]?.id):D.branches[0]?.id||"");
+  const phPool = isMgr? D.pharmacists.filter(p=>p.active&&(view!=="pharmacist"||!bid||E.shares(p.id,mk).some(s=>s.branch_id===bid))) : D.pharmacists.filter(p=>p.id===me.pharmacist_id);
+  const [pid,setPid]=useState(isMgr?"":me.pharmacist_id);
+  useEffect(()=>{ if(!phPool.find(p=>p.id===pid)) setPid(phPool[0]?.id||""); },[bid,mk,view]);
+  const months6=[5,4,3,2,1,0].map(i=>addMonths(mk,-i));
 
-  const stats = useMemo(()=>kpis.map(k=>{ const b=bucketize(k,entries); const cur=b[b.length-1].sum, prev=b[b.length-2].sum;
-    return {k, buckets:b, cur, prev, ach:achievement(cur,k.target,k.direction), prevAch:achievement(prev,k.target,k.direction)}; }),[kpis,entries]);
-  const momentum = stats.length? stats.reduce((a,s)=>a+Math.min(s.ach,1),0)/stats.length : 0;
-  const prevMomentum = stats.length? stats.reduce((a,s)=>a+Math.min(s.prevAch,1),0)/stats.length : 0;
-  const delta = Math.round((momentum-prevMomentum)*100);
-  const days = Array.from({length:28},(_,i)=>iso(addDays(new Date(),i-27)));
-  const activeDays = new Set(entries.map(e=>e.entry_date));
-  const person = pharmacists.find(p=>p.id===pid);
+  let hero=null, rows=[], sparks=[], extra=null;
+  if(view==="pharmacist"&&pid){ const s=E.pharmacistScore(pid,mk); const prev=E.pharmacistScore(pid,addMonths(mk,-1)).total; rows=s.rows;
+    hero={title:D.pharmacists.find(p=>p.id===pid)?.full_name, sub:E.shares(pid,mk).map(x=>bname(D.branches,x.branch_id)).join(" ⇄ ")||"—", total:s.total, prev, q:E.quarterAvg(E.pharmacistScore,pid,mk), covered:s.covered};
+    sparks=months6.map(m=>E.pharmacistScore(pid,m).total); }
+  if(view==="branch"&&bid){ const s=E.branchScore(bid,mk); const prev=E.branchScore(bid,addMonths(mk,-1)).total; rows=s.rows;
+    hero={title:bname(D.branches,bid), sub:`${s.phs.length} ${t.pharmacists}`, total:s.total, prev, q:E.quarterAvg(E.branchScore,bid,mk)};
+    sparks=months6.map(m=>E.branchScore(bid,m).total);
+    const rank=s.phs.map(p=>({p,total:E.pharmacistScore(p.id,mk).total})).sort((a,b)=>(b.total??-1)-(a.total??-1));
+    extra=<div className="card"><h3 style={{marginBottom:8}}>{t.ranking} · {t.pharmacists}</h3><table className="rank"><tbody>{rank.map((r,i)=><tr key={r.p.id}><td>{i+1}</td><td><a href="#" onClick={e=>{e.preventDefault();setView("pharmacist");setPid(r.p.id);}}>{r.p.full_name}</a></td><td className="num"><strong>{r.total==null?"—":r.total.toFixed(1)}</strong></td></tr>)}</tbody></table></div>; }
+  if(view==="company"){ const rank=D.branches.map(b=>({b,s:E.branchScore(b.id,mk),prev:E.branchScore(b.id,addMonths(mk,-1)).total})).sort((a,b)=>(b.s.total??-1)-(a.s.total??-1));
+    const has=rank.filter(r=>r.s.total!=null); const total=has.length?has.reduce((a,r)=>a+r.s.total,0)/has.length:null;
+    const hasP=rank.filter(r=>r.prev!=null); const prev=hasP.length?hasP.reduce((a,r)=>a+r.prev,0)/hasP.length:null;
+    hero={title:t.company, sub:`${D.branches.length} ${t.branches}`, total, prev, q:null};
+    sparks=months6.map(m=>{ const v=D.branches.map(b=>E.branchScore(b.id,m).total).filter(x=>x!=null); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; });
+    extra=<div className="card"><h3 style={{marginBottom:8}}>{t.ranking} · {t.branches}</h3><table className="rank"><thead><tr><th></th><th>{t.branch}</th>{D.kpis.filter(k=>k.active).map(k=><th key={k.code} className="num">{kname(k,lang)}</th>)}<th className="num">{t.score}</th></tr></thead><tbody>
+      {rank.map((r,i)=><tr key={r.b.id}><td>{i+1}</td><td><a href="#" onClick={e=>{e.preventDefault();setView("branch");setBid(r.b.id);}}>{r.b.name}</a></td>{r.s.rows.map(x=><td key={x.k.code} className="num">{x.pts==null?"—":x.pts.toFixed(1)}</td>)}<td className="num"><strong>{r.s.total==null?"—":r.s.total.toFixed(1)}</strong></td></tr>)}</tbody></table></div>; }
 
+  const delta = hero&&hero.total!=null&&hero.prev!=null? hero.total-hero.prev : null;
   return <div className="grid">
-    <div className="row" style={{justifyContent:"space-between"}}>
-      <h1>{t.dash}</h1>
-      {isMgr && <div className="row">
-        {me.role==="admin" && <select value={branch} onChange={e=>setBranch(e.target.value)} style={{width:"auto"}}><option value="">{t.filter}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>}
-        <select value={pid} onChange={e=>setPid(e.target.value)} style={{width:"auto"}}>{pool.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>
-      </div>}
-    </div>
-    {!person ? <div className="card empty">{t.noKpi}</div> : <>
+    <div className="row" style={{justifyContent:"space-between"}}><h1>{t.dash}</h1><MonthPicker mk={mk} set={setMk} lang={lang}/></div>
+    {isMgr && <div className="row">
+      <div className="subtabs">{me.role==="admin"&&<button className={view==="company"?"on":""} onClick={()=>setView("company")}>{t.company}</button>}<button className={view==="branch"?"on":""} onClick={()=>setView("branch")}>{t.branch}</button><button className={view==="pharmacist"?"on":""} onClick={()=>setView("pharmacist")}>{t.pharmacist}</button></div>
+      {view!=="company" && (me.role==="admin"||!me.branch_id) && <select value={bid} onChange={e=>setBid(e.target.value)} style={{width:"auto"}}>{view==="pharmacist"&&<option value="">{t.allBranches}</option>}{D.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>}
+      {view==="pharmacist" && <select value={pid} onChange={e=>setPid(e.target.value)} style={{width:"auto"}}>{phPool.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>}
+    </div>}
+    {!hero ? <div className="card empty">{t.noData}</div> : <>
     <div className="hero">
       <div className="mo">
-        <div><div className="small" style={{color:"#CFE0DC"}}>{person.full_name} · {bname(branches,person.branch_id)}</div><div style={{fontWeight:600,marginTop:6}}>{t.momentum}</div></div>
-        <div><div className="big">{Math.round(momentum*100)}<small>%</small></div>
-          <div className={"delta "+(delta>0?"up":delta<0?"down":"flat")}>{delta>0?"▲":delta<0?"▼":"■"} {Math.abs(delta)} <span style={{fontWeight:400,color:"#CFE0DC"}}>{t.vsPrev}</span></div></div>
+        <div><div className="small" style={{color:"#CFE0DC"}}>{hero.sub}</div><div style={{fontWeight:600,marginTop:6}}>{hero.title}</div></div>
+        <div><div className="big">{hero.total==null?"—":hero.total.toFixed(0)}<small> / 100</small></div>
+          <div className={"delta "+(delta==null?"flat":delta>0?"up":delta<0?"down":"flat")}>{delta==null?"■ —":(delta>0?"▲ ":delta<0?"▼ ":"■ ")+Math.abs(delta).toFixed(1)} <span style={{fontWeight:400,color:"#CFE0DC"}}>{t.vsPrev}</span>{hero.q!=null&&<span style={{fontWeight:400,color:"#CFE0DC"}}> · {t.qAvg} {hero.q.toFixed(1)}</span>}</div></div>
       </div>
-      <div className="card">
-        <div className="row" style={{justifyContent:"space-between"}}><h3>{t.last28}</h3><span className="muted small">{activeDays.size} {t.entries}</span></div>
-        <div className="strip">{days.map(d=><i key={d} className={(activeDays.has(d)?"on ":"")+(d===today()?"today":"")} title={d}/>)}</div>
-        <div className="muted small" style={{marginTop:12}}>{stats.length} {t.kpi} · {entries.length} {t.entries}</div>
-      </div>
+      <div className="card"><h3>{t.momentum}</h3><Spark points={sparks}/><div className="row small muted" style={{justifyContent:"space-between"}}>{months6.map(m=><span key={m}>{new Date(m+"T00:00:00").toLocaleDateString(lang==="ar"?"ar-SA":"en-GB",{month:"short"})}</span>)}</div></div>
     </div>
-    {stats.length===0 ? <div className="card empty">{t.noKpi}</div> :
-    <div className="grid g3">{stats.map(s=><div key={s.k.kpi_id} className="card">
-      <div className="kpi-head"><div><strong>{lang==="ar"&&s.k.name_ar?s.k.name_ar:s.k.name_en}</strong><div className="muted small">{t[s.k.frequency]} · {t.target} {s.k.target} {t[s.k.unit]}</div></div>
-        <div className={"pct "+tone(s.ach)}>{Math.round(s.ach*100)}%</div></div>
-      <div className="bar-track"><div className={"bar-fill "+tone(s.ach)} style={{width:Math.min(100,s.ach*100)+"%"}}/></div>
-      <div className="small muted">{s.cur} {t.of} {s.k.target} {t.thisPeriod}</div>
-      <Spark points={s.buckets.map(b=>b.sum)}/>
-    </div>)}</div>}
+    {view!=="company" && <div className="card"><ScoreRows rows={rows} t={t} lang={lang}/></div>}
+    {extra}
     </>}
   </div>;
 }
 
-/* ================= TEAM: branches + pharmacists (admin) ================= */
-function Team({t,branches,pharmacists,reload,toast}){
-  const [nb,setNb]=useState(""); const [np,setNp]=useState({}); // per-branch new pharmacist form
-  const [sel,setSel]=useState("all");
-  useEffect(()=>{ if(sel!=="all"&&sel!=="none"&&!branches.find(b=>b.id===sel)) setSel(branches[0]?.id||"all"); },[branches]);
-  const run=async(q)=>{ const r=await q; toast(r.error?r.error.message:t.saved); reload(); };
+/* ================= TARGETS (admin) ================= */
+function Targets({t,D,reload,toast,lang}){
+  const q0=qOf(thisMonth()); const [year,setYear]=useState(q0.year); const [quarter,setQuarter]=useState(q0.quarter); const [tab,setTab]=useState("branch");
+  const [edits,setEdits]=useState({}); // key -> {m1,m2,m3}
+  useEffect(()=>setEdits({}),[year,quarter,tab]);
+  const key=(code,id)=>code+"|"+id;
+  const row=(code,bid,pid)=>{ const k=key(code,bid||pid); if(edits[k]) return edits[k]; const r=D.targets.find(x=>x.kpi_code===code&&x.year===year&&x.quarter===quarter&&(bid?x.branch_id===bid:x.pharmacist_id===pid)); return r?{m1:r.m1,m2:r.m2,m3:r.m3}:{m1:"",m2:"",m3:""}; };
+  const setCell=(code,id,m,v)=>setEdits({...edits,[key(code,id)]:{...row(code,tab==="branch"?id:null,tab==="branch"?null:id),[m]:v}});
+  const split=(code,id)=>{ const tot=Number(prompt(t.qTotal)); if(!tot) return; const v=+(tot/3).toFixed(2); setEdits({...edits,[key(code,id)]:{m1:v,m2:v,m3:v}}); };
+  const save=async()=>{ const rows=Object.entries(edits).map(([k,v])=>{ const [code,id]=k.split("|"); return {kpi_code:code,year,quarter,branch_id:tab==="branch"?id:null,pharmacist_id:tab==="branch"?null:id,m1:Number(v.m1)||0,m2:Number(v.m2)||0,m3:Number(v.m3)||0}; });
+    if(!rows.length) return; const r=await sb.from("targets").upsert(rows,{onConflict:"kpi_code,year,quarter,branch_id,pharmacist_id"}); toast(r.error?r.error.message:t.saved); if(!r.error){ setEdits({}); reload(); } };
+  const kp=D.kpis.filter(k=>k.active&&k.level===(tab==="branch"?"branch":"pharmacist")&&k.rule!=="visit"&&k.code!=="expire");
+  const subjects= tab==="branch"? D.branches : D.pharmacists.filter(p=>p.active);
+  const mlabels=[0,1,2].map(i=>new Date(year,(quarter-1)*3+i,1).toLocaleDateString(lang==="ar"?"ar-SA":"en-GB",{month:"short"}));
+  return <div className="grid">
+    <div className="row" style={{justifyContent:"space-between"}}><h1>{t.targets}</h1><div className="row"><select value={year} onChange={e=>setYear(Number(e.target.value))} style={{width:"auto"}}>{[q0.year-1,q0.year,q0.year+1].map(y=><option key={y}>{y}</option>)}</select><select value={quarter} onChange={e=>setQuarter(Number(e.target.value))} style={{width:"auto"}}>{[1,2,3,4].map(q=><option key={q} value={q}>Q{q}</option>)}</select></div></div>
+    <div className="subtabs"><button className={tab==="branch"?"on":""} onClick={()=>setTab("branch")}>{t.branchKpis}</button><button className={tab==="ph"?"on":""} onClick={()=>setTab("ph")}>{t.phKpis}</button></div>
+    {kp.map(k=><div key={k.code} className="card"><h2 style={{marginBottom:8}}>{kname(k,lang)} <span className="muted small">{k.rule==="rate"?`(${t.regRate}: ${k.threshold*100}% ${t.noCap.toLowerCase()} — override optional)`:""}</span></h2>
+      <table><thead><tr><th>{tab==="branch"?t.branch:t.pharmacist}</th>{mlabels.map(m=><th key={m} className="num">{m}</th>)}<th className="num">{t.qTotal}</th><th></th></tr></thead><tbody>
+        {subjects.map(s=>{ const r=row(k.code,tab==="branch"?s.id:null,tab==="branch"?null:s.id); const tot=["m1","m2","m3"].reduce((a,m)=>a+(Number(r[m])||0),0);
+          return <tr key={s.id}><td>{s.full_name||s.name}{tab==="ph"&&<div className="muted small">{bname(D.branches,s.branch_id)}</div>}</td>
+            {["m1","m2","m3"].map(m=><td key={m}><input type="number" step="any" className="num" value={r[m]} onChange={e=>setCell(k.code,s.id,m,e.target.value)} placeholder={k.rule==="rate"?String(k.threshold):"0"}/></td>)}
+            <td className="num">{fmt(tot)}</td><td><button className="btn sec" style={{padding:"4px 8px"}} onClick={()=>split(k.code,s.id)}>{t.split}</button></td></tr>; })}
+      </tbody></table></div>)}
+    <div><button className="btn" onClick={save} disabled={!Object.keys(edits).length}>{t.save}</button></div>
+  </div>;
+}
+
+/* ================= VISITS (managers) ================= */
+function Visits({t,me,D,reload,toast,lang}){
+  const branches = me.role==="supervisor"&&me.branch_id? D.branches.filter(b=>b.id===me.branch_id) : D.branches;
+  const [bid,setBid]=useState(branches[0]?.id||""); const [date,setDate]=useState(today());
+  const phs=D.pharmacists.filter(p=>p.active&&E_shares(D,p.id,monthKey(date)).some(s=>s.branch_id===bid));
+  const [pid,setPid]=useState(""); useEffect(()=>{ if(!phs.find(p=>p.id===pid)) setPid(phs[0]?.id||""); },[bid,date]);
+  const items=D.visit_items.filter(i=>i.active); const [checks,setChecks]=useState({}); const [notes,setNotes]=useState("");
+  const score = items.length? items.filter(i=>checks[i.id]).length/items.length : 0;
+  const submit=async()=>{ const r=await sb.from("visits").insert({visit_date:date,branch_id:bid,pharmacist_id:pid,supervisor_id:me.id,checks,score,notes:notes||null}); toast(r.error?r.error.message:t.saved); if(!r.error){ setChecks({}); setNotes(""); reload(); } };
+  const recent=D.visits.filter(v=>v.branch_id===bid).slice(0,15);
+  return <div className="grid">
+    <h1>{t.visits}</h1>
+    <div className="card row">
+      <label className="f">{t.branch}<select value={bid} onChange={e=>setBid(e.target.value)}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+      <label className="f">{t.pharmacist}<select value={pid} onChange={e=>setPid(e.target.value)}>{phs.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select></label>
+      <label className="f">{t.visitDate}<input type="date" value={date} max={today()} onChange={e=>setDate(e.target.value)}/></label>
+    </div>
+    <div className="card">
+      <div className="row" style={{justifyContent:"space-between"}}><h2>{t.checklist}</h2><span className={"pct "+tone(score)} style={{fontSize:22}}>{Math.round(score*100)}%</span></div>
+      {items.length===0 ? <div className="empty">{t.noItems}</div> : items.map(i=><label key={i.id} className="checkrow"><input type="checkbox" checked={!!checks[i.id]} onChange={e=>setChecks({...checks,[i.id]:e.target.checked})}/><span>{lang==="ar"&&i.text_ar?i.text_ar:i.text_en}</span></label>)}
+      <label className="f" style={{marginTop:12}}>{t.notes}<textarea rows="3" value={notes} onChange={e=>setNotes(e.target.value)}/></label>
+      <div style={{marginTop:12}}><button className="btn" disabled={!pid||!items.length} onClick={submit}>{t.submit}</button></div>
+    </div>
+    {recent.length>0 && <div className="card"><h3 style={{marginBottom:8}}>{t.recentVisits}</h3><table><tbody>{recent.map(v=><tr key={v.id}><td>{v.visit_date}</td><td>{D.pharmacists.find(p=>p.id===v.pharmacist_id)?.full_name}</td><td className="num"><span className={"pct "+tone(v.score)} style={{fontSize:15}}>{Math.round(v.score*100)}%</span></td><td className="small muted">{v.notes}</td></tr>)}</tbody></table></div>}
+  </div>;
+}
+const E_shares=(D,pid,mk)=>makeEngine(D).shares(pid,mk);
+
+/* ================= DATA (admin): snapshots ================= */
+function Data({t,me,D,reload,toast,lang}){
+  const [mk,setMk]=useState(thisMonth()); const [f,setF]=useState({kpi_code:"sales",subject:"",as_of:today(),value:"",numerator:"",denominator:""});
+  const [csv,setCsv]=useState(""); const [hist,setHist]=useState(null);
+  const k=D.kpis.find(x=>x.code===f.kpi_code); const subjects=k?.level==="branch"?D.branches:D.pharmacists;
+  const subjRow=()=> k.level==="branch"? {branch_id:f.subject,pharmacist_id:null} : {branch_id:null,pharmacist_id:f.subject};
+  const add=async()=>{ if(!f.subject) return; const r=await sb.from("snapshots").upsert({kpi_code:f.kpi_code,month:mk,as_of:f.as_of,...subjRow(),value:Number(f.value)||0,numerator:f.numerator===""?null:Number(f.numerator),denominator:f.denominator===""?null:Number(f.denominator),source:"manual",created_by:me.id},{onConflict:"kpi_code,month,as_of,branch_id,pharmacist_id"}); toast(r.error?r.error.message:t.saved); if(!r.error) reload(); };
+  const runImport=async()=>{ const lines=csv.trim().split(/\r?\n/).filter(Boolean); const head=lines[0].split(",").map(s=>s.trim()); const rows=[]; const bad=[];
+    lines.slice(1).forEach((l,i)=>{ const c=l.split(",").map(s=>s.trim()); const o=Object.fromEntries(head.map((h,j)=>[h,c[j]])); const kk=D.kpis.find(x=>x.code===o.kpi_code); if(!kk) return bad.push(i+2);
+      const s= kk.level==="branch"? D.branches.find(b=>b.name.toLowerCase()===(o.subject||"").toLowerCase()) : D.pharmacists.find(p=>p.full_name.toLowerCase()===(o.subject||"").toLowerCase()); if(!s||!o.month) return bad.push(i+2);
+      rows.push({kpi_code:o.kpi_code,month:o.month.slice(0,7)+"-01",as_of:o.as_of||(o.month.slice(0,7)+"-28"),branch_id:kk.level==="branch"?s.id:null,pharmacist_id:kk.level==="branch"?null:s.id,value:Number(o.value)||0,numerator:o.numerator?Number(o.numerator):null,denominator:o.denominator?Number(o.denominator):null,source:"import",created_by:me.id}); });
+    if(!rows.length) return toast("0 rows"); const r=await sb.from("snapshots").upsert(rows,{onConflict:"kpi_code,month,as_of,branch_id,pharmacist_id"}); toast(r.error?r.error.message:`${t.saved}: ${rows.length}${bad.length?` · skipped lines ${bad.join(",")}`:""}`); if(!r.error){ setCsv(""); reload(); } };
+  const del=async(id)=>{ const r=await sb.from("snapshots").delete().eq("id",id); toast(r.error?r.error.message:t.saved); reload(); if(hist) showHist(hist.key); };
+  const latest=D.snaps.filter(s=>s.month===mk).sort((a,b)=>a.kpi_code.localeCompare(b.kpi_code));
+  const showHist=async(s)=>{ const q=sb.from("snapshots").select("*").eq("kpi_code",s.kpi_code).eq("month",s.month).order("as_of",{ascending:false}); const r= s.branch_id? await q.eq("branch_id",s.branch_id) : await q.eq("pharmacist_id",s.pharmacist_id); setHist({key:s,rows:r.data||[]}); };
+  const subjName=s=>s.branch_id?bname(D.branches,s.branch_id):D.pharmacists.find(p=>p.id===s.pharmacist_id)?.full_name;
+  return <div className="grid">
+    <div className="row" style={{justifyContent:"space-between"}}><h1>{t.data}</h1><MonthPicker mk={mk} set={setMk} lang={lang}/></div>
+    <div className="card grid"><h2>{t.addSnapshot}</h2><div className="row">
+      <label className="f">{t.kpi}<select value={f.kpi_code} onChange={e=>setF({...f,kpi_code:e.target.value,subject:""})}>{D.kpis.filter(x=>x.rule!=="visit").map(x=><option key={x.code} value={x.code}>{kname(x,lang)}</option>)}</select></label>
+      <label className="f">{k?.level==="branch"?t.branch:t.pharmacist}<select value={f.subject} onChange={e=>setF({...f,subject:e.target.value})}><option value="">—</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.name||s.full_name}</option>)}</select></label>
+      <label className="f">{t.asOf}<input type="date" value={f.as_of} onChange={e=>setF({...f,as_of:e.target.value})}/></label>
+      {k?.rule!=="rate" && <label className="f">{f.kpi_code==="expire"?t.expired:t.value}<input type="number" step="any" value={f.value} onChange={e=>setF({...f,value:e.target.value})}/></label>}
+      {k?.rule==="rate" && <><label className="f">{t.numerator}<input type="number" value={f.numerator} onChange={e=>setF({...f,numerator:e.target.value})}/></label><label className="f">{t.denominator}<input type="number" value={f.denominator} onChange={e=>setF({...f,denominator:e.target.value})}/></label></>}
+      <button className="btn" onClick={add} disabled={!f.subject}>{t.add}</button></div></div>
+    <div className="card grid"><h2>{t.importCsv}</h2><div className="muted small">{t.csvHint}</div>
+      <pre className="csv">kpi_code,subject,month,as_of,value,numerator,denominator{"\n"}sales,Sawarmah,2025-09,2025-09-30,412000,,{"\n"}registration,Ahmed Ali,2025-09,2025-09-30,,640,800</pre>
+      <textarea rows="5" value={csv} onChange={e=>setCsv(e.target.value)} dir="ltr" style={{fontFamily:"monospace",fontSize:12}}/>
+      <div><button className="btn sec" onClick={runImport} disabled={!csv.trim()}>{t.importRun}</button></div></div>
+    <div className="card"><h2 style={{marginBottom:8}}>{t.latest} · {monthLabel(mk,lang)}</h2>
+      {latest.length===0? <div className="empty">{t.noData}</div> :
+      <table><thead><tr><th>{t.kpi}</th><th>{t.branch}/{t.pharmacist}</th><th className="num">{t.value}</th><th>{t.asOf}</th><th>{t.source}</th><th></th></tr></thead><tbody>
+        {latest.map(s=><tr key={s.id}><td>{kname(D.kpis.find(x=>x.code===s.kpi_code)||{name_en:s.kpi_code},lang)}</td><td>{subjName(s)}</td><td className="num">{s.kpi_code==="registration"?`${fmt(s.numerator)} / ${fmt(s.denominator)}`:fmt(s.value)}</td><td>{s.as_of}</td><td className="small muted">{s.source}</td>
+          <td className="row" style={{gap:6}}><button className="btn sec" style={{padding:"4px 8px"}} onClick={()=>showHist(s)}>{t.history}</button><button className="btn warn" style={{padding:"4px 8px"}} onClick={()=>del(s.id)}>×</button></td></tr>)}
+      </tbody></table>}</div>
+    {hist && <div className="card"><div className="row" style={{justifyContent:"space-between"}}><h3>{t.history} · {subjName(hist.key)} · {kname(D.kpis.find(x=>x.code===hist.key.kpi_code),lang)}</h3><button className="btn sec" style={{padding:"4px 8px"}} onClick={()=>setHist(null)}>×</button></div>
+      <table><tbody>{hist.rows.map(s=><tr key={s.id}><td>{s.as_of}</td><td className="num">{s.kpi_code==="registration"?`${fmt(s.numerator)} / ${fmt(s.denominator)}`:fmt(s.value)}</td><td className="small muted">{s.source}</td><td><button className="btn warn" style={{padding:"3px 8px"}} onClick={()=>del(s.id)}>×</button></td></tr>)}</tbody></table></div>}
+  </div>;
+}
+
+/* ================= TEAM (admin) ================= */
+function Team({t,D,reload,toast}){
+  const {branches,pharmacists}=D; const [nb,setNb]=useState(""); const [np,setNp]=useState({}); const [sel,setSel]=useState("all"); const [mv,setMv]=useState({});
+  const run=async(q)=>{ const r=await q; toast(r.error?r.error.message:t.saved); reload(); return r; };
   const addBranch=()=>{ if(!nb.trim()) return; run(sb.from("branches").insert({name:nb.trim()})); setNb(""); };
   const removeBranch=b=>{ if(pharmacists.some(p=>p.branch_id===b.id)) return toast(t.deleteBranchBlocked); if(confirm(t.remove+" "+b.name+"?")) run(sb.from("branches").delete().eq("id",b.id)); };
-  const addPh=bid=>{ const f=np[bid]||{}; if(!f.name?.trim()) return; run(sb.from("pharmacists").insert({full_name:f.name.trim(),emp_code:f.code||null,branch_id:bid==="none"?null:bid})); setNp({...np,[bid]:{}}); };
+  const addPh=async bid=>{ const f=np[bid]||{}; if(!f.name?.trim()) return; const r=await sb.from("pharmacists").insert({full_name:f.name.trim(),emp_code:f.code||null,branch_id:bid==="none"?null:bid}).select().single(); if(r.error) return toast(r.error.message);
+    if(bid!=="none") await sb.from("pharmacist_assignments").insert({pharmacist_id:r.data.id,branch_id:bid,from_date:f.from||thisMonth()}); toast(t.saved); setNp({...np,[bid]:{}}); reload(); };
   const removePh=p=>{ if(confirm(t.confirmRemove)) run(sb.from("pharmacists").delete().eq("id",p.id)); };
+  const move=async p=>{ const m=mv[p.id]||{}; const to=m.branch; const from=m.from||today(); if(!to||to===p.branch_id) return;
+    const prev=new Date(from+"T00:00:00Z"); prev.setUTCDate(prev.getUTCDate()-1);
+    await sb.from("pharmacist_assignments").update({to_date:prev.toISOString().slice(0,10)}).eq("pharmacist_id",p.id).is("to_date",null);
+    await run(sb.from("pharmacist_assignments").insert({pharmacist_id:p.id,branch_id:to,from_date:from})); setMv({...mv,[p.id]:{}}); };
   const updPh=(id,patch)=>run(sb.from("pharmacists").update(patch).eq("id",id));
   const shown = sel==="all"? branches : branches.filter(b=>b.id===sel);
-  const groups = [...shown.map(b=>({id:b.id,name:b.name,list:pharmacists.filter(p=>p.branch_id===b.id)})),
-                  ...((sel==="all"||sel==="none")?[{id:"none",name:t.noBranch,list:pharmacists.filter(p=>!p.branch_id)}]:[])];
-
+  const groups=[...shown.map(b=>({id:b.id,name:b.name,list:pharmacists.filter(p=>p.branch_id===b.id)})), ...(sel==="all"?[{id:"none",name:t.noBranch,list:pharmacists.filter(p=>!p.branch_id)}]:[])];
   return <div className="grid">
     <div className="row" style={{justifyContent:"space-between"}}><h1>{t.team}</h1><span className="muted small">{pharmacists.length} {t.pharmacists} · {branches.length} {t.branches}</span></div>
-    <div className="card grid">
-      <h2>{t.branches}</h2>
-      <div className="row">
-        {branches.map(b=><span key={b.id} className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel===b.id?"var(--teal)":"",color:sel===b.id?"#fff":""}} onClick={()=>setSel(sel===b.id?"all":b.id)}>
-          {b.name} <span className="muted small" style={{color:"inherit",opacity:.7}}>({pharmacists.filter(p=>p.branch_id===b.id).length})</span>
-          <button title={t.remove} onClick={e=>{e.stopPropagation();removeBranch(b)}} style={{background:"transparent",border:0,cursor:"pointer",color:"inherit",marginInlineStart:6}}>×</button>
-        </span>)}
-        <span className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel==="all"?"var(--teal)":"#EDF1EF",color:sel==="all"?"#fff":"var(--ink-2)"}} onClick={()=>setSel("all")}>{t.allBranches}</span>
-      </div>
-      <div className="row"><input placeholder={t.newBranch} value={nb} onChange={e=>setNb(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addBranch()} style={{maxWidth:280}}/><button className="btn sec" onClick={addBranch}>{t.add}</button></div>
-    </div>
-
+    <div className="card grid"><h2>{t.branches}</h2>
+      <div className="row">{branches.map(b=><span key={b.id} className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel===b.id?"var(--teal)":"",color:sel===b.id?"#fff":""}} onClick={()=>setSel(sel===b.id?"all":b.id)}>{b.name} <span style={{opacity:.7}}>({pharmacists.filter(p=>p.branch_id===b.id).length})</span><button title={t.remove} onClick={e=>{e.stopPropagation();removeBranch(b)}} style={{background:"transparent",border:0,cursor:"pointer",color:"inherit",marginInlineStart:6}}>×</button></span>)}
+        <span className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel==="all"?"var(--teal)":"#EDF1EF",color:sel==="all"?"#fff":"var(--ink-2)"}} onClick={()=>setSel("all")}>{t.allBranches}</span></div>
+      <div className="row"><input placeholder={t.newBranch} value={nb} onChange={e=>setNb(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addBranch()} style={{maxWidth:280}}/><button className="btn sec" onClick={addBranch}>{t.add}</button></div></div>
     {groups.map(g=><div key={g.id} className="card">
       <div className="row" style={{justifyContent:"space-between",marginBottom:8}}><h2>{g.name}</h2><span className="muted small">{g.list.length} {t.pharmacists}</span></div>
-      {g.list.length>0 && <table><thead><tr><th>{t.name}</th><th>{t.empCode}</th><th>{t.moveTo}</th><th>{t.status}</th><th></th></tr></thead><tbody>
+      {g.list.length>0 && <table><thead><tr><th>{t.name}</th><th>{t.empCode}</th><th>{t.moveTo}</th><th>{t.effective}</th><th>{t.status}</th><th></th></tr></thead><tbody>
         {g.list.map(p=><tr key={p.id} style={{opacity:p.active?1:.55}}>
           <td>{p.full_name}</td><td className="muted">{p.emp_code||"—"}</td>
-          <td><select value={p.branch_id||""} onChange={e=>updPh(p.id,{branch_id:e.target.value||null})}><option value="">{t.noBranch}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></td>
+          <td><select value={mv[p.id]?.branch||""} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),branch:e.target.value}})}><option value="">—</option>{branches.filter(b=>b.id!==p.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></td>
+          <td className="row" style={{gap:6,flexWrap:"nowrap"}}><input type="date" value={mv[p.id]?.from||today()} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),from:e.target.value}})} style={{width:150}}/><button className="btn sec" style={{padding:"5px 10px"}} disabled={!mv[p.id]?.branch} onClick={()=>move(p)}>{t.move}</button></td>
           <td><label className="check"><input type="checkbox" checked={p.active} onChange={e=>updPh(p.id,{active:e.target.checked})}/>{t.active}</label></td>
-          <td><button className="btn warn" style={{padding:"5px 10px"}} onClick={()=>removePh(p)}>{t.remove}</button></td>
-        </tr>)}
+          <td><button className="btn warn" style={{padding:"5px 10px"}} onClick={()=>removePh(p)}>{t.remove}</button></td></tr>)}
       </tbody></table>}
       <div className="row" style={{marginTop:10}}>
-        <input placeholder={t.pharmacistName} value={np[g.id]?.name||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),name:e.target.value}})} onKeyDown={e=>e.key==="Enter"&&addPh(g.id)} style={{maxWidth:260}}/>
-        <input placeholder={t.empCode} value={np[g.id]?.code||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),code:e.target.value}})} style={{maxWidth:140}}/>
-        <button className="btn sec" onClick={()=>addPh(g.id)}>{t.addPharmacist}</button>
-      </div>
+        <input placeholder={t.pharmacistName} value={np[g.id]?.name||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),name:e.target.value}})} onKeyDown={e=>e.key==="Enter"&&addPh(g.id)} style={{maxWidth:240}}/>
+        <input placeholder={t.empCode} value={np[g.id]?.code||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),code:e.target.value}})} style={{maxWidth:130}}/>
+        {g.id!=="none" && <input type="date" title={t.effective} value={np[g.id]?.from||thisMonth()} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),from:e.target.value}})} style={{maxWidth:160}}/>}
+        <button className="btn sec" onClick={()=>addPh(g.id)}>{t.addPharmacist}</button></div>
     </div>)}
   </div>;
 }
 
-/* ================= ACCOUNTS: link logins to pharmacist records (admin) ================= */
-function Accounts({t,me,branches,pharmacists,toast}){
-  const [profiles,setProfiles]=useState([]);
+/* ================= ACCOUNTS (admin) ================= */
+function Accounts({t,me,D,toast}){
+  const {branches,pharmacists}=D; const [profiles,setProfiles]=useState([]);
   const load=useCallback(async()=>{ const r=await sb.from("profiles").select("*").order("created_at",{ascending:false}); setProfiles(r.data||[]); },[]);
   useEffect(()=>{load()},[load]);
   const upd=async(id,patch)=>{ const r=await sb.from("profiles").update(patch).eq("id",id); toast(r.error?r.error.message:t.saved); load(); };
-  const takenBy = pid => profiles.find(p=>p.pharmacist_id===pid);
-  return <div className="grid">
-    <h1>{t.accounts}</h1>
-    <div className="muted small">{t.linkHint}</div>
-    <div className="card">
-      <table><thead><tr><th>{t.name}</th><th>{t.email}</th><th>{t.role}</th><th>{t.linkedTo}</th><th>{t.scope}</th><th>{t.status}</th></tr></thead><tbody>
-        {profiles.map(p=>{ const linked=pharmacists.find(x=>x.id===p.pharmacist_id); return <tr key={p.id}>
-          <td>{p.full_name}{!p.pharmacist_id&&p.role==="pharmacist"&&<div><span className="chip bad">{t.unlinked}</span></div>}</td>
-          <td className="small" dir="ltr">{p.email||"—"}</td>
-          <td><select value={p.role} disabled={p.id===me.id} onChange={e=>upd(p.id,{role:e.target.value})}><option value="pharmacist">{t.pharmacist}</option><option value="supervisor">{t.supervisor}</option><option value="admin">{t.admin}</option></select></td>
-          <td><select value={p.pharmacist_id||""} onChange={e=>upd(p.id,{pharmacist_id:e.target.value||null})}>
-            <option value="">{t.notLinked}</option>
-            {pharmacists.map(x=>{ const tb=takenBy(x.id); return <option key={x.id} value={x.id} disabled={tb&&tb.id!==p.id}>{x.full_name} — {bname(branches,x.branch_id)}{tb&&tb.id!==p.id?" ✓":""}</option>; })}
-          </select>{linked&&<div className="muted small">{bname(branches,linked.branch_id)}</div>}</td>
-          <td>{p.role==="supervisor"? <select value={p.branch_id||""} onChange={e=>upd(p.id,{branch_id:e.target.value||null})}><option value="">{t.allBranches}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select> : <span className="muted">—</span>}</td>
-          <td><label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{t.active}</label></td>
-        </tr>; })}
-      </tbody></table>
-    </div>
+  const takenBy=pid=>profiles.find(p=>p.pharmacist_id===pid);
+  return <div className="grid"><h1>{t.accounts}</h1><div className="muted small">{t.linkHint}</div><div className="card">
+    <table><thead><tr><th>{t.name}</th><th>{t.email}</th><th>{t.role}</th><th>{t.linkedTo}</th><th>{t.scope}</th><th>{t.status}</th></tr></thead><tbody>
+      {profiles.map(p=>{ const linked=pharmacists.find(x=>x.id===p.pharmacist_id); return <tr key={p.id}>
+        <td>{p.full_name}{!p.pharmacist_id&&p.role==="pharmacist"&&<div><span className="chip bad">{t.unlinked}</span></div>}</td>
+        <td className="small" dir="ltr">{p.email||"—"}</td>
+        <td><select value={p.role} disabled={p.id===me.id} onChange={e=>upd(p.id,{role:e.target.value})}><option value="pharmacist">{t.pharmacist}</option><option value="supervisor">{t.supervisor}</option><option value="admin">{t.admin}</option></select></td>
+        <td><select value={p.pharmacist_id||""} onChange={e=>upd(p.id,{pharmacist_id:e.target.value||null})}><option value="">{t.notLinked}</option>{pharmacists.map(x=>{ const tb=takenBy(x.id); return <option key={x.id} value={x.id} disabled={tb&&tb.id!==p.id}>{x.full_name} — {bname(branches,x.branch_id)}{tb&&tb.id!==p.id?" ✓":""}</option>; })}</select>{linked&&<div className="muted small">{bname(branches,linked.branch_id)}</div>}</td>
+        <td>{p.role==="supervisor"? <select value={p.branch_id||""} onChange={e=>upd(p.id,{branch_id:e.target.value||null})}><option value="">{t.allBranches}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select> : <span className="muted">—</span>}</td>
+        <td><label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{t.active}</label></td></tr>; })}
+    </tbody></table></div></div>;
+}
+
+/* ================= SETTINGS (admin): weights/caps + checklist ================= */
+function Settings({t,D,reload,toast,lang}){
+  const [ed,setEd]=useState({}); const [ni,setNi]=useState({en:"",ar:""});
+  const val=(k,f)=> ed[k.code]?.[f] ?? (k[f]??"");
+  const saveK=async()=>{ for(const [code,p] of Object.entries(ed)){ const patch={}; if(p.weight!==undefined) patch.weight=Number(p.weight); if(p.cap!==undefined) patch.cap=p.cap===""?null:Number(p.cap); if(p.threshold!==undefined) patch.threshold=Number(p.threshold); if(p.active!==undefined) patch.active=p.active; const r=await sb.from("kpis").update(patch).eq("code",code); if(r.error) return toast(r.error.message); } toast(t.saved); setEd({}); reload(); };
+  const addItem=async()=>{ if(!ni.en.trim()) return; const r=await sb.from("visit_items").insert({text_en:ni.en.trim(),text_ar:ni.ar.trim(),sort:D.visit_items.length+1}); toast(r.error?r.error.message:t.saved); setNi({en:"",ar:""}); reload(); };
+  const updItem=async(id,patch)=>{ const r=await sb.from("visit_items").update(patch).eq("id",id); toast(r.error?r.error.message:t.saved); reload(); };
+  const total=D.kpis.filter(k=>(ed[k.code]?.active??k.active)).reduce((a,k)=>a+Number(val(k,"weight")||0),0);
+  return <div className="grid"><h1>{t.settings}</h1>
+    <div className="card"><div className="row" style={{justifyContent:"space-between"}}><h2>{t.kpi}</h2><span className={"chip "+(total===100?"":"bad")}>Σ {t.weight} = {total}</span></div>
+      <table><thead><tr><th>{t.kpi}</th><th>{t.level}</th><th className="num">{t.weight}</th><th className="num">{t.cap}</th><th className="num">%</th><th>{t.active}</th></tr></thead><tbody>
+        {D.kpis.map(k=><tr key={k.code}><td><strong>{kname(k,lang)}</strong><div className="muted small">{k.code} · {k.rule}</div></td><td>{k.level==="branch"?t.branch:t.pharmacist}</td>
+          <td><input type="number" className="num" value={val(k,"weight")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],weight:e.target.value}})}/></td>
+          <td>{k.rule==="all_or_none"?<span className="muted">—</span>:<input type="number" step="0.1" className="num" placeholder={t.noCap} value={val(k,"cap")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],cap:e.target.value}})}/>}</td>
+          <td>{k.threshold!=null?<input type="number" step="0.001" className="num" value={val(k,"threshold")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],threshold:e.target.value}})}/>:<span className="muted">—</span>}</td>
+          <td><input type="checkbox" checked={ed[k.code]?.active??k.active} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],active:e.target.checked}})}/></td></tr>)}
+      </tbody></table><div style={{marginTop:12}}><button className="btn" disabled={!Object.keys(ed).length} onClick={saveK}>{t.save}</button></div></div>
+    <div className="card grid"><h2>{t.checklist}</h2>
+      {D.visit_items.map(i=><div key={i.id} className="row" style={{opacity:i.active?1:.5}}><span style={{flex:1}}>{i.text_en}{i.text_ar&&<span className="muted"> · {i.text_ar}</span>}</span><label className="check"><input type="checkbox" checked={i.active} onChange={e=>updItem(i.id,{active:e.target.checked})}/>{t.active}</label></div>)}
+      <div className="row"><input placeholder={t.itemEn} value={ni.en} onChange={e=>setNi({...ni,en:e.target.value})}/><input placeholder={t.itemAr} dir="rtl" value={ni.ar} onChange={e=>setNi({...ni,ar:e.target.value})}/><button className="btn sec" onClick={addItem}>{t.add}</button></div></div>
   </div>;
 }
 
@@ -458,43 +498,40 @@ function Accounts({t,me,branches,pharmacists,toast}){
 function App(){
   const [lang,setLang]=useState(localStorage.getItem("lang")||"en"); const t=T[lang];
   useEffect(()=>{ document.documentElement.lang=lang; document.documentElement.dir=lang==="ar"?"rtl":"ltr"; localStorage.setItem("lang",lang); },[lang]);
-  const [session,setSession]=useState(undefined); const [me,setMe]=useState(null);
-  const [branches,setBranches]=useState([]); const [pharmacists,setPharmacists]=useState([]);
+  const [session,setSession]=useState(undefined); const [me,setMe]=useState(null); const [D,setD]=useState(null);
   const [page,setPage]=useState("dash"); const [msg,setMsg]=useState("");
   const toast=m=>{ setMsg(m); if(m!==t.saved) console.error(m); setTimeout(()=>setMsg(""), m===t.saved?2200:7000); };
   useEffect(()=>{ sb.auth.getSession().then(({data})=>setSession(data.session)); const {data:sub}=sb.auth.onAuthStateChange((_,s)=>setSession(s)); return ()=>sub.subscription.unsubscribe(); },[]);
   const reload=useCallback(async()=>{
-    const [b,p]=await Promise.all([sb.from("branches").select("*").eq("active",true).order("name"), sb.from("pharmacists").select("*").order("full_name")]);
-    setBranches(b.data||[]); setPharmacists(p.data||[]);
+    const [b,p,a,k,tg,sn,vi,vs]=await Promise.all([
+      sb.from("branches").select("*").eq("active",true).order("name"), sb.from("pharmacists").select("*").order("full_name"),
+      sb.from("pharmacist_assignments").select("*"), sb.from("kpis").select("*").order("sort"), sb.from("targets").select("*"),
+      sb.from("v_latest_snapshots").select("*"), sb.from("visit_items").select("*").order("sort"), sb.from("visits").select("*").order("visit_date",{ascending:false}).limit(2000)]);
+    const err=[b,p,a,k,tg,sn,vi,vs].find(r=>r.error); if(err) toast(err.error.message);
+    setD({branches:b.data||[],pharmacists:p.data||[],assignments:a.data||[],kpis:k.data||[],targets:tg.data||[],snaps:sn.data||[],visit_items:vi.data||[],visits:vs.data||[]});
   },[]);
-  useEffect(()=>{ if(!session){setMe(null);return;} (async()=>{
-    const r=await sb.from("profiles").select("*").eq("id",session.user.id).single(); setMe(r.data||null); await reload();
-  })(); },[session]);
+  useEffect(()=>{ if(!session){setMe(null);setD(null);return;} (async()=>{ const r=await sb.from("profiles").select("*").eq("id",session.user.id).single(); setMe(r.data||null); await reload(); })(); },[session]);
+  const E=useMemo(()=>D?makeEngine(D):null,[D]);
 
   if(session===undefined) return null;
   if(!session) return <Login t={t} lang={lang} setLang={setLang}/>;
-  if(!me) return <div className="empty">…</div>;
-
+  if(!me||!D) return <div className="empty">…</div>;
   const linked = me.role!=="pharmacist" || !!me.pharmacist_id;
-  const tabs=[["dash",t.dash],["record",t.record]]; if(me.role==="admin") tabs.push(["deploy",t.deploy],["team",t.team],["accounts",t.accounts]);
-  const props={t,me,branches,pharmacists,toast,lang,reload};
+  const tabs=[["dash",t.dash]]; if(me.role!=="pharmacist") tabs.push(["visits",t.visits]); if(me.role==="admin") tabs.push(["targets",t.targets],["data",t.data],["team",t.team],["accounts",t.accounts],["settings",t.settings]);
+  const props={t,me,D,E,toast,lang,reload};
   return <>
-    <div className="bar">
-      <div className="brand">{t.app} <span>{t.kpi}</span></div>
+    <div className="bar"><div className="brand">{t.app} <span>{t.kpi}</span></div>
       <div className="tabs">{linked && tabs.map(([k,l])=><button key={k} className={"tab"+(page===k?" on":"")} onClick={()=>setPage(k)}>{l}</button>)}</div>
       <div className="who">{me.full_name} · {t[me.role]||me.role}</div>
-      <button className="ghost" onClick={()=>setLang(lang==="en"?"ar":"en")}>{t.lang}</button>
-      <button className="ghost" onClick={()=>sb.auth.signOut()}>{t.out}</button>
-    </div>
-    <div className="wrap">
-      {!linked ? <div className="card empty">{t.notLinkedMsg}</div> : <>
+      <button className="ghost" onClick={()=>setLang(lang==="en"?"ar":"en")}>{t.lang}</button><button className="ghost" onClick={()=>sb.auth.signOut()}>{t.out}</button></div>
+    <div className="wrap">{!linked ? <div className="card empty">{t.notLinkedMsg}</div> : <>
       {page==="dash"     && <Dashboard key={me.id} {...props}/>}
-      {page==="record"   && <Record {...props}/>}
-      {page==="deploy"   && me.role==="admin" && <Deploy {...props}/>}
+      {page==="visits"   && me.role!=="pharmacist" && <Visits {...props}/>}
+      {page==="targets"  && me.role==="admin" && <Targets {...props}/>}
+      {page==="data"     && me.role==="admin" && <Data {...props}/>}
       {page==="team"     && me.role==="admin" && <Team {...props}/>}
       {page==="accounts" && me.role==="admin" && <Accounts {...props}/>}
-      </>}
-    </div>
+      {page==="settings" && me.role==="admin" && <Settings {...props}/>}</>}</div>
     <Toast msg={msg}/>
   </>;
 }
