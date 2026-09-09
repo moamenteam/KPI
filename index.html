@@ -381,7 +381,7 @@ function Dashboard({t,me,branches,pharmacists,lang}){
 /* ================= TEAM: branches + pharmacists (admin) ================= */
 function Team({t,branches,pharmacists,reload,toast}){
   const [nb,setNb]=useState(""); const [np,setNp]=useState({}); // per-branch new pharmacist form
-  const [sel,setSel]=useState(branches[0]?.id||"all");
+  const [sel,setSel]=useState("all");
   useEffect(()=>{ if(sel!=="all"&&sel!=="none"&&!branches.find(b=>b.id===sel)) setSel(branches[0]?.id||"all"); },[branches]);
   const run=async(q)=>{ const r=await q; toast(r.error?r.error.message:t.saved); reload(); };
   const addBranch=()=>{ if(!nb.trim()) return; run(sb.from("branches").insert({name:nb.trim()})); setNb(""); };
@@ -394,7 +394,7 @@ function Team({t,branches,pharmacists,reload,toast}){
                   ...((sel==="all"||sel==="none")?[{id:"none",name:t.noBranch,list:pharmacists.filter(p=>!p.branch_id)}]:[])];
 
   return <div className="grid">
-    <h1>{t.team}</h1>
+    <div className="row" style={{justifyContent:"space-between"}}><h1>{t.team}</h1><span className="muted small">{pharmacists.length} {t.pharmacists} · {branches.length} {t.branches}</span></div>
     <div className="card grid">
       <h2>{t.branches}</h2>
       <div className="row">
@@ -402,7 +402,7 @@ function Team({t,branches,pharmacists,reload,toast}){
           {b.name} <span className="muted small" style={{color:"inherit",opacity:.7}}>({pharmacists.filter(p=>p.branch_id===b.id).length})</span>
           <button title={t.remove} onClick={e=>{e.stopPropagation();removeBranch(b)}} style={{background:"transparent",border:0,cursor:"pointer",color:"inherit",marginInlineStart:6}}>×</button>
         </span>)}
-        <span className="chip grey" style={{padding:"6px 10px",fontSize:13,cursor:"pointer"}} onClick={()=>setSel("all")}>{t.allBranches}</span>
+        <span className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel==="all"?"var(--teal)":"#EDF1EF",color:sel==="all"?"#fff":"var(--ink-2)"}} onClick={()=>setSel("all")}>{t.allBranches}</span>
       </div>
       <div className="row"><input placeholder={t.newBranch} value={nb} onChange={e=>setNb(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addBranch()} style={{maxWidth:280}}/><button className="btn sec" onClick={addBranch}>{t.add}</button></div>
     </div>
@@ -461,7 +461,7 @@ function App(){
   const [session,setSession]=useState(undefined); const [me,setMe]=useState(null);
   const [branches,setBranches]=useState([]); const [pharmacists,setPharmacists]=useState([]);
   const [page,setPage]=useState("dash"); const [msg,setMsg]=useState("");
-  const toast=m=>{ setMsg(m); setTimeout(()=>setMsg(""),2200); };
+  const toast=m=>{ setMsg(m); if(m!==t.saved) console.error(m); setTimeout(()=>setMsg(""), m===t.saved?2200:7000); };
   useEffect(()=>{ sb.auth.getSession().then(({data})=>setSession(data.session)); const {data:sub}=sb.auth.onAuthStateChange((_,s)=>setSession(s)); return ()=>sub.subscription.unsubscribe(); },[]);
   const reload=useCallback(async()=>{
     const [b,p]=await Promise.all([sb.from("branches").select("*").eq("active",true).order("name"), sb.from("pharmacists").select("*").order("full_name")]);
