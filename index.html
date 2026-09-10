@@ -136,7 +136,7 @@ const { useState, useEffect, useMemo, useCallback } = React;
 const T = {
   en:{ app:"First Brand", kpi:"KPI", login:"Sign in", signup:"Create account", email:"Email", pass:"Password", name:"Full name",
     haveAcc:"Already have an account? Sign in", noAcc:"New here? Create an account", out:"Sign out",
-    dash:"Dashboard", date:"Date", admin2:"Admin", tabs:"Tabs", hr:"HR", hrSoon:"HR module — coming next", hrHint:"Same login, same staff records and branches, same per-account permissions. Modules planned:", hrStaff:"Staff file", hrAttendance:"Attendance & shifts", hrLeave:"Leave requests", hrDocs:"Documents & licence expiry", visitReports:"Visit reports", from:"From", to:"To", lastVisit:"Last visit", lastScore:"Last score", avgScore:"Average", access:"Tab access", accessHint:"Tick which tabs each account type can see. Changes apply on next reload.", accessSuper:"Accounts and Settings are always super-admin only.", noAccess:"No pages are enabled for your account yet.", targets:"Targets", visits:"Visits", data:"Data", team:"Team", accounts:"Accounts", settings:"Settings", lang:"العربية",
+    dash:"Dashboard", date:"Date", admin2:"Admin", tabs:"Tabs", profile:"My profile", phone:"Phone", changePhoto:"Change photo", documents:"Documents", upload:"Upload file", docHint:"PDF or image, up to 10 MB", docCv:"CV", docCert:"Certificate", docId:"ID / licence", docOther:"Other", hr:"HR", hrSoon:"HR module — coming next", hrHint:"Same login, same staff records and branches, same per-account permissions. Modules planned:", hrStaff:"Staff file", hrAttendance:"Attendance & shifts", hrLeave:"Leave requests", hrDocs:"Documents & licence expiry", visitReports:"Visit reports", from:"From", to:"To", lastVisit:"Last visit", lastScore:"Last score", avgScore:"Average", access:"Tab access", accessHint:"Tick which tabs each account type can see. Changes apply on next reload.", accessSuper:"Accounts and Settings are always super-admin only.", noAccess:"No pages are enabled for your account yet.", targets:"Targets", visits:"Visits", data:"Data", team:"Team", accounts:"Accounts", settings:"Settings", lang:"العربية",
     pharmacist:"Pharmacist", pharmacists:"Pharmacists", branch:"Branch", branches:"Branches", company:"Company", month:"Month", quarter:"Quarter",
     score:"Score", vsPrev:"vs last month", qAvg:"Quarter average", momentum:"Momentum (monthly score)", actual:"Actual", target:"Target", ach:"Ach.", pts:"pts",
     noData:"No data for this month yet.", asOf:"as of", saved:"Saved", cancel:"Cancel", save:"Save", add:"Add", remove:"Remove", active:"Active",
@@ -154,7 +154,7 @@ const T = {
     title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
     haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج",
-    dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", hr:"الموارد البشرية", hrSoon:"وحدة الموارد البشرية — قريبًا", hrHint:"نفس تسجيل الدخول، نفس سجلات الموظفين والفروع، ونفس صلاحيات الحسابات. الوحدات المخطط لها:", hrStaff:"ملف الموظف", hrAttendance:"الحضور والورديات", hrLeave:"طلبات الإجازة", hrDocs:"المستندات وانتهاء التراخيص", visitReports:"تقارير الزيارات", from:"من", to:"إلى", lastVisit:"آخر زيارة", lastScore:"آخر نتيجة", avgScore:"المتوسط", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
+    dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", profile:"ملفي", phone:"الجوال", changePhoto:"تغيير الصورة", documents:"المستندات", upload:"رفع ملف", docHint:"PDF أو صورة، حتى 10 ميجابايت", docCv:"السيرة الذاتية", docCert:"شهادة", docId:"هوية / ترخيص", docOther:"أخرى", hr:"الموارد البشرية", hrSoon:"وحدة الموارد البشرية — قريبًا", hrHint:"نفس تسجيل الدخول، نفس سجلات الموظفين والفروع، ونفس صلاحيات الحسابات. الوحدات المخطط لها:", hrStaff:"ملف الموظف", hrAttendance:"الحضور والورديات", hrLeave:"طلبات الإجازة", hrDocs:"المستندات وانتهاء التراخيص", visitReports:"تقارير الزيارات", from:"من", to:"إلى", lastVisit:"آخر زيارة", lastScore:"آخر نتيجة", avgScore:"المتوسط", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
     pharmacist:"الصيدلي", pharmacists:"الصيادلة", branch:"الفرع", branches:"الفروع", company:"الشركة", month:"الشهر", quarter:"الربع",
     score:"النقاط", vsPrev:"مقارنة بالشهر الماضي", qAvg:"متوسط الربع", momentum:"الزخم (نقاط شهرية)", actual:"الفعلي", target:"الهدف", ach:"التحقق", pts:"نقطة",
     noData:"لا توجد بيانات لهذا الشهر بعد.", asOf:"حتى", saved:"تم الحفظ", cancel:"إلغاء", save:"حفظ", add:"إضافة", remove:"حذف", active:"فعّال",
@@ -705,6 +705,40 @@ function Settings({t,D,E,reload,toast,lang}){
   </div>;
 }
 
+/* ================= PROFILE (everyone) ================= */
+function Profile({t,me,D,lang,toast,setMe}){
+  const rec=D.pharmacists.find(p=>p.id===me.pharmacist_id); const [phone,setPhone]=useState(me.phone||rec?.phone||""); const [docs,setDocs]=useState([]); const [photo,setPhoto]=useState(null); const [busy,setBusy]=useState(false); const [kind,setKind]=useState("cv");
+  const loadDocs=useCallback(async()=>{ const r=await sb.from("staff_documents").select("*").eq("profile_id",me.id).order("created_at",{ascending:false}); setDocs(r.data||[]); },[me.id]);
+  useEffect(()=>{ loadDocs(); },[loadDocs]);
+  useEffect(()=>{ (async()=>{ if(!me.photo_path){setPhoto(null);return;} const r=await sb.storage.from("staff").createSignedUrl(me.photo_path,3600); setPhoto(r.data?.signedUrl||null); })(); },[me.photo_path]);
+  const savePhone=async()=>{ const r=await sb.from("profiles").update({phone}).eq("id",me.id).select().single(); toast(r.error?r.error.message:t.saved); if(!r.error) setMe(r.data); };
+  const upPhoto=async e=>{ const f=e.target.files[0]; if(!f) return; setBusy(true); const ext=f.name.split(".").pop().toLowerCase(); const path=`${me.id}/photo.${ext}`;
+    const u=await sb.storage.from("staff").upload(path,f,{upsert:true,contentType:f.type}); if(u.error){ toast(u.error.message); setBusy(false); return; }
+    const r=await sb.from("profiles").update({photo_path:path}).eq("id",me.id).select().single(); toast(r.error?r.error.message:t.saved); if(!r.error) setMe(r.data); setBusy(false); };
+  const upDoc=async e=>{ const f=e.target.files[0]; if(!f) return; setBusy(true); const path=`${me.id}/docs/${Date.now()}_${f.name.replace(/[^\w.\-]+/g,"_")}`;
+    const u=await sb.storage.from("staff").upload(path,f,{contentType:f.type}); if(u.error){ toast(u.error.message); setBusy(false); return; }
+    const r=await sb.from("staff_documents").insert({profile_id:me.id,kind,name:f.name,path,size:f.size}); toast(r.error?r.error.message:t.saved); loadDocs(); setBusy(false); e.target.value=""; };
+  const openDoc=async d=>{ const r=await sb.storage.from("staff").createSignedUrl(d.path,600); if(r.data?.signedUrl) window.open(r.data.signedUrl,"_blank"); else toast(r.error?.message||"—"); };
+  const delDoc=async d=>{ if(!confirm(t.remove+"?")) return; await sb.storage.from("staff").remove([d.path]); const r=await sb.from("staff_documents").delete().eq("id",d.id); toast(r.error?r.error.message:t.saved); loadDocs(); };
+  const kinds={cv:t.docCv,certificate:t.docCert,id:t.docId,other:t.docOther};
+  return <div className="grid"><h1>{t.profile}</h1>
+    <div className="card row" style={{gap:20,alignItems:"flex-start"}}>
+      <div style={{textAlign:"center"}}><div style={{width:120,height:120,borderRadius:"50%",background:"var(--teal-soft)",overflow:"hidden",display:"grid",placeItems:"center",fontSize:40,color:"var(--teal)"}}>{photo?<img src={photo} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(me.full_name||"?")[0]}</div>
+        <label className="btn sec" style={{display:"inline-block",marginTop:10,padding:"6px 12px",cursor:"pointer"}}>{t.changePhoto}<input type="file" accept="image/*" onChange={upPhoto} style={{display:"none"}} disabled={busy}/></label></div>
+      <div className="grid" style={{flex:1,minWidth:240}}>
+        <div><strong style={{fontSize:18}}>{me.full_name}</strong><div className="muted small">{rec?.title||t[me.role]} · {rec?bname(D.branches,rec.branch_id):"—"}{rec?.emp_code&&<> · {t.empCode} {rec.emp_code}</>}</div></div>
+        <label className="f">{t.email}<input value={me.email||""} readOnly dir="ltr"/></label>
+        <div className="row" style={{alignItems:"flex-end"}}><label className="f">{t.phone}<input value={phone} onChange={e=>setPhone(e.target.value)} dir="ltr" inputMode="tel"/></label><button className="btn" onClick={savePhone} disabled={phone===(me.phone||"")}>{t.save}</button></div>
+      </div></div>
+    <div className="card grid"><h2>{t.documents}</h2>
+      <div className="row"><select value={kind} onChange={e=>setKind(e.target.value)} style={{width:"auto"}}>{Object.entries(kinds).map(([k,l])=><option key={k} value={k}>{l}</option>)}</select>
+        <label className="btn sec" style={{cursor:"pointer"}}>{t.upload}<input type="file" accept="application/pdf,image/*" onChange={upDoc} style={{display:"none"}} disabled={busy}/></label><span className="muted small">{t.docHint}</span></div>
+      {docs.length===0? <div className="empty">—</div> :
+      <table><tbody>{docs.map(d=><tr key={d.id}><td><span className="chip">{kinds[d.kind]}</span></td><td><a href="#" onClick={e=>{e.preventDefault();openDoc(d);}}>{d.name}</a></td><td className="small muted">{d.created_at.slice(0,10)}</td><td className="small muted">{d.size?Math.round(d.size/1024)+" KB":""}</td><td><button className="btn warn" style={{padding:"3px 8px"}} onClick={()=>delDoc(d)}>×</button></td></tr>)}</tbody></table>}
+    </div>
+  </div>;
+}
+
 /* ================= HR (placeholder) ================= */
 function HR({t,me,D,lang}){
   const staff=D.pharmacists.filter(p=>p.active).length;
@@ -743,19 +777,20 @@ function App(){
   const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["hr",t.hr,["hr"]],["data",t.data,["data","targets"]],["admin",t.admin2,["team","accounts","settings"]]];
   const tabs=GROUPS.filter(g=>g[2].some(can)).map(g=>[g[0],g[1]]);
   const firstAllowed=GROUPS.flatMap(g=>g[2]).find(can);
-  const group=GROUPS.find(g=>g[2].includes(page))?.[0]||"dash"; const subs=(GROUPS.find(g=>g[0]===group)?.[2]||[]).filter(can);
+  const group=GROUPS.find(g=>g[2].includes(page))?.[0]||""; const subs=(GROUPS.find(g=>g[0]===group)?.[2]||[]).filter(can);
   const props={t,me,D,E,toast,lang,reload};
   return <>
     <div className="bar"><div className="brand">{t.app} <span>{t.kpi}</span></div>
       <div className="tabs">{linked && tabs.map(([k,l])=><button key={k} className={"tab"+(group===k?" on":"")} onClick={()=>setPage(GROUPS.find(g=>g[0]===k)[2].filter(can)[0])}>{l}</button>)}</div>
-      <div className="who">{me.full_name} · {me.is_super?t.superAdmin:(t[me.role]||me.role)}</div>
+      <button className="who" style={{background:"transparent",border:0,cursor:"pointer"}} onClick={()=>setPage("profile")} title={t.profile}>{me.full_name} · {me.is_super?t.superAdmin:(t[me.role]||me.role)}</button>
       <button className="ghost" onClick={()=>setLang(lang==="en"?"ar":"en")}>{t.lang}</button><button className="ghost" onClick={()=>sb.auth.signOut()}>{t.out}</button></div>
-    <div className="wrap">{!linked ? <div className="card empty">{t.notLinkedMsg}</div> : !firstAllowed ? <div className="card empty">{t.noAccess}</div> : !can(page) ? (setPage(firstAllowed),null) : <>
+    <div className="wrap">{!linked&&page!=="profile" ? <div className="card empty">{t.notLinkedMsg}<div style={{marginTop:10}}><button className="btn sec" onClick={()=>setPage("profile")}>{t.profile}</button></div></div> : !firstAllowed ? <div className="card empty">{t.noAccess}</div> : (page!=="profile"&&!can(page)) ? (setPage(firstAllowed),null) : <>
       {subs.length>1 && <div className="subtabs" style={{marginBottom:14}}>{subs.map(k=><button key={k} className={page===k?"on":""} onClick={()=>setPage(k)}>{t[k]}</button>)}</div>}
       {page==="dash"     && <Dashboard key={me.id} {...props}/>}
       {page==="visits"   && can("visits")   && <Visits {...props}/>}
       {page==="visitReports" && can("visitReports") && <VisitReports {...props}/>}
       {page==="hr" && can("hr") && <HR {...props}/>}
+      {page==="profile" && <Profile {...props} setMe={setMe}/>}
       {page==="targets"  && can("targets")  && <Targets {...props}/>}
       {page==="data"     && can("data")     && <Data {...props}/>}
       {page==="team"     && can("team")     && <Team {...props}/>}
