@@ -136,7 +136,7 @@ const { useState, useEffect, useMemo, useCallback } = React;
 const T = {
   en:{ app:"First Brand", kpi:"KPI", login:"Sign in", signup:"Create account", email:"Email", pass:"Password", name:"Full name",
     haveAcc:"Already have an account? Sign in", noAcc:"New here? Create an account", out:"Sign out",
-    dash:"Dashboard", date:"Date", admin2:"Admin", access:"Tab access", accessHint:"Tick which tabs each account type can see. Changes apply on next reload.", accessSuper:"Accounts and Settings are always super-admin only.", noAccess:"No pages are enabled for your account yet.", targets:"Targets", visits:"Visits", data:"Data", team:"Team", accounts:"Accounts", settings:"Settings", lang:"العربية",
+    dash:"Dashboard", date:"Date", admin2:"Admin", tabs:"Tabs", access:"Tab access", accessHint:"Tick which tabs each account type can see. Changes apply on next reload.", accessSuper:"Accounts and Settings are always super-admin only.", noAccess:"No pages are enabled for your account yet.", targets:"Targets", visits:"Visits", data:"Data", team:"Team", accounts:"Accounts", settings:"Settings", lang:"العربية",
     pharmacist:"Pharmacist", pharmacists:"Pharmacists", branch:"Branch", branches:"Branches", company:"Company", month:"Month", quarter:"Quarter",
     score:"Score", vsPrev:"vs last month", qAvg:"Quarter average", momentum:"Momentum (monthly score)", actual:"Actual", target:"Target", ach:"Ach.", pts:"pts",
     noData:"No data for this month yet.", asOf:"as of", saved:"Saved", cancel:"Cancel", save:"Save", add:"Add", remove:"Remove", active:"Active",
@@ -154,7 +154,7 @@ const T = {
     title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
     haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج",
-    dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
+    dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
     pharmacist:"الصيدلي", pharmacists:"الصيادلة", branch:"الفرع", branches:"الفروع", company:"الشركة", month:"الشهر", quarter:"الربع",
     score:"النقاط", vsPrev:"مقارنة بالشهر الماضي", qAvg:"متوسط الربع", momentum:"الزخم (نقاط شهرية)", actual:"الفعلي", target:"الهدف", ach:"التحقق", pts:"نقطة",
     noData:"لا توجد بيانات لهذا الشهر بعد.", asOf:"حتى", saved:"تم الحفظ", cancel:"إلغاء", save:"حفظ", add:"إضافة", remove:"حذف", active:"فعّال",
@@ -660,12 +660,13 @@ function Accounts({t,me,D,toast}){
   const upd=async(id,patch)=>{ const r=await sb.from("profiles").update(patch).eq("id",id); toast(r.error?r.error.message:t.saved); load(); };
   const takenBy=pid=>profiles.find(p=>p.pharmacist_id===pid);
   return <div className="grid"><h1>{t.accounts}</h1><div className="muted small">{t.linkHint}</div><div className="card">
-    <table><thead><tr><th>{t.name}</th><th>{t.email}</th><th>{t.role}</th><th>{t.linkedTo}</th><th>{t.scope}</th><th>{t.superAdmin}</th><th>{t.status}</th></tr></thead><tbody>
+    <table><thead><tr><th>{t.name}</th><th>{t.email}</th><th>{t.role}</th><th>{t.linkedTo}</th><th>{t.tabs}</th><th>{t.scope}</th><th>{t.superAdmin}</th><th>{t.status}</th></tr></thead><tbody>
       {profiles.map(p=>{ const linked=pharmacists.find(x=>x.id===p.pharmacist_id); return <tr key={p.id}>
         <td>{p.full_name}{!p.pharmacist_id&&p.role==="pharmacist"&&<div><span className="chip bad">{t.unlinked}</span></div>}</td>
         <td className="small" dir="ltr">{p.email||"—"}</td>
         <td><select value={p.role} disabled={p.id===me.id} onChange={e=>upd(p.id,{role:e.target.value})}><option value="pharmacist">{t.pharmacist}</option><option value="supervisor">{t.supervisor}</option><option value="admin">{t.admin}</option></select></td>
         <td><select value={p.pharmacist_id||""} onChange={e=>upd(p.id,{pharmacist_id:e.target.value||null})}><option value="">{t.notLinked}</option>{pharmacists.map(x=>{ const tb=takenBy(x.id); return <option key={x.id} value={x.id} disabled={tb&&tb.id!==p.id}>{x.full_name} — {bname(branches,x.branch_id)}{tb&&tb.id!==p.id?" ✓":""}</option>; })}</select>{linked&&<div className="muted small">{bname(branches,linked.branch_id)}</div>}</td>
+        <td><div className="row" style={{gap:8}}>{["dash","visits","data","targets","team"].map(k=><label key={k} className="check small"><input type="checkbox" checked={(p.pages||[]).includes(k)} disabled={p.is_super&&p.role==="admin"} onChange={e=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:e.target.checked?[...cur,k]:cur}); }}/>{t[k]}</label>)}</div></td>
         <td>{p.role==="supervisor"? <select value={p.branch_id||""} onChange={e=>upd(p.id,{branch_id:e.target.value||null})}><option value="">{t.allBranches}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select> : <span className="muted">—</span>}</td>
         <td>{p.role==="admin"? <input type="checkbox" checked={!!p.is_super} disabled={p.id===me.id} onChange={e=>upd(p.id,{is_super:e.target.checked})}/> : <span className="muted">—</span>}</td>
         <td><label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{t.active}</label></td></tr>; })}
@@ -692,11 +693,6 @@ function Settings({t,D,E,reload,toast,lang}){
           <td>{k.threshold!=null?<input type="number" step="0.001" className="num" value={val(k,"threshold")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],threshold:e.target.value}})}/>:<span className="muted">—</span>}</td>
           <td><input type="checkbox" checked={ed[k.code]?.active??k.active} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],active:e.target.checked}})}/></td></tr>)}
       </tbody></table><div style={{marginTop:12}}><button className="btn" onClick={saveK}>{t.save} Q{quarter} {year}</button></div></div>
-    <div className="card grid"><h2>{t.access}</h2><div className="muted small">{t.accessHint}</div>
-      <table><thead><tr><th>{t.role}</th>{["dash","visits","data","targets","team"].map(k=><th key={k}>{t[k]}</th>)}</tr></thead><tbody>
-        {[["pharmacist",t.pharmacist],["supervisor",t.supervisor],["admin",t.admin]].map(([r,lab])=><tr key={r}><td><strong>{lab}</strong></td>
-          {["dash","visits","data","targets","team"].map(k=>{ const row=(D.access||[]).find(a=>a.role===r&&a.page===k); return <td key={k}><input type="checkbox" checked={!!row?.allowed} onChange={async e=>{ const x=await sb.from("page_access").upsert({role:r,page:k,allowed:e.target.checked},{onConflict:"role,page"}); toast(x.error?x.error.message:t.saved); reload(); }}/></td>; })}</tr>)}
-      </tbody></table><div className="muted small">{t.accessSuper}</div></div>
     <div className="card grid"><h2>{t.checklist} <span className="muted small">Σ {D.visit_items.filter(i=>i.active).reduce((a,i)=>a+Number(i.points),0)}</span></h2>
       <table><thead><tr><th>{t.sectionEn}</th><th>{t.itemEn}</th><th className="num">{t.points}</th><th>{t.active}</th></tr></thead><tbody>
       {D.visit_items.map(i=><tr key={i.id} style={{opacity:i.active?1:.5}}><td className="small">{lang==="ar"&&i.section_ar?i.section_ar:i.section_en}</td><td>{lang==="ar"&&i.text_ar?i.text_ar:i.text_en}</td><td className="num">{i.points}</td><td><input type="checkbox" checked={i.active} onChange={e=>updItem(i.id,{active:e.target.checked})}/></td></tr>)}
@@ -715,12 +711,12 @@ function App(){
   const toast=m=>{ setMsg(m); if(m!==t.saved) console.error(m); setTimeout(()=>setMsg(""), m===t.saved?2200:7000); };
   useEffect(()=>{ sb.auth.getSession().then(({data})=>setSession(data.session)); const {data:sub}=sb.auth.onAuthStateChange((_,s)=>setSession(s)); return ()=>sub.subscription.unsubscribe(); },[]);
   const reload=useCallback(async()=>{
-    const [b,p,a,k,tg,sn,vi,vs,sc,pa]=await Promise.all([
+    const [b,p,a,k,tg,sn,vi,vs,sc]=await Promise.all([
       sb.from("branches").select("*").eq("active",true).order("name"), sb.from("pharmacists").select("*").order("full_name"),
       sb.from("pharmacist_assignments").select("*"), sb.from("kpis").select("*").order("sort"), sb.from("targets").select("*"),
-      sb.from("v_latest_snapshots").select("*"), sb.from("visit_items").select("*").order("sort"), sb.from("visits").select("*").order("visit_date",{ascending:false}).limit(2000), sb.from("kpi_periods").select("*"), sb.from("page_access").select("*")]);
-    const err=[b,p,a,k,tg,sn,vi,vs,sc,pa].find(r=>r.error); if(err) toast(err.error.message);
-    setD({branches:b.data||[],pharmacists:p.data||[],assignments:a.data||[],kpis:k.data||[],targets:tg.data||[],snaps:sn.data||[],visit_items:vi.data||[],visits:vs.data||[],schemes:sc.data||[],access:pa.data||[]});
+      sb.from("v_latest_snapshots").select("*"), sb.from("visit_items").select("*").order("sort"), sb.from("visits").select("*").order("visit_date",{ascending:false}).limit(2000), sb.from("kpi_periods").select("*")]);
+    const err=[b,p,a,k,tg,sn,vi,vs,sc].find(r=>r.error); if(err) toast(err.error.message);
+    setD({branches:b.data||[],pharmacists:p.data||[],assignments:a.data||[],kpis:k.data||[],targets:tg.data||[],snaps:sn.data||[],visit_items:vi.data||[],visits:vs.data||[],schemes:sc.data||[]});
   },[]);
   useEffect(()=>{ if(!session){setMe(null);setD(null);return;} (async()=>{ const r=await sb.from("profiles").select("*").eq("id",session.user.id).single(); setMe(r.data||null); await reload(); })(); },[session]);
   const E=useMemo(()=>D?makeEngine(D):null,[D]);
@@ -730,7 +726,7 @@ function App(){
   if(!me||!D) return <div className="empty">…</div>;
   const linked = me.role!=="pharmacist" || !!me.pharmacist_id;
   // tab visibility: super admin sees everything; others follow the page_access matrix (Admin → Settings)
-  const can=k=> me.is_super&&me.role==="admin"? true : (k==="accounts"||k==="settings")? false : !!(D.access||[]).find(a=>a.role===me.role&&a.page===k&&a.allowed);
+  const can=k=> me.is_super&&me.role==="admin"? true : (k==="accounts"||k==="settings")? false : (me.pages||[]).includes(k);
   const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits"]],["data",t.data,["data","targets"]],["admin",t.admin2,["team","accounts","settings"]]];
   const tabs=GROUPS.filter(g=>g[2].some(can)).map(g=>[g[0],g[1]]);
   const firstAllowed=GROUPS.flatMap(g=>g[2]).find(can);
