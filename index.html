@@ -372,7 +372,7 @@ VT.ar={ title:"نموذج تقييم زيارة الصيدلية", sub:"فيرس
   plan:"خطة الإجراءات التصحيحية", obs:"الملاحظة", sev:"الخطورة", s1:"حرجة", s2:"عالية", s3:"متوسطة", s4:"بسيطة", req:"الإجراء المطلوب", resp:"المسؤول", due:"الموعد",
   decision:"قرار الزيارة", d1:"الفرع ناجح", d2:"متابعة بالصور والإثباتات", d3:"تدريب الموظفين / رفع ملاحظة إدارية", d4:"إعادة زيارة خلال 7 أيام",
   strengths:"أبرز نقاط القوة", priorities:"أهم أولويات التحسين", approve:"اعتماد الزيارة", officerName:"اسم مسؤول الزيارة", recvName:"اسم مدير الفرع أو المستلم", follow:"موعد المتابعة",
-  submit:"حفظ الزيارة", print:"طباعة", pdf:"تنزيل PDF", savedHint:"تم حفظ الزيارة — يمكنك تنزيلها كـ PDF للرفع في نظام آخر أو للأرشفة.", recent:"آخر الزيارات", noItems:"لا توجد بنود — أضفها من الإعدادات." };
+  submit:"حفظ الزيارة", print:"طباعة", pdf:"تنزيل PDF", edit:"تعديل", editing:"تعديل زيارة محفوظة", update:"حفظ التعديلات", newVisit:"زيارة جديدة", savedHint:"تم حفظ الزيارة — يمكنك تنزيلها كـ PDF للرفع في نظام آخر أو للأرشفة.", recent:"آخر الزيارات", noItems:"لا توجد بنود — أضفها من الإعدادات." };
 VT.en={ title:"Pharmacy Visit Evaluation Form", sub:"First Brand — Operations", code:"Form: PH-OPS-01", ver:"Version 4.1", officer:"Visit officer",
   h1:"Visit details", branch:"Branch", date:"Visit date", tStart:"Start time", tEnd:"End time", mgr:"Branch manager", vtype:"Visit type", routine:"Routine", surprise:"Surprise", followup:"Follow-up",
   prev:"Previous visit result", profit:"General profitability index", trend:"Trend", up:"Improving", flat:"Stable", down:"Declining",
@@ -384,7 +384,7 @@ VT.en={ title:"Pharmacy Visit Evaluation Form", sub:"First Brand — Operations"
   plan:"Corrective action plan", obs:"Observation", sev:"Severity", s1:"Critical", s2:"High", s3:"Medium", s4:"Minor", req:"Required action", resp:"Responsible", due:"Due",
   decision:"Visit decision", d1:"Branch passed", d2:"Follow-up with photos / evidence", d3:"Staff training / admin note", d4:"Re-visit within 7 days",
   strengths:"Key strengths", priorities:"Top improvement priorities", approve:"Visit approval", officerName:"Visit officer", recvName:"Branch manager / recipient", follow:"Follow-up date",
-  submit:"Save visit", print:"Print", pdf:"Download PDF", savedHint:"Visit saved — download it as PDF to upload elsewhere or keep on record.", recent:"Recent visits", noItems:"No items — add them in Settings." };
+  submit:"Save visit", print:"Print", pdf:"Download PDF", edit:"Edit", editing:"Editing saved visit", update:"Save changes", newVisit:"New visit", savedHint:"Visit saved — download it as PDF to upload elsewhere or keep on record.", recent:"Recent visits", noItems:"No items — add them in Settings." };
 
 async function exportPdf(node,filename){
   const canvas=await html2canvas(node,{scale:2,useCORS:true,backgroundColor:"#ffffff"});
@@ -451,11 +451,15 @@ function Visits({t,me,D,reload,toast,lang}){
   useEffect(()=>{ if(!phs.find(p=>p.id===m.pid)) setM(x=>({...x,pid:phs[0]?.id||""})); },[m.branch_id,m.date]);
   const ph=D.pharmacists.find(p=>p.id===m.pid);
   const mgrName=(D.pharmacists.find(p=>p.active&&p.title==="pharmacy manager"&&E_shares(D,p.id,monthKey(m.date)).some(s=>s.branch_id===m.branch_id))||{}).full_name||"";
-  const prevVisit=D.visits.filter(x=>x.branch_id===m.branch_id&&x.visit_date<m.date).sort((a,b)=>b.visit_date<a.visit_date?-1:1)[0]||null;
+  const prevVisit=D.visits.filter(x=>x.branch_id===m.branch_id&&x.id!==editId&&(x.visit_date<m.date||(x.visit_date===m.date&&editId&&x.created_at<(last?.created_at||"9")))).sort((a,b)=>b.visit_date<a.visit_date?-1:1)[0]||null;
   const prevScore=prevVisit? (prevVisit.total_points!=null?Number(prevVisit.total_points):Math.round(Number(prevVisit.score)*100)) : null;
   const items=D.visit_items.filter(i=>i.active); const maxTotal=items.reduce((a,i)=>a+Number(i.points),0);
   const sections=[]; items.forEach(i=>{ const key=i.section_en||"—"; let g=sections.find(x=>x.key===key); if(!g){ g={key,en:i.section_en,ar:i.section_ar,items:[]}; sections.push(g);} g.items.push(i); });
-  const [sc,setSc]=useState({}); const [sn,setSn]=useState({}); const [acts,setActs]=useState([{},{},{},{}]); const [exp,setExp]=useState(null); const [last,setLast]=useState(null);
+  const [sc,setSc]=useState({}); const [sn,setSn]=useState({}); const [acts,setActs]=useState([{},{},{},{}]); const [exp,setExp]=useState(null); const [last,setLast]=useState(null); const [editId,setEditId]=useState(null);
+  const blankM=()=>({officer:m.officer,branch_id:m.branch_id,date:today(),tStart:"",tEnd:"",mgr:"",vtype:"routine",prev:"",profit:"",trend:"",pid:"",shift:"",shiftStart:"",arrival:"",uniform:"",badge:"",know:"",strengths:"",priorities:"",decision:"",recv:"",follow:""});
+  const clearForm=()=>{ setEditId(null); setLast(null); setSc({}); setSn({}); setActs([{},{},{},{}]); setM(blankM()); window.scrollTo(0,0); };
+  const loadVisit=x=>{ const mm=x.meta||{}; setEditId(x.id); setLast(x); setSc({...(x.checks||{})}); setSn({...(x.section_notes||{})}); const a=[...(x.actions||[])]; while(a.length<4) a.push({}); setActs(a);
+    setM({...blankM(),...mm,branch_id:x.branch_id,date:x.visit_date,pid:x.pharmacist_id,vtype:x.visit_type||"routine",strengths:x.strengths||"",priorities:x.priorities||"",decision:x.decision||"",officer:mm.officer||m.officer}); window.scrollTo(0,0); };
   const doExport=async(visit)=>{ setExp(visit); await new Promise(r=>setTimeout(r,400)); const node=document.getElementById("visit-print"); if(!node) return;
     try{ await exportPdf(node,`visit_${(D.branches.find(b=>b.id===visit.branch_id)||{}).name||"branch"}_${visit.visit_date}_${(D.pharmacists.find(p=>p.id===visit.pharmacist_id)||{}).full_name||""}.pdf`); }catch(e){ toast(String(e)); } setExp(null); };
   const val=i=> sc[i.id]===undefined||sc[i.id]===""? "" : Number(sc[i.id]);
@@ -467,16 +471,17 @@ function Visits({t,me,D,reload,toast,lang}){
   const trendLabel = prevScore==null? "—" : ({up:v.up,flat:v.flat,down:v.down})[trend]+` (${prevScore} → ${total})`;
   const setScore=(i,val)=>{ let n=val===""?"":Math.max(0,Math.min(Number(i.points),Number(val)||0)); setSc(x=>({...x,[i.id]:n})); };
   const submit=async()=>{ const checks={}; items.forEach(i=>checks[i.id]=num(i));
-    const r=await sb.from("visits").insert({visit_date:m.date,branch_id:m.branch_id,pharmacist_id:m.pid,supervisor_id:me.id,checks,score:pct,total_points:total,visit_type:m.vtype,section_notes:sn,strengths:m.strengths||null,priorities:m.priorities||null,decision:m.decision||null,notes:null,meta:{...m,mgr:mgrName,prev:prevScore,prevDate:prevVisit?.visit_date||null,trend},actions:acts.filter(a=>a.obs)}).select().single();
-    toast(r.error?r.error.message:t.saved); if(!r.error){ setLast(r.data); setSc({}); setSn({}); setActs([{},{},{},{}]); setM(x=>({...x,tStart:"",tEnd:"",prev:"",profit:"",trend:"",strengths:"",priorities:"",decision:"",follow:""})); reload(); } };
-  const recent=D.visits.filter(x=>x.branch_id===m.branch_id).slice(0,10);
+    const row={visit_date:m.date,branch_id:m.branch_id,pharmacist_id:m.pid,checks,score:pct,total_points:total,visit_type:m.vtype,section_notes:sn,strengths:m.strengths||null,priorities:m.priorities||null,decision:m.decision||null,meta:{...m,mgr:mgrName,prev:prevScore,prevDate:prevVisit?.visit_date||null,trend},actions:acts.filter(a=>a.obs)};
+    const r= editId? await sb.from("visits").update(row).eq("id",editId).select().single() : await sb.from("visits").insert({...row,supervisor_id:me.id}).select().single();
+    toast(r.error?r.error.message:t.saved); if(!r.error){ setLast(r.data); setEditId(r.data.id); reload(); } };
+  const recent=D.visits.filter(x=>x.branch_id===m.branch_id).slice(0,20);
   const Radio=({name,opts,k})=><div className="row" style={{gap:10}}>{opts.map(([val,lab])=><label key={val} className="check"><input type="radio" name={name} checked={m[k]===val} onChange={()=>setM(x=>({...x,[k]:val}))}/>{lab}</label>)}</div>;
   const F=({label,k,type="text"})=><label className="f">{label}<input type={type} value={m[k]} onChange={set(k)}/></label>;
 
   return <div className="grid vform">
     <div className="card">
       <div className="row" style={{justifyContent:"space-between"}}>
-        <div><h1>{v.title}</h1><div className="muted small">{v.sub}</div></div>
+        <div><h1>{v.title}</h1><div className="muted small">{v.sub}{editId&&<span className="chip amber" style={{marginInlineStart:8}}>{v.editing} · {m.date}</span>}</div></div>
         <div className="small muted" style={{textAlign:"end"}}>{v.code}<br/>{v.ver}<br/>{v.officer}: {m.officer}</div>
       </div>
     </div>
@@ -542,12 +547,13 @@ function Visits({t,me,D,reload,toast,lang}){
 
     <div className="card grid"><h2>{v.approve}</h2>
       <div className="row"><label className="f">{v.officerName}<select value={m.officer} onChange={set("officer")}>{[...new Set([m.officer,...officers.map(o=>o.full_name)])].filter(Boolean).map(n=><option key={n}>{n}</option>)}</select></label><label className="f">{v.date}<input value={m.date} readOnly/></label><F label={v.recvName} k="recv"/><F label={v.follow} k="follow" type="date"/></div>
-      <div className="row"><button className="btn" disabled={!m.pid||!items.length} onClick={submit}>{v.submit}</button>
-        {last && <button className="btn sec" onClick={()=>doExport(last)}>⬇ {v.pdf}</button>}<button className="btn sec" onClick={()=>window.print()}>{v.print}</button></div>
+      <div className="row"><button className="btn" disabled={!m.pid||!items.length} onClick={submit}>{editId?v.update:v.submit}</button>
+        {last && <button className="btn sec" onClick={()=>doExport(last)}>⬇ {v.pdf}</button>}<button className="btn sec" onClick={()=>window.print()}>{v.print}</button>
+        <button className="btn sec" onClick={clearForm}>{v.newVisit}</button></div>
       {last && <div className="muted small">{v.savedHint}</div>}
     </div>
 
-    {recent.length>0 && <div className="card noprint"><h3 style={{marginBottom:8}}>{v.recent}</h3><table><tbody>{recent.map(x=><tr key={x.id}><td>{x.visit_date}</td><td>{D.pharmacists.find(p=>p.id===x.pharmacist_id)?.full_name}</td><td className="small muted">{v[x.visit_type]||""}</td><td className="num"><span className={"pct "+tone(x.score)} style={{fontSize:15}}>{x.total_points!=null?x.total_points:Math.round(x.score*100)} / 100</span></td><td className="small muted">{x.priorities}</td><td><button className="btn sec" style={{padding:"4px 8px"}} onClick={()=>doExport(x)}>PDF</button></td></tr>)}</tbody></table></div>}
+    {recent.length>0 && <div className="card noprint"><h3 style={{marginBottom:8}}>{v.recent}</h3><table><tbody>{recent.map(x=><tr key={x.id}><td>{x.visit_date}</td><td>{D.pharmacists.find(p=>p.id===x.pharmacist_id)?.full_name}</td><td className="small muted">{v[x.visit_type]||""}</td><td className="num"><span className={"pct "+tone(x.score)} style={{fontSize:15}}>{x.total_points!=null?x.total_points:Math.round(x.score*100)} / 100</span></td><td className="small muted">{x.priorities}</td><td className="row" style={{gap:6,flexWrap:"nowrap"}}>{(me.role==="admin"||x.supervisor_id===me.id)&&<button className="btn sec" style={{padding:"4px 8px"}} onClick={()=>loadVisit(x)}>{v.edit}</button>}<button className="btn sec" style={{padding:"4px 8px"}} onClick={()=>doExport(x)}>PDF</button></td></tr>)}</tbody></table></div>}
     {exp && <div style={{position:"fixed",left:-10000,top:0}}><div id="visit-print"><VisitPrint visit={exp} D={D} lang={lang} me={me}/></div></div>}
   </div>;
 }
