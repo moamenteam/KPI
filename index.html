@@ -136,7 +136,7 @@ const { useState, useEffect, useMemo, useCallback } = React;
 const T = {
   en:{ app:"First Brand", kpi:"KPI", login:"Sign in", signup:"Create account", email:"Email", pass:"Password", name:"Full name",
     haveAcc:"Already have an account? Sign in", noAcc:"New here? Create an account", out:"Sign out",
-    dash:"Dashboard", date:"Date", admin2:"Admin", tabs:"Tabs", visitReports:"Visit reports", from:"From", to:"To", lastVisit:"Last visit", lastScore:"Last score", avgScore:"Average", access:"Tab access", accessHint:"Tick which tabs each account type can see. Changes apply on next reload.", accessSuper:"Accounts and Settings are always super-admin only.", noAccess:"No pages are enabled for your account yet.", targets:"Targets", visits:"Visits", data:"Data", team:"Team", accounts:"Accounts", settings:"Settings", lang:"العربية",
+    dash:"Dashboard", date:"Date", admin2:"Admin", tabs:"Tabs", hr:"HR", hrSoon:"HR module — coming next", hrHint:"Same login, same staff records and branches, same per-account permissions. Modules planned:", hrStaff:"Staff file", hrAttendance:"Attendance & shifts", hrLeave:"Leave requests", hrDocs:"Documents & licence expiry", visitReports:"Visit reports", from:"From", to:"To", lastVisit:"Last visit", lastScore:"Last score", avgScore:"Average", access:"Tab access", accessHint:"Tick which tabs each account type can see. Changes apply on next reload.", accessSuper:"Accounts and Settings are always super-admin only.", noAccess:"No pages are enabled for your account yet.", targets:"Targets", visits:"Visits", data:"Data", team:"Team", accounts:"Accounts", settings:"Settings", lang:"العربية",
     pharmacist:"Pharmacist", pharmacists:"Pharmacists", branch:"Branch", branches:"Branches", company:"Company", month:"Month", quarter:"Quarter",
     score:"Score", vsPrev:"vs last month", qAvg:"Quarter average", momentum:"Momentum (monthly score)", actual:"Actual", target:"Target", ach:"Ach.", pts:"pts",
     noData:"No data for this month yet.", asOf:"as of", saved:"Saved", cancel:"Cancel", save:"Save", add:"Add", remove:"Remove", active:"Active",
@@ -154,7 +154,7 @@ const T = {
     title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
     haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج",
-    dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", visitReports:"تقارير الزيارات", from:"من", to:"إلى", lastVisit:"آخر زيارة", lastScore:"آخر نتيجة", avgScore:"المتوسط", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
+    dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", hr:"الموارد البشرية", hrSoon:"وحدة الموارد البشرية — قريبًا", hrHint:"نفس تسجيل الدخول، نفس سجلات الموظفين والفروع، ونفس صلاحيات الحسابات. الوحدات المخطط لها:", hrStaff:"ملف الموظف", hrAttendance:"الحضور والورديات", hrLeave:"طلبات الإجازة", hrDocs:"المستندات وانتهاء التراخيص", visitReports:"تقارير الزيارات", from:"من", to:"إلى", lastVisit:"آخر زيارة", lastScore:"آخر نتيجة", avgScore:"المتوسط", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
     pharmacist:"الصيدلي", pharmacists:"الصيادلة", branch:"الفرع", branches:"الفروع", company:"الشركة", month:"الشهر", quarter:"الربع",
     score:"النقاط", vsPrev:"مقارنة بالشهر الماضي", qAvg:"متوسط الربع", momentum:"الزخم (نقاط شهرية)", actual:"الفعلي", target:"الهدف", ach:"التحقق", pts:"نقطة",
     noData:"لا توجد بيانات لهذا الشهر بعد.", asOf:"حتى", saved:"تم الحفظ", cancel:"إلغاء", save:"حفظ", add:"إضافة", remove:"حذف", active:"فعّال",
@@ -669,7 +669,7 @@ function Accounts({t,me,D,toast}){
         <td className="small" dir="ltr">{p.email||"—"}</td>
         <td><select value={p.role} disabled={p.id===me.id} onChange={e=>upd(p.id,{role:e.target.value})}><option value="pharmacist">{t.pharmacist}</option><option value="supervisor">{t.supervisor}</option><option value="admin">{t.admin}</option></select></td>
         <td><select value={p.pharmacist_id||""} onChange={e=>upd(p.id,{pharmacist_id:e.target.value||null})}><option value="">{t.notLinked}</option>{pharmacists.map(x=>{ const tb=takenBy(x.id); return <option key={x.id} value={x.id} disabled={tb&&tb.id!==p.id}>{x.full_name} — {bname(branches,x.branch_id)}{tb&&tb.id!==p.id?" ✓":""}</option>; })}</select>{linked&&<div className="muted small">{bname(branches,linked.branch_id)}</div>}</td>
-        <td><div className="row" style={{gap:8}}>{["dash","visits","data","targets","team"].map(k=><label key={k} className="check small"><input type="checkbox" checked={(p.pages||[]).includes(k)} disabled={p.is_super&&p.role==="admin"} onChange={e=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:e.target.checked?[...cur,k]:cur}); }}/>{t[k]}</label>)}</div></td>
+        <td><div className="row" style={{gap:8}}>{["dash","visits","hr","data","targets","team"].map(k=><label key={k} className="check small"><input type="checkbox" checked={(p.pages||[]).includes(k)} disabled={p.is_super&&p.role==="admin"} onChange={e=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:e.target.checked?[...cur,k]:cur}); }}/>{t[k]}</label>)}</div></td>
         <td>{p.role==="supervisor"? <select value={p.branch_id||""} onChange={e=>upd(p.id,{branch_id:e.target.value||null})}><option value="">{t.allBranches}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select> : <span className="muted">—</span>}</td>
         <td>{p.role==="admin"? <input type="checkbox" checked={!!p.is_super} disabled={p.id===me.id} onChange={e=>upd(p.id,{is_super:e.target.checked})}/> : <span className="muted">—</span>}</td>
         <td><label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{t.active}</label></td></tr>; })}
@@ -705,6 +705,16 @@ function Settings({t,D,E,reload,toast,lang}){
   </div>;
 }
 
+/* ================= HR (placeholder) ================= */
+function HR({t,me,D,lang}){
+  const staff=D.pharmacists.filter(p=>p.active).length;
+  return <div className="grid"><h1>{t.hr}</h1>
+    <div className="card"><h2>{t.hrSoon}</h2><div className="muted" style={{marginTop:6}}>{t.hrHint}</div>
+      <div className="row" style={{marginTop:14}}>{[t.hrStaff,t.hrAttendance,t.hrLeave,t.hrDocs].map(x=><span key={x} className="chip grey" style={{padding:"6px 10px",fontSize:13}}>{x}</span>)}</div>
+      <div className="muted small" style={{marginTop:14}}>{staff} {t.pharmacists} · {D.branches.length} {t.branches}</div></div>
+  </div>;
+}
+
 /* ================= APP ================= */
 function App(){
   const [lang,setLang]=useState(localStorage.getItem("lang")||"en"); const t=T[lang];
@@ -730,7 +740,7 @@ function App(){
   const linked = me.role!=="pharmacist" || !!me.pharmacist_id;
   // tab visibility: super admin sees everything; others follow the page_access matrix (Admin → Settings)
   const can=k=> me.is_super&&me.role==="admin"? true : (k==="accounts"||k==="settings")? false : (me.pages||[]).includes(k==="visitReports"?"visits":k);
-  const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["data",t.data,["data","targets"]],["admin",t.admin2,["team","accounts","settings"]]];
+  const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["hr",t.hr,["hr"]],["data",t.data,["data","targets"]],["admin",t.admin2,["team","accounts","settings"]]];
   const tabs=GROUPS.filter(g=>g[2].some(can)).map(g=>[g[0],g[1]]);
   const firstAllowed=GROUPS.flatMap(g=>g[2]).find(can);
   const group=GROUPS.find(g=>g[2].includes(page))?.[0]||"dash"; const subs=(GROUPS.find(g=>g[0]===group)?.[2]||[]).filter(can);
@@ -745,6 +755,7 @@ function App(){
       {page==="dash"     && <Dashboard key={me.id} {...props}/>}
       {page==="visits"   && can("visits")   && <Visits {...props}/>}
       {page==="visitReports" && can("visitReports") && <VisitReports {...props}/>}
+      {page==="hr" && can("hr") && <HR {...props}/>}
       {page==="targets"  && can("targets")  && <Targets {...props}/>}
       {page==="data"     && can("data")     && <Data {...props}/>}
       {page==="team"     && can("team")     && <Team {...props}/>}
