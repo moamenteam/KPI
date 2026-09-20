@@ -588,7 +588,7 @@ function Visits({t,me,D,reload,toast,lang}){
     {exp && <div style={{position:"fixed",left:-10000,top:0}}><div id="visit-print"><VisitPrint visit={exp} D={D} lang={lang} me={me}/></div></div>}
   </div>;
 }
-
+const E_shares=(D,pid,mk)=>makeEngine(D).shares(pid,mk);
 /* ================= DATA (admin): snapshots ================= */
 function Data({t,me,D,E,reload,toast,lang}){
   const [mk,setMk]=useState(thisMonth());
