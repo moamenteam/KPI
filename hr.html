@@ -509,74 +509,151 @@ function SalaryTab({me,lang}){
 /* ---------- HR: payroll ---------- */
 function PayrollTab({people,toast,lang}){
   const tr = useT();
-  const [mode,setMode] = useState("month");
-  const [month,setMonth] = useState(thisMonth());
-  const [fixed,setFixed] = useState({});
+  const [mode,setMode] = useState("employee");
+  const [q,setQ] = useState("");
+  const [pid,setPid] = useState("");
+  const [fixed,setFixed] = useState(null);      // saved fixed salary of the chosen employee
   const [fEdit,setFEdit] = useState({});
-  const [rows,setRows] = useState({});
+  const [slips,setSlips] = useState([]);        // all payslips of the chosen employee
+  const blank = m => ({month:m, commissions:"", other_allowances:"", deductions:"", note:"", published:false});
+  const [f,setF] = useState(blank(thisMonth()));
   const [busy,setBusy] = useState(false);
-  const loadFixed = async () => { const {data} = await sb.from("hr_salary_fixed").select("*"); const m={}; (data||[]).forEach(r=>m[r.profile_id]=r); setFixed(m); setFEdit({}); return m; };
-  const loadMonth = async (fx) => {
-    const {data} = await sb.from("hr_payslips").select("*").eq("month",month+"-01");
-    const m={}; (data||[]).forEach(r=>m[r.profile_id]=r);
-    const out={};
-    people.forEach(p=>{ const s=m[p.id], f=fx[p.id]||{};
-      out[p.id] = s ? {...s, _saved:true} : {basic:f.basic||0, management_allowance:f.management_allowance||0, housing_allowance:f.housing_allowance||0, overtime_allowance:f.overtime_allowance||0, commissions:0, other_allowances:0, deductions:0, note:"", published:false, _saved:false}; });
-    setRows(out);
+  const person = people.find(p=>p.id===pid);
+  const matches = q.trim() ? people.filter(p=>[p.full_name,p.branch,p.emp_code].filter(Boolean).join(" ").toLowerCase().includes(q.trim().toLowerCase())) : people;
+
+  const loadEmp = async id => {
+    const [fx,sl] = await Promise.all([
+      sb.from("hr_salary_fixed").select("*").eq("profile_id",id).maybeSingle(),
+      sb.from("hr_payslips").select("*").eq("profile_id",id).order("month",{ascending:false})]);
+    setFixed(fx.data||null); setFEdit({}); setSlips(sl.data||[]); return {fx:fx.data||null, sl:sl.data||[]};
   };
-  useEffect(()=>{ (async()=>{ const fx=await loadFixed(); await loadMonth(fx); })(); },[month,people.length]);
-  const saveFixed = async pid => {
-    const e = {...(fixed[pid]||{}), ...(fEdit[pid]||{})};
-    const row = {profile_id:pid, updated_at:new Date().toISOString()}; SAL_FIXED.forEach(([k])=>row[k]=num(e[k]));
+  const fillForm = (m, fx, sl) => {
+    const s = sl.find(x=>x.month.slice(0,7)===m);
+    if (s) setF({...s, month:m});
+    else { const o = blank(m); SAL_FIXED.forEach(([k])=>o[k]= fx ? fx[k] : ""); setF(o); }
+  };
+  const pick = async id => { setPid(id); setQ(""); if(!id) return; const {fx,sl} = await loadEmp(id); fillForm(thisMonth(), fx, sl); };
+  const changeMonth = m => { if(!m) return; fillForm(m, fixed, slips); };
+  const existing = slips.find(x=>x.month.slice(0,7)===f.month);
+
+  const saveFixed = async () => {
+    const row = {profile_id:pid, updated_at:new Date().toISOString()}; SAL_FIXED.forEach(([k])=>row[k]=num(fEdit[k]??fixed?.[k]));
     const {error} = await sb.from("hr_salary_fixed").upsert(row,{onConflict:"profile_id"});
-    if (error) return toast(error.message,true); toast(tr("تم حفظ الراتب الثابت","Fixed salary saved")); loadFixed();
+    if (error) return toast(error.message,true);
+    toast(tr("تم حفظ الراتب الثابت","Fixed salary saved"));
+    const {fx,sl} = await loadEmp(pid); if(!slips.find(x=>x.month.slice(0,7)===f.month)) fillForm(f.month, fx, sl);
   };
-  const setR = (pid,k,v) => setRows({...rows,[pid]:{...rows[pid],[k]:v}});
-  const saveMonth = async (publishAll) => {
+  const saveSlip = async publish => {
     setBusy(true);
-    const payload = people.filter(p=>{ const r=rows[p.id]; return r && (r._saved || netOf(r)!==0); }).map(p=>{ const r=rows[p.id];
-      const o={profile_id:p.id, month:month+"-01", note:(r.note||"").trim()||null, published: publishAll?true:!!r.published, updated_at:new Date().toISOString()};
-      [...SAL_FIXED,...SAL_MONTH].forEach(([k])=>o[k]=num(r[k])); return o; });
-    const {error} = payload.length ? await sb.from("hr_payslips").upsert(payload,{onConflict:"profile_id,month"}) : {error:null};
+    const o = {profile_id:pid, month:f.month+"-01", note:(f.note||"").trim()||null, published: publish===undefined ? !!f.published : publish, updated_at:new Date().toISOString()};
+    [...SAL_FIXED,...SAL_MONTH].forEach(([k])=>o[k]=num(f[k]));
+    const {error} = await sb.from("hr_payslips").upsert(o,{onConflict:"profile_id,month"});
     setBusy(false);
     if (error) return toast(error.message,true);
-    toast(publishAll ? tr("تم الحفظ والنشر للموظفين","Saved and published to employees") : tr("تم حفظ رواتب الشهر","Month saved")); loadMonth(fixed);
+    toast(o.published ? tr("تم الحفظ والنشر للموظف","Saved and published to the employee") : tr("تم الحفظ (غير منشور)","Saved (not published)"));
+    const {fx,sl} = await loadEmp(pid); fillForm(f.month, fx, sl);
   };
-  const total = people.reduce((s,p)=>s+(rows[p.id]?netOf(rows[p.id]):0),0);
-  return <div className="card">
-    <div className="row" style={{justifyContent:"space-between",marginBottom:12}}>
-      <div className="seg"><button className={mode==="month"?"on":""} onClick={()=>setMode("month")}>{tr("رواتب الشهر","Monthly payroll")}</button><button className={mode==="fixed"?"on":""} onClick={()=>setMode("fixed")}>{tr("الراتب الثابت","Fixed salary")}</button></div>
-      {mode==="month" && <input type="month" style={{width:"auto"}} value={month} onChange={e=>e.target.value&&setMonth(e.target.value)}/>}
+  const delSlip = async s => {
+    if (!confirm(tr(`حذف راتب ${monthLabel(s.month,lang)}؟`,`Delete the ${monthLabel(s.month,lang)} payslip?`))) return;
+    const {error} = await sb.from("hr_payslips").delete().eq("id",s.id);
+    if (error) return toast(error.message,true);
+    toast(tr("تم الحذف","Deleted")); const {fx,sl} = await loadEmp(pid); fillForm(f.month, fx, sl);
+  };
+
+  /* month summary (read-only overview) */
+  const [sm,setSm] = useState(thisMonth()); const [smRows,setSmRows] = useState([]);
+  useEffect(()=>{ if(mode!=="summary") return; sb.from("hr_payslips").select("*").eq("month",sm+"-01").then(({data})=>setSmRows(data||[])); },[mode,sm]);
+  const pmap = Object.fromEntries(people.map(p=>[p.id,p]));
+
+  const fx = {...(fixed||{}), ...fEdit};
+  return <div className="grid" style={{gap:16}}>
+    <div className="row" style={{justifyContent:"space-between"}}>
+      <div className="seg"><button className={mode==="employee"?"on":""} onClick={()=>setMode("employee")}>{tr("راتب موظف","Employee payroll")}</button><button className={mode==="summary"?"on":""} onClick={()=>setMode("summary")}>{tr("ملخص شهر","Month summary")}</button></div>
     </div>
-    {mode==="fixed" && <>
-      <p className="small muted" style={{marginTop:0}}>{tr("تُسجّل مرة واحدة وتُعدّل عند تغيّرها فقط (كل 2–3 سنوات). تُنسخ تلقائيًا في رواتب كل شهر جديد.","Recorded once and changed only when they change (every 2–3 years). Copied into each new month automatically.")}</p>
-      <div className="tw"><table>
-        <thead><tr><th>{tr("الموظف","Employee")}</th>{SAL_FIXED.map(([k,ar,en])=><th key={k} className="num">{tr(ar,en)}</th>)}<th className="num">{tr("المجموع","Total")}</th><th></th></tr></thead>
-        <tbody>{people.map(p=>{ const cur={...(fixed[p.id]||{}),...(fEdit[p.id]||{})}; const dirty=!!fEdit[p.id];
-          return <tr key={p.id}><td>{p.full_name}<div className="small muted">{p.branch||""}</div></td>
-            {SAL_FIXED.map(([k])=><td key={k} className="num"><input type="number" step="0.01" value={cur[k]??""} placeholder="0" onChange={e=>setFEdit({...fEdit,[p.id]:{...(fEdit[p.id]||{}),[k]:e.target.value}})}/></td>)}
-            <td className="num"><b>{money(SAL_FIXED.reduce((s,[k])=>s+num(cur[k]),0))}</b></td>
-            <td>{dirty && <button className="btn sm" onClick={()=>saveFixed(p.id)}>{tr("حفظ","Save")}</button>}</td></tr>; })}</tbody></table></div>
-    </>}
-    {mode==="month" && <>
-      <p className="small muted" style={{marginTop:0}}>{monthLabel(month,lang)} — {tr("أدخل العمولات والخصومات والبدلات الأخرى، ثم احفظ. لا يرى الموظف راتبه إلا بعد النشر.","Enter commissions, deductions and other allowances, then save. Employees only see a payslip once it's published.")}</p>
-      <div className="tw"><table>
-        <thead><tr><th>{tr("الموظف","Employee")}</th><th className="num">{tr("الثابت","Fixed")}</th>{SAL_MONTH.map(([k,ar,en])=><th key={k} className="num">{tr(ar,en)}</th>)}<th className="num">{tr("الصافي","Net")}</th><th>{tr("ملاحظة","Note")}</th><th>{tr("منشور","Published")}</th></tr></thead>
-        <tbody>{people.map(p=>{ const r=rows[p.id]; if(!r) return null; const fx=SAL_FIXED.reduce((s,[k])=>s+num(r[k]),0);
-          return <tr key={p.id}><td>{p.full_name}<div className="small muted">{p.branch||""}</div></td>
-            <td className="num" title={SAL_FIXED.map(([k,ar,en])=>tr(ar,en)+": "+money(r[k])).join("\n")}>{money(fx)}</td>
-            {SAL_MONTH.map(([k])=><td key={k} className="num"><input type="number" step="0.01" value={r[k]} onChange={e=>setR(p.id,k,e.target.value)}/></td>)}
-            <td className="num"><b>{money(netOf(r))}</b></td>
-            <td><input style={{minWidth:140}} value={r.note||""} onChange={e=>setR(p.id,"note",e.target.value)}/></td>
-            <td style={{textAlign:"center"}}><input type="checkbox" style={{width:18,height:18}} checked={!!r.published} onChange={e=>setR(p.id,"published",e.target.checked)}/></td></tr>; })}</tbody>
-        <tfoot><tr><td colSpan={2+SAL_MONTH.length}><b>{tr("إجمالي الصافي","Total net")}</b></td><td className="num"><b>{money(total)}</b></td><td colSpan="2"></td></tr></tfoot>
-      </table></div>
-      <div className="row" style={{marginTop:12}}>
-        <button className="btn sec" disabled={busy} onClick={()=>saveMonth(false)}>{tr("حفظ","Save")}</button>
-        <button className="btn" disabled={busy} onClick={()=>saveMonth(true)}>{tr("حفظ ونشر للجميع","Save and publish to all")}</button>
-        <span className="small muted">{tr("مرّر على خانة الثابت لرؤية التفاصيل","Hover the fixed column to see its breakdown")}</span>
+
+    {mode==="employee" && <>
+      <div className="card">
+        <h2>{tr("اختر الموظف","Choose employee")}</h2>
+        <div className="grid2">
+          <label className="f">{tr("بحث بالاسم أو الفرع أو الرقم الوظيفي","Search name, branch or emp. code")}<input value={q} onChange={e=>setQ(e.target.value)}/></label>
+          <label className="f">{tr("الموظف","Employee")}<select value={pid} onChange={e=>pick(e.target.value)}>
+            <option value="">{tr("— اختر —","— choose —")}</option>
+            {matches.map(p=><option key={p.id} value={p.id}>{p.full_name}{p.branch?` — ${p.branch}`:""}{p.emp_code?` (${p.emp_code})`:""}</option>)}
+          </select></label>
+        </div>
       </div>
+
+      {!person && <div className="card empty">{tr("اختر موظفًا لعرض رواتبه وإضافة شهر جديد أو تعديل شهر سابق.","Choose an employee to see their payslips, add a month or edit a past one.")}</div>}
+
+      {person && <>
+        <div className="card">
+          <div className="row" style={{justifyContent:"space-between",marginBottom:8}}>
+            <h2 style={{margin:0}}>{tr("الراتب الثابت","Fixed salary")} — {person.full_name}</h2>
+            <span className="small muted">{fixed?.updated_at ? tr("آخر تعديل ","Last changed ")+fixed.updated_at.slice(0,10) : tr("لم يُسجل بعد","Not recorded yet")}</span>
+          </div>
+          <div className="grid2">{SAL_FIXED.map(([k,ar,en])=><label key={k} className="f">{tr(ar,en)}
+            <input type="number" step="0.01" value={fx[k]??""} placeholder="0" onChange={e=>setFEdit({...fEdit,[k]:e.target.value})}/></label>)}</div>
+          <div className="row" style={{marginTop:12}}>
+            <button className="btn sec" disabled={!Object.keys(fEdit).length} onClick={saveFixed}>{tr("حفظ الراتب الثابت","Save fixed salary")}</button>
+            <span className="small muted">{tr("يُنسخ تلقائيًا في كل شهر جديد. الشهور المحفوظة سابقًا لا تتغير.","Copied into each new month. Months already saved don't change.")}</span>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="row" style={{justifyContent:"space-between",marginBottom:8}}>
+            <h2 style={{margin:0}}>{existing ? tr("تعديل راتب شهر","Edit month") : tr("إضافة راتب شهر","Add month")}</h2>
+            <label className="f" style={{maxWidth:200}}>{tr("الشهر","Month")}<input type="month" value={f.month} max={thisMonth()} onChange={e=>changeMonth(e.target.value)}/></label>
+          </div>
+          {existing && <div className="warn" style={{marginBottom:10}}>{tr(`يوجد راتب محفوظ لشهر ${monthLabel(f.month,lang)} — التعديلات ستستبدله.`,`A payslip for ${monthLabel(f.month,lang)} already exists — saving will replace it.`)}</div>}
+          <div className="small muted" style={{marginBottom:6}}>{tr("الثابت لهذا الشهر (عدّله إذا كان مختلفًا في شهر سابق)","Fixed part for this month (change it if it was different back then)")}</div>
+          <div className="grid2">{SAL_FIXED.map(([k,ar,en])=><label key={k} className="f">{tr(ar,en)}<input type="number" step="0.01" value={f[k]??""} placeholder="0" onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}</div>
+          <div className="small muted" style={{margin:"12px 0 6px"}}>{tr("المتغير الشهري","Monthly items")}</div>
+          <div className="grid2">{SAL_MONTH.map(([k,ar,en])=><label key={k} className="f">{tr(ar,en)}<input type="number" step="0.01" value={f[k]??""} placeholder="0" onChange={e=>setF({...f,[k]:e.target.value})}/></label>)}</div>
+          <label className="f" style={{marginTop:12}}>{tr("ملاحظة تظهر للموظف","Note shown to the employee")}<input value={f.note||""} onChange={e=>setF({...f,note:e.target.value})}/></label>
+          <div className="row" style={{marginTop:14,justifyContent:"space-between"}}>
+            <div className="stat"><b>{money(netOf(f))}</b><span>{tr("صافي الراتب","Net salary")} ({tr("ر.س","SAR")})</span></div>
+            <div className="row">
+              <button className="btn sec" disabled={busy} onClick={()=>saveSlip(false)}>{tr("حفظ بدون نشر","Save without publishing")}</button>
+              <button className="btn" disabled={busy} onClick={()=>saveSlip(true)}>{tr("حفظ ونشر للموظف","Save and publish")}</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2>{tr("سجل الرواتب","Payslip history")} — {person.full_name}</h2>
+          {slips.length===0 ? <div className="empty">{tr("لا توجد رواتب مسجلة بعد","No payslips yet")}</div> :
+          <div className="tw"><table>
+            <thead><tr><th>{tr("الشهر","Month")}</th><th className="num">{tr("الثابت","Fixed")}</th>{SAL_MONTH.map(([k,ar,en])=><th key={k} className="num">{tr(ar,en)}</th>)}<th className="num">{tr("الصافي","Net")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead>
+            <tbody>{slips.map(x=><tr key={x.id} style={{background:x.month.slice(0,7)===f.month?"var(--teal2)":undefined}}>
+              <td>{monthLabel(x.month,lang)}</td>
+              <td className="num">{money(SAL_FIXED.reduce((a,[k])=>a+num(x[k]),0))}</td>
+              {SAL_MONTH.map(([k])=><td key={k} className="num">{money(x[k])}</td>)}
+              <td className="num"><b>{money(x.net)}</b></td>
+              <td><span className={"pill "+(x.published?"p-ok":"p-off")}>{x.published?tr("منشور","Published"):tr("غير منشور","Draft")}</span></td>
+              <td className="row" style={{gap:6,flexWrap:"nowrap"}}>
+                <button className="btn sec sm" onClick={()=>{ fillForm(x.month.slice(0,7),fixed,slips); window.scrollTo({top:0,behavior:"smooth"}); }}>{tr("تعديل","Edit")}</button>
+                <button className="btn red sm" onClick={()=>delSlip(x)}>{tr("حذف","Delete")}</button></td>
+            </tr>)}</tbody>
+          </table></div>}
+        </div>
+      </>}
     </>}
+
+    {mode==="summary" && <div className="card">
+      <div className="row" style={{justifyContent:"space-between",marginBottom:10}}>
+        <h2 style={{margin:0}}>{tr("ملخص رواتب الشهر","Month summary")}</h2>
+        <input type="month" style={{width:"auto"}} value={sm} onChange={e=>e.target.value&&setSm(e.target.value)}/>
+      </div>
+      {smRows.length===0 ? <div className="empty">{tr("لا توجد رواتب مسجلة لهذا الشهر","No payslips recorded for this month")}</div> :
+      <div className="tw"><table>
+        <thead><tr><th>{tr("الموظف","Employee")}</th><th>{tr("الفرع","Branch")}</th><th className="num">{tr("الصافي","Net")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead>
+        <tbody>{smRows.map(x=><tr key={x.id}><td>{pmap[x.profile_id]?.full_name||"—"}</td><td className="muted">{pmap[x.profile_id]?.branch||"—"}</td>
+          <td className="num"><b>{money(x.net)}</b></td><td><span className={"pill "+(x.published?"p-ok":"p-off")}>{x.published?tr("منشور","Published"):tr("غير منشور","Draft")}</span></td>
+          <td><button className="btn sec sm" onClick={async()=>{ setMode("employee"); setPid(x.profile_id); const d=await loadEmp(x.profile_id); fillForm(sm,d.fx,d.sl); }}>{tr("فتح","Open")}</button></td></tr>)}</tbody>
+        <tfoot><tr><td colSpan="2"><b>{tr("الإجمالي","Total")} ({smRows.length})</b></td><td className="num"><b>{money(smRows.reduce((a,x)=>a+num(x.net),0))}</b></td><td colSpan="2"></td></tr></tfoot>
+      </table></div>}
+      <p className="small muted">{tr("يعرض فقط الموظفين الذين سُجّل لهم راتب هذا الشهر. للإضافة أو التعديل استخدم «راتب موظف».","Shows only employees with a payslip this month. To add or edit, use Employee payroll.")}</p>
+    </div>}
   </div>;
 }
 
