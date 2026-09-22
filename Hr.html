@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>First Brand HR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --teal:#0F6B63; --teal2:#E3F0EE; --ink:#1B2826; --muted:#5E6E6B; --line:#D9E2DF;
+  --paper:#F4F7F6; --card:#FFFFFF; --amber:#B7791F; --amber2:#FBF1DE;
+  --red:#B03A32; --red2:#F8E3E1; --green:#2F7A4C; --green2:#E2F2E8;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;font-size:15px;line-height:1.55}
+a{color:var(--teal)}
+button,input,select,textarea{font:inherit;color:inherit}
+.top{background:var(--teal);color:#fff;position:sticky;top:0;z-index:5}
+.top .in{max-width:1100px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:18px;letter-spacing:.2px}
+.brand small{font-weight:400;opacity:.8;margin-inline-start:6px}
+.top .sp{flex:1}
+.top a,.top button.lnk{color:#fff;opacity:.9;text-decoration:none;background:none;border:0;cursor:pointer;padding:4px 6px;border-radius:6px}
+.top a:hover,.top button.lnk:hover{opacity:1;background:rgba(255,255,255,.12)}
+.tabs{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:52px;z-index:4}
+.tabs .in{max-width:1100px;margin:0 auto;padding:0 10px;display:flex;gap:2px;overflow-x:auto}
+.tab{border:0;background:none;padding:12px 12px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tab.on{color:var(--teal);border-bottom-color:var(--teal);font-weight:600}
+.badge{background:var(--red);color:#fff;border-radius:10px;font-size:11px;padding:0 6px;min-width:18px;text-align:center;line-height:18px}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 60px;display:grid;gap:16px}
+h1{font-size:22px;margin:0}
+h2{font-size:17px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+label.f{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff;width:100%}
+textarea{min-height:70px;resize:vertical}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.btn{border:0;background:var(--teal);color:#fff;padding:9px 16px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.sec{background:var(--teal2);color:var(--teal)}
+.btn.red{background:var(--red)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.muted{color:var(--muted)} .small{font-size:13px}
+.warn{background:var(--amber2);color:#7A5210;border-radius:8px;padding:8px 12px;font-size:13px}
+.err{background:var(--red2);color:var(--red);border-radius:8px;padding:8px 12px;font-size:13px}
+.stat{display:grid;gap:2px}
+.stat b{font-size:26px;line-height:1.1}
+.stat span{font-size:13px;color:var(--muted)}
+.pill{display:inline-block;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:600}
+.p-pend{background:var(--amber2);color:var(--amber)} .p-ok{background:var(--green2);color:var(--green)}
+.p-no{background:var(--red2);color:var(--red)} .p-off{background:#ECEFEE;color:var(--muted)}
+.lv{border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;background:#fff}
+.lv .hd{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.lv .who{font-weight:600}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);position:relative}
+.st{display:grid;justify-items:center;gap:3px;text-align:center;font-size:12px;color:var(--muted);position:relative}
+.st::before{content:"";position:absolute;top:13px;inset-inline-start:-50%;width:100%;height:2px;background:var(--line);z-index:0}
+.st:first-child::before{display:none}
+.st .dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid var(--line);font-weight:700;position:relative;z-index:1}
+.st.done .dot{background:var(--green);border-color:var(--green);color:#fff}
+.st.done::before,.st.cur::before{background:var(--green)}
+.st.cur .dot{border-color:var(--amber);color:var(--amber);box-shadow:0 0 0 4px var(--amber2)}
+.st.cur{color:var(--ink);font-weight:600}
+.st.rej .dot{background:var(--red);border-color:var(--red);color:#fff}
+.st.skip{opacity:.4}
+.st small{font-size:11px;color:var(--muted);font-weight:400}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
+th{font-size:12px;color:var(--muted);font-weight:600;background:#FAFCFB}
+td input{min-width:90px;padding:6px 8px}
+td.num,th.num{text-align:end;font-variant-numeric:tabular-nums}
+.slip{display:grid;gap:0}
+.slip .ln{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--line)}
+.slip .ln.tot{border-bottom:0;border-top:2px solid var(--ink);margin-top:6px;font-weight:700;font-size:18px}
+.slip .ln.neg b{color:var(--red)}
+.seg{display:inline-flex;background:var(--teal2);border-radius:9px;padding:3px}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:7px;cursor:pointer;color:var(--teal)}
+.seg button.on{background:#fff;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));inset-inline-start:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;z-index:50;max-width:90vw}
+[dir=rtl] .toast{transform:translateX(50%)}
+.toast.bad{background:var(--red)}
+.empty{text-align:center;color:var(--muted);padding:26px}
+.login{max-width:380px;margin:60px auto}
+@media (max-width:600px){ .tabs{top:0;position:relative} .steps .st span:not(.dot){font-size:11px} }
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const {useState,useEffect,useMemo,useCallback,useContext,createContext} = React;
+
+/* ---------- config ---------- */
+const SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
+const SB_KEY = ""; // leave empty: the key is read from index.html in the same repo
+let sb = null;
+async function getKey(){
+  if (SB_KEY) return SB_KEY;
+  const txt = await (await fetch("./index.html",{cache:"no-store"})).text();
+  const m = txt.match(/["'`](sb_publishable_[\w-]+|eyJ[\w-]+\.eyJ[\w-]+\.[\w-]+)["'`]/);
+  if (!m) throw new Error("no key");
+  return m[1];
+}
+
+/* ---------- helpers ---------- */
+const LangCtx = createContext(null);
+const useT = () => useContext(LangCtx);
+const pad = n => String(n).padStart(2,"0");
+const todayStr = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const thisMonth = () => todayStr().slice(0,7);
+const dayDiff = (a,b) => Math.round((Date.parse(b+"T00:00:00Z")-Date.parse(a+"T00:00:00Z"))/864e5)+1;
+const money = n => Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const safeName = n => n.replace(/[^\w.\-]+/g,"_").slice(-80);
+const num = v => { const x = Number(v); return isFinite(x) ? x : 0; };
+async function upload(path,file){
+  if (file.size > 10*1024*1024) throw new Error("File is larger than 10 MB");
+  const {error} = await sb.storage.from("hr").upload(path,file,{upsert:false});
+  if (error) throw error; return path;
+}
+async function openFile(path){
+  const w = window.open("","_blank");
+  const {data,error} = await sb.storage.from("hr").createSignedUrl(path,600);
+  if (error){ if(w) w.close(); alert(error.message); return; }
+  if (w) w.location = data.signedUrl; else location.href = data.signedUrl;
+}
+const canAct = (me,r) => {
+  if (r.profile_id===me.id && !me.is_super) return false;
+  switch (r.stage){
+    case "manager": return me.is_super || (me.managed_branch && me.managed_branch===r.branch_id);
+    case "hr": return me.is_hr;
+    case "supervisor": return me.is_supervisor;
+    case "ceo": return me.is_ceo;
+    default: return false;
+  }
+};
+const SEQ = ["manager","hr","supervisor","ceo"];
+const stageName = (tr,s) => ({
+  manager:tr("مدير الصيدلية","Pharmacy manager"), hr:tr("الموارد البشرية","HR"),
+  supervisor:tr("المشرف","Supervisor"), ceo:tr("الرئيس التنفيذي","CEO"),
+  approved:tr("معتمدة","Approved"), rejected:tr("مرفوضة","Rejected"), cancelled:tr("ملغاة","Cancelled")
+}[s]||s);
+const typeName = (tr,t) => ({annual:tr("سنوية","Annual"), sick:tr("مرضية","Sick"), unpaid:tr("بدون راتب","Unpaid")}[t]||t);
+const kindName = (tr,k) => ({
+  chamber:tr("توثيقات الغرفة التجارية","Chamber of Commerce attestation"),
+  exit_reentry:tr("إصدار تأشيرة خروج وعودة","Exit & re-entry visa"),
+  mofa:tr("توثيقات وزارة الخارجية","Ministry of Foreign Affairs attestation"),
+  salary_cert:tr("تعريف بالراتب","Salary certificate"),
+  other:tr("طلب آخر","Other request")
+}[k]||k);
+const srStatus = (tr,s) => ({new:tr("جديد","New"), in_progress:tr("قيد التنفيذ","In progress"), done:tr("تم","Done"), rejected:tr("مرفوض","Rejected")}[s]||s);
+const pillFor = s => ["approved","done"].includes(s) ? "p-ok" : ["rejected"].includes(s) ? "p-no" : ["cancelled"].includes(s) ? "p-off" : "p-pend";
+const SAL_FIXED = [["basic","الراتب الأساسي","Basic salary"],["management_allowance","بدل إدارة","Management allowance"],["housing_allowance","بدل سكن","Housing allowance"],["overtime_allowance","بدل وقت إضافي","Overtime allowance"]];
+const SAL_MONTH = [["commissions","العمولات","Commissions"],["other_allowances","بدلات أخرى","Other allowances"],["deductions","الخصومات","Deductions"]];
+const netOf = r => SAL_FIXED.reduce((s,[k])=>s+num(r[k]),0) + num(r.commissions) + num(r.other_allowances) - num(r.deductions);
+const monthLabel = (m,lang) => new Date(m.slice(0,7)+"-01T00:00:00").toLocaleDateString(lang==="ar"?"ar-SA-u-ca-gregory":"en-GB",{month:"long",year:"numeric"});
+
+/* ---------- shared pieces ---------- */
+function Stepper({r,acts}){
+  const tr = useT();
+  const ra = acts.filter(a=>a.request_id===r.id && a.action!=="cancel");
+  const cur = SEQ.indexOf(r.stage);
+  return <ol className="steps">{SEQ.map((s,i)=>{
+    const a = ra.filter(x=>x.stage===s).slice(-1)[0];
+    let st = "todo";
+    if (a) st = a.action==="approve" ? "done" : "rej";
+    else if (s===r.stage) st = "cur";
+    else if (r.stage==="approved" || (cur>-1 && i<cur)) st = "skip";
+    else if (["rejected","cancelled"].includes(r.stage)) st = "skip";
+    return <li key={s} className={"st "+st}>
+      <span className="dot">{st==="done"?"✓":st==="rej"?"✕":i+1}</span>
+      <span>{stageName(tr,s)}</span>
+      {a && <small>{a.actor_name}</small>}
+    </li>;
+  })}</ol>;
+}
+
+function LeaveCard({r,person,acts,showWho,children}){
+  const tr = useT();
+  const notes = acts.filter(a=>a.request_id===r.id && a.comment);
+  return <div className="lv">
+    <div className="hd">
+      <div>
+        {showWho && <div className="who">{person?.full_name||"—"} <span className="muted small">{person?.branch||""}{person?.emp_code?` (${person.emp_code})`:""}</span></div>}
+        <div><b>{tr("إجازة","Leave")} {typeName(tr,r.leave_type)}</b> <span className="muted">{r.start_date} – {r.end_date}</span> <b>{r.days}</b> {tr("يوم","day(s)")}</div>
+        {r.sehaty_ref && <div className="small">{tr("رقم تقرير صحتي","Sehaty report no.")}: <b>{r.sehaty_ref}</b></div>}
+        {r.note && <div className="small muted">{r.note}</div>}
+        {r.attachment_path && <button className="btn sec sm" style={{marginTop:6}} onClick={()=>openFile(r.attachment_path)}>{tr("عرض المرفق","Open attachment")}</button>}
+      </div>
+      <span className={"pill "+pillFor(r.stage)}>{SEQ.includes(r.stage) ? tr("بانتظار: ","Waiting: ")+stageName(tr,r.stage) : stageName(tr,r.stage)}</span>
+    </div>
+    <Stepper r={r} acts={acts}/>
+    {notes.map(n=><div key={n.id} className="small muted">{stageName(tr,n.stage)} — {n.actor_name}: {n.comment}</div>)}
+    {children}
+  </div>;
+}
+
+/* ---------- 1. my leave ---------- */
+function LeaveTab({me,leaves,acts,reload,toast}){
+  const tr = useT();
+  const year = new Date().getFullYear();
+  const [ent,setEnt] = useState(undefined);
+  const blank = {type:"annual",from:todayStr(),to:todayStr(),sehaty:"",note:""};
+  const [f,setF] = useState(blank);
+  const [file,setFile] = useState(null);
+  const [busy,setBusy] = useState(false);
+  useEffect(()=>{ sb.from("hr_leave_entitlements").select("annual_days").eq("profile_id",me.id).eq("year",year).maybeSingle()
+    .then(({data})=>setEnt(data?data.annual_days:null)); },[me.id,leaves.length]);
+  const mine = leaves.filter(l=>l.profile_id===me.id);
+  const annualThisYear = mine.filter(l=>l.leave_type==="annual" && l.start_date.startsWith(String(year)));
+  const taken = annualThisYear.filter(l=>l.stage==="approved").reduce((s,l)=>s+l.days,0);
+  const pend = annualThisYear.filter(l=>SEQ.includes(l.stage)).reduce((s,l)=>s+l.days,0);
+  const remaining = ent==null ? null : Math.max(ent-taken-pend,0);
+  const days = f.from && f.to && f.to>=f.from ? dayDiff(f.from,f.to) : 0;
+  let warn = "";
+  if (f.to < f.from) warn = tr("تاريخ النهاية قبل تاريخ البداية","End date is before start date");
+  else if (f.type==="sick" && days>3) warn = tr("الإجازة المرضية 3 أيام كحد أقصى","Sick leave is 3 days maximum");
+  else if (f.type==="annual" && ent===null) warn = tr("لم تحدد الموارد البشرية رصيدك السنوي بعد","HR hasn't set your annual balance yet");
+  else if (f.type==="annual" && remaining!=null && days>remaining) warn = tr(`الرصيد المتبقي ${remaining} يوم فقط`,`Only ${remaining} day(s) left`);
+  const needProof = f.type==="sick" && !f.sehaty.trim() && !file;
+  const submit = async () => {
+    setBusy(true);
+    try{
+      let path = null;
+      if (file) path = await upload(`${me.id}/leave/${Date.now()}_${safeName(file.name)}`, file);
+      const {error} = await sb.from("hr_leave_requests").insert({profile_id:me.id, leave_type:f.type, start_date:f.from, end_date:f.to,
+        sehaty_ref: f.type==="sick" ? (f.sehaty.trim()||null) : null, attachment_path:path, note:f.note.trim()||null});
+      if (error) throw error;
+      toast(tr("تم إرسال طلب الإجازة","Leave request sent")); setF(blank); setFile(null); reload();
+    }catch(e){ toast(e.message,true); }
+    setBusy(false);
+  };
+  const cancel = async id => { if(!confirm(tr("إلغاء هذا الطلب؟","Cancel this request?"))) return;
+    const {error} = await sb.rpc("hr_leave_cancel",{p_id:id}); if(error) toast(error.message,true); else { toast(tr("تم الإلغاء","Cancelled")); reload(); } };
+  return <>
+    <div className="card grid2">
+      <div className="stat"><b>{ent==null?"—":ent}</b><span>{tr(`الرصيد السنوي ${year}`,`Annual balance ${year}`)}</span></div>
+      <div className="stat"><b>{taken}</b><span>{tr("أيام مستخدمة (معتمدة)","Days taken (approved)")}</span></div>
+      <div className="stat"><b>{pend}</b><span>{tr("أيام في انتظار الموافقة","Days awaiting approval")}</span></div>
+      <div className="stat"><b style={{color:"var(--teal)"}}>{remaining==null?"—":remaining}</b><span>{tr("المتبقي","Remaining")}</span></div>
+    </div>
+    <div className="card">
+      <h2>{tr("طلب إجازة جديد","New leave request")}</h2>
+      <div className="grid2">
+        <label className="f">{tr("نوع الإجازة","Leave type")}
+          <select value={f.type} onChange={e=>setF({...f,type:e.target.value})}>
+            <option value="annual">{typeName(tr,"annual")}</option><option value="sick">{typeName(tr,"sick")}</option><option value="unpaid">{typeName(tr,"unpaid")}</option>
+          </select></label>
+        <label className="f">{tr("من","From")}<input type="date" value={f.from} onChange={e=>setF({...f,from:e.target.value,to:f.to<e.target.value?e.target.value:f.to})}/></label>
+        <label className="f">{tr("إلى","To")}<input type="date" value={f.to} min={f.from} onChange={e=>setF({...f,to:e.target.value})}/></label>
+        <div className="stat" style={{alignSelf:"end"}}><b>{days}</b><span>{tr("عدد الأيام (يُحسب تلقائيًا)","Days (calculated)")}</span></div>
+      </div>
+      {f.type==="sick" && <div className="grid2" style={{marginTop:12}}>
+        <label className="f">{tr("رقم تقرير صحتي","Sehaty report number")}<input value={f.sehaty} onChange={e=>setF({...f,sehaty:e.target.value})}/></label>
+        <label className="f">{tr("أو أرفق إثبات (PDF / صورة)","Or attach proof (PDF / image)")}<input type="file" accept="application/pdf,image/*" onChange={e=>setFile(e.target.files[0]||null)}/></label>
+      </div>}
+      {f.type!=="sick" && <label className="f" style={{marginTop:12}}>{tr("مرفق (اختياري)","Attachment (optional)")}<input type="file" accept="application/pdf,image/*" onChange={e=>setFile(e.target.files[0]||null)}/></label>}
+      <label className="f" style={{marginTop:12}}>{tr("ملاحظات","Notes")}<textarea value={f.note} onChange={e=>setF({...f,note:e.target.value})}/></label>
+      {warn && <div className="warn" style={{marginTop:10}}>{warn}</div>}
+      {needProof && !warn && <div className="warn" style={{marginTop:10}}>{tr("أدخل رقم تقرير صحتي أو أرفق الإثبات","Enter the Sehaty report number or attach proof")}</div>}
+      <div className="row" style={{marginTop:12}}>
+        <button className="btn" disabled={busy||!!warn||needProof||!days} onClick={submit}>{busy?"…":tr("إرسال الطلب","Send request")}</button>
+        <span className="small muted">{tr("يمر الطلب على: مدير الصيدلية ← الموارد البشرية ← المشرف ← الرئيس التنفيذي","Goes to: pharmacy manager → HR → supervisor → CEO")}</span>
+      </div>
+    </div>
+    <div className="card grid" style={{gap:12}}>
+      <h2>{tr("طلباتي","My leave requests")}</h2>
+      {mine.length===0 && <div className="empty">{tr("لا توجد طلبات إجازة بعد","No leave requests yet")}</div>}
+      {mine.map(r=><LeaveCard key={r.id} r={r} acts={acts}>
+        {SEQ.includes(r.stage) && <div><button className="btn sec sm" onClick={()=>cancel(r.id)}>{tr("إلغاء الطلب","Cancel request")}</button></div>}
+      </LeaveCard>)}
+    </div>
+  </>;
+}
+
+/* ---------- approvals ---------- */
+function ApprovalsTab({me,leaves,acts,pmap,reload,toast}){
+  const tr = useT();
+  const [c,setC] = useState({});
+  const [busy,setBusy] = useState("");
+  const pending = leaves.filter(r=>canAct(me,r));
+  const handled = leaves.filter(r=>!canAct(me,r) && acts.some(a=>a.request_id===r.id && a.actor_id===me.id)).slice(0,15);
+  const act = async (r,action) => {
+    if (action==="reject" && !(c[r.id]||"").trim()) return toast(tr("اكتب سبب الرفض","Write a reason for rejecting"),true);
+    setBusy(r.id);
+    const {data,error} = await sb.rpc("hr_leave_act",{p_id:r.id,p_action:action,p_comment:c[r.id]||null});
+    setBusy("");
+    if (error) return toast(error.message,true);
+    toast(action==="reject" ? tr("تم رفض الطلب","Request rejected") : data==="approved" ? tr("اعتُمدت الإجازة نهائيًا","Leave fully approved") : tr("تمت الموافقة وأُحيل الطلب إلى ","Approved and sent to ")+stageName(tr,data));
+    setC({...c,[r.id]:""}); reload();
+  };
+  return <>
+    <div className="card grid" style={{gap:12}}>
+      <h2>{tr("بانتظار موافقتك","Waiting for your approval")} ({pending.length})</h2>
+      {pending.length===0 && <div className="empty">{tr("لا توجد طلبات بانتظارك","Nothing waiting for you")}</div>}
+      {pending.map(r=><LeaveCard key={r.id} r={r} person={pmap[r.profile_id]} acts={acts} showWho>
+        <textarea placeholder={tr("تعليق (مطلوب عند الرفض)","Comment (required to reject)")} value={c[r.id]||""} onChange={e=>setC({...c,[r.id]:e.target.value})}/>
+        <div className="row">
+          <button className="btn" disabled={busy===r.id} onClick={()=>act(r,"approve")}>{tr("موافقة","Approve")}</button>
+          <button className="btn red" disabled={busy===r.id} onClick={()=>act(r,"reject")}>{tr("رفض","Reject")}</button>
+        </div>
+      </LeaveCard>)}
+    </div>
+    {handled.length>0 && <div className="card grid" style={{gap:12}}>
+      <h2>{tr("تعاملت معها مؤخرًا","Recently handled by you")}</h2>
+      {handled.map(r=><LeaveCard key={r.id} r={r} person={pmap[r.profile_id]} acts={acts} showWho/>)}
+    </div>}
+  </>;
+}
+
+/* ---------- HR: balances + leave record ---------- */
+function HrLeaveTab({people,leaves,acts,pmap,toast}){
+  const tr = useT();
+  const Y = new Date().getFullYear();
+  const [year,setYear] = useState(Y);
+  const [ents,setEnts] = useState({});
+  const [edit,setEdit] = useState({});
+  const [def,setDef] = useState("30");
+  const [fs,setFs] = useState("all");
+  const load = () => sb.from("hr_leave_entitlements").select("*").eq("year",year).then(({data})=>{
+    const m={}; (data||[]).forEach(e=>m[e.profile_id]=e.annual_days); setEnts(m); setEdit({}); });
+  useEffect(()=>{load();},[year]);
+  const save = async pid => {
+    const v = edit[pid]; if (v===undefined || v==="") return;
+    const {error} = await sb.from("hr_leave_entitlements").upsert({profile_id:pid,year,annual_days:Math.round(num(v))},{onConflict:"profile_id,year"});
+    if (error) return toast(error.message,true); toast(tr("تم الحفظ","Saved")); load();
+  };
+  const fillMissing = async () => {
+    const rows = people.filter(p=>ents[p.id]===undefined).map(p=>({profile_id:p.id,year,annual_days:Math.round(num(def))}));
+    if (!rows.length) return toast(tr("كل الموظفين لديهم رصيد","Everyone already has a balance"));
+    const {error} = await sb.from("hr_leave_entitlements").upsert(rows,{onConflict:"profile_id,year"});
+    if (error) return toast(error.message,true); toast(tr(`تم تعيين ${rows.length} موظف`,`Set for ${rows.length} employee(s)`)); load();
+  };
+  const usedOf = pid => leaves.filter(l=>l.profile_id===pid && l.leave_type==="annual" && l.start_date.startsWith(String(year)) && l.stage==="approved").reduce((s,l)=>s+l.days,0);
+  const pendOf = pid => leaves.filter(l=>l.profile_id===pid && l.leave_type==="annual" && l.start_date.startsWith(String(year)) && SEQ.includes(l.stage)).reduce((s,l)=>s+l.days,0);
+  const list = leaves.filter(l => fs==="all" ? true : fs==="pending" ? SEQ.includes(l.stage) : l.stage===fs);
+  return <>
+    <div className="card">
+      <div className="row" style={{justifyContent:"space-between",marginBottom:10}}>
+        <h2 style={{margin:0}}>{tr("أرصدة الإجازة السنوية","Annual leave balances")}</h2>
+        <div className="row">
+          <select value={year} onChange={e=>setYear(+e.target.value)} style={{width:"auto"}}>{[Y-1,Y,Y+1].map(y=><option key={y} value={y}>{y}</option>)}</select>
+          <input style={{width:80}} type="number" value={def} onChange={e=>setDef(e.target.value)}/>
+          <button className="btn sec sm" onClick={fillMissing}>{tr("تعيين لمن ليس لديه رصيد","Set for everyone without one")}</button>
+        </div>
+      </div>
+      <div className="tw"><table>
+        <thead><tr><th>{tr("الموظف","Employee")}</th><th>{tr("الفرع","Branch")}</th><th className="num">{tr("الرصيد","Balance")}</th><th className="num">{tr("مستخدم","Taken")}</th><th className="num">{tr("معلّق","Pending")}</th><th className="num">{tr("متبقي","Left")}</th><th></th></tr></thead>
+        <tbody>{people.map(p=>{ const e=ents[p.id]; const u=usedOf(p.id), pd=pendOf(p.id);
+          return <tr key={p.id}><td>{p.full_name}</td><td className="muted">{p.branch||"—"}</td>
+            <td className="num"><input type="number" style={{width:90}} value={edit[p.id]!==undefined?edit[p.id]:(e??"")} placeholder="—" onChange={ev=>setEdit({...edit,[p.id]:ev.target.value})}/></td>
+            <td className="num">{u}</td><td className="num">{pd}</td><td className="num"><b>{e===undefined?"—":Math.max(e-u-pd,0)}</b></td>
+            <td>{edit[p.id]!==undefined && <button className="btn sm" onClick={()=>save(p.id)}>{tr("حفظ","Save")}</button>}</td></tr>; })}
+        </tbody></table></div>
+    </div>
+    <div className="card">
+      <div className="row" style={{justifyContent:"space-between",marginBottom:10}}>
+        <h2 style={{margin:0}}>{tr("سجل الإجازات","Leave record")}</h2>
+        <select style={{width:"auto"}} value={fs} onChange={e=>setFs(e.target.value)}>
+          <option value="all">{tr("الكل","All")}</option><option value="pending">{tr("قيد الموافقة","In approval")}</option>
+          <option value="approved">{stageName(tr,"approved")}</option><option value="rejected">{stageName(tr,"rejected")}</option><option value="cancelled">{stageName(tr,"cancelled")}</option>
+        </select>
+      </div>
+      <div className="tw"><table>
+        <thead><tr><th>{tr("الموظف","Employee")}</th><th>{tr("الفرع","Branch")}</th><th>{tr("النوع","Type")}</th><th>{tr("من","From")}</th><th>{tr("إلى","To")}</th><th className="num">{tr("أيام","Days")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead>
+        <tbody>{list.map(l=><tr key={l.id}><td>{pmap[l.profile_id]?.full_name||"—"}</td><td className="muted">{pmap[l.profile_id]?.branch||"—"}</td>
+          <td>{typeName(tr,l.leave_type)}</td><td>{l.start_date}</td><td>{l.end_date}</td><td className="num">{l.days}</td>
+          <td><span className={"pill "+pillFor(l.stage)}>{SEQ.includes(l.stage)?tr("عند: ","At: ")+stageName(tr,l.stage):stageName(tr,l.stage)}</span></td>
+          <td>{l.attachment_path && <button className="btn sec sm" onClick={()=>openFile(l.attachment_path)}>{tr("مرفق","File")}</button>}</td></tr>)}
+        {list.length===0 && <tr><td colSpan="8" className="empty">{tr("لا توجد سجلات","No records")}</td></tr>}</tbody></table></div>
+    </div>
+  </>;
+}
+
+/* ---------- 2. my requests ---------- */
+function RequestsTab({me,srs,reload,toast}){
+  const tr = useT();
+  const [kind,setKind] = useState("chamber");
+  const [comment,setComment] = useState("");
+  const [file,setFile] = useState(null);
+  const [busy,setBusy] = useState(false);
+  const [fk,setFk] = useState(0);
+  const mine = srs.filter(s=>s.profile_id===me.id);
+  const submit = async () => {
+    setBusy(true);
+    try{
+      let path = null;
+      if (file) path = await upload(`${me.id}/req/${Date.now()}_${safeName(file.name)}`, file);
+      const {error} = await sb.from("hr_service_requests").insert({profile_id:me.id,kind,comment:comment.trim()||null,attachment_path:path});
+      if (error) throw error;
+      toast(tr("تم إرسال الطلب للموارد البشرية","Request sent to HR")); setComment(""); setFile(null); setFk(fk+1); reload();
+    }catch(e){ toast(e.message,true); }
+    setBusy(false);
+  };
+  return <>
+    <div className="card">
+      <h2>{tr("طلب جديد للموارد البشرية","New request to HR")}</h2>
+      <div className="grid2">
+        <label className="f">{tr("نوع الطلب","Request type")}<select value={kind} onChange={e=>setKind(e.target.value)}>
+          {["chamber","exit_reentry","mofa","salary_cert","other"].map(k=><option key={k} value={k}>{kindName(tr,k)}</option>)}</select></label>
+        <label className="f">{tr("ملف مرفق","Attach file")}<input key={fk} type="file" onChange={e=>setFile(e.target.files[0]||null)}/></label>
+      </div>
+      <label className="f" style={{marginTop:12}}>{tr("اكتب ما تحتاجه بالتفصيل","Describe what you need")}<textarea value={comment} onChange={e=>setComment(e.target.value)}/></label>
+      <div className="row" style={{marginTop:12}}><button className="btn" disabled={busy||(!comment.trim()&&!file)} onClick={submit}>{busy?"…":tr("إرسال الطلب","Send request")}</button></div>
+    </div>
+    <div className="card grid" style={{gap:10}}>
+      <h2>{tr("طلباتي السابقة","My requests")}</h2>
+      {mine.length===0 && <div className="empty">{tr("لا توجد طلبات بعد","No requests yet")}</div>}
+      {mine.map(s=><div key={s.id} className="lv">
+        <div className="hd"><div><b>{kindName(tr,s.kind)}</b> <span className="muted small">{s.created_at.slice(0,10)}</span></div><span className={"pill "+pillFor(s.status)}>{srStatus(tr,s.status)}</span></div>
+        {s.comment && <div className="small">{s.comment}</div>}
+        <div className="row">
+          {s.attachment_path && <button className="btn sec sm" onClick={()=>openFile(s.attachment_path)}>{tr("ملفي المرفق","My file")}</button>}
+          {s.reply_path && <button className="btn sm" onClick={()=>openFile(s.reply_path)}>{tr("ملف من الموارد البشرية","File from HR")}</button>}
+        </div>
+        {s.hr_reply && <div className="small" style={{background:"var(--teal2)",padding:"8px 10px",borderRadius:8}}><b>{tr("رد الموارد البشرية: ","HR reply: ")}</b>{s.hr_reply}</div>}
+      </div>)}
+    </div>
+  </>;
+}
+
+/* ---------- HR: incoming requests ---------- */
+function HrRequestsTab({srs,pmap,reload,toast}){
+  const tr = useT();
+  const [fs,setFs] = useState("open");
+  const [ed,setEd] = useState({});
+  const [busy,setBusy] = useState("");
+  const list = srs.filter(s => fs==="all" ? true : fs==="open" ? ["new","in_progress"].includes(s.status) : s.status===fs);
+  const save = async s => {
+    const e = ed[s.id]||{}; setBusy(s.id);
+    try{
+      let reply_path = s.reply_path;
+      if (e.file) reply_path = await upload(`${s.profile_id}/req/reply_${Date.now()}_${safeName(e.file.name)}`, e.file);
+      const {error} = await sb.from("hr_service_requests").update({status:e.status||s.status, hr_reply:(e.reply!==undefined?e.reply:s.hr_reply)||null, reply_path, updated_at:new Date().toISOString()}).eq("id",s.id);
+      if (error) throw error;
+      toast(tr("تم الحفظ","Saved")); setEd({...ed,[s.id]:undefined}); reload();
+    }catch(err){ toast(err.message,true); }
+    setBusy("");
+  };
+  return <div className="card grid" style={{gap:12}}>
+    <div className="row" style={{justifyContent:"space-between"}}>
+      <h2 style={{margin:0}}>{tr("طلبات الموظفين","Staff requests")}</h2>
+      <select style={{width:"auto"}} value={fs} onChange={e=>setFs(e.target.value)}>
+        <option value="open">{tr("المفتوحة","Open")}</option><option value="new">{srStatus(tr,"new")}</option><option value="in_progress">{srStatus(tr,"in_progress")}</option>
+        <option value="done">{srStatus(tr,"done")}</option><option value="rejected">{srStatus(tr,"rejected")}</option><option value="all">{tr("الكل","All")}</option>
+      </select>
+    </div>
+    {list.length===0 && <div className="empty">{tr("لا توجد طلبات","No requests")}</div>}
+    {list.map(s=>{ const e=ed[s.id]||{}; const p=pmap[s.profile_id];
+      return <div key={s.id} className="lv">
+        <div className="hd"><div><div className="who">{p?.full_name||"—"} <span className="muted small">{p?.branch||""}</span></div><b>{kindName(tr,s.kind)}</b> <span className="muted small">{s.created_at.slice(0,10)}</span></div>
+          <span className={"pill "+pillFor(s.status)}>{srStatus(tr,s.status)}</span></div>
+        {s.comment && <div>{s.comment}</div>}
+        {s.attachment_path && <div><button className="btn sec sm" onClick={()=>openFile(s.attachment_path)}>{tr("ملف الموظف","Employee's file")}</button></div>}
+        <div className="grid2">
+          <label className="f">{tr("الحالة","Status")}<select value={e.status||s.status} onChange={ev=>setEd({...ed,[s.id]:{...e,status:ev.target.value}})}>
+            {["new","in_progress","done","rejected"].map(x=><option key={x} value={x}>{srStatus(tr,x)}</option>)}</select></label>
+          <label className="f">{tr("إرفاق ملف للموظف","Attach file for employee")}<input type="file" onChange={ev=>setEd({...ed,[s.id]:{...e,file:ev.target.files[0]||null}})}/></label>
+        </div>
+        <label className="f">{tr("الرد","Reply")}<textarea value={e.reply!==undefined?e.reply:(s.hr_reply||"")} onChange={ev=>setEd({...ed,[s.id]:{...e,reply:ev.target.value}})}/></label>
+        {s.reply_path && <div><button className="btn sec sm" onClick={()=>openFile(s.reply_path)}>{tr("الملف المرسل","Sent file")}</button></div>}
+        <div><button className="btn" disabled={busy===s.id} onClick={()=>save(s)}>{busy===s.id?"…":tr("حفظ","Save")}</button></div>
+      </div>; })}
+  </div>;
+}
+
+/* ---------- 3. my salary ---------- */
+function SalaryTab({me,lang}){
+  const tr = useT();
+  const [slips,setSlips] = useState(null);
+  const [sel,setSel] = useState("");
+  useEffect(()=>{ sb.from("hr_payslips").select("*").eq("profile_id",me.id).eq("published",true).order("month",{ascending:false})
+    .then(({data})=>{ setSlips(data||[]); if(data&&data[0]) setSel(data[0].month); }); },[me.id]);
+  if (slips===null) return <div className="card empty">…</div>;
+  const s = slips.find(x=>x.month===sel);
+  return <div className="card" style={{maxWidth:560}}>
+    <div className="row" style={{justifyContent:"space-between",marginBottom:12}}>
+      <h2 style={{margin:0}}>{tr("مسير الراتب","Payslip")}</h2>
+      {slips.length>0 && <select style={{width:"auto"}} value={sel} onChange={e=>setSel(e.target.value)}>
+        {slips.map(x=><option key={x.month} value={x.month}>{monthLabel(x.month,lang)}</option>)}</select>}
+    </div>
+    {!s && <div className="empty">{tr("لم يُنشر أي راتب بعد","No payslip published yet")}</div>}
+    {s && <div className="slip">
+      {SAL_FIXED.map(([k,ar,en])=><div key={k} className="ln"><span>{tr(ar,en)}</span><b>{money(s[k])}</b></div>)}
+      <div className="ln"><span>{tr("العمولات","Commissions")}</span><b>{money(s.commissions)}</b></div>
+      <div className="ln"><span>{tr("بدلات أخرى","Other allowances")}</span><b>{money(s.other_allowances)}</b></div>
+      <div className="ln neg"><span>{tr("الخصومات","Deductions")}</span><b>− {money(s.deductions)}</b></div>
+      <div className="ln tot"><span>{tr("صافي الراتب","Net salary")}</span><span>{money(s.net)} {tr("ر.س","SAR")}</span></div>
+      {s.note && <div className="small muted" style={{marginTop:8}}>{s.note}</div>}
+    </div>}
+  </div>;
+}
+
+/* ---------- HR: payroll ---------- */
+function PayrollTab({people,toast,lang}){
+  const tr = useT();
+  const [mode,setMode] = useState("month");
+  const [month,setMonth] = useState(thisMonth());
+  const [fixed,setFixed] = useState({});
+  const [fEdit,setFEdit] = useState({});
+  const [rows,setRows] = useState({});
+  const [busy,setBusy] = useState(false);
+  const loadFixed = async () => { const {data} = await sb.from("hr_salary_fixed").select("*"); const m={}; (data||[]).forEach(r=>m[r.profile_id]=r); setFixed(m); setFEdit({}); return m; };
+  const loadMonth = async (fx) => {
+    const {data} = await sb.from("hr_payslips").select("*").eq("month",month+"-01");
+    const m={}; (data||[]).forEach(r=>m[r.profile_id]=r);
+    const out={};
+    people.forEach(p=>{ const s=m[p.id], f=fx[p.id]||{};
+      out[p.id] = s ? {...s, _saved:true} : {basic:f.basic||0, management_allowance:f.management_allowance||0, housing_allowance:f.housing_allowance||0, overtime_allowance:f.overtime_allowance||0, commissions:0, other_allowances:0, deductions:0, note:"", published:false, _saved:false}; });
+    setRows(out);
+  };
+  useEffect(()=>{ (async()=>{ const fx=await loadFixed(); await loadMonth(fx); })(); },[month,people.length]);
+  const saveFixed = async pid => {
+    const e = {...(fixed[pid]||{}), ...(fEdit[pid]||{})};
+    const row = {profile_id:pid, updated_at:new Date().toISOString()}; SAL_FIXED.forEach(([k])=>row[k]=num(e[k]));
+    const {error} = await sb.from("hr_salary_fixed").upsert(row,{onConflict:"profile_id"});
+    if (error) return toast(error.message,true); toast(tr("تم حفظ الراتب الثابت","Fixed salary saved")); loadFixed();
+  };
+  const setR = (pid,k,v) => setRows({...rows,[pid]:{...rows[pid],[k]:v}});
+  const saveMonth = async (publishAll) => {
+    setBusy(true);
+    const payload = people.filter(p=>{ const r=rows[p.id]; return r && (r._saved || netOf(r)!==0); }).map(p=>{ const r=rows[p.id];
+      const o={profile_id:p.id, month:month+"-01", note:(r.note||"").trim()||null, published: publishAll?true:!!r.published, updated_at:new Date().toISOString()};
+      [...SAL_FIXED,...SAL_MONTH].forEach(([k])=>o[k]=num(r[k])); return o; });
+    const {error} = payload.length ? await sb.from("hr_payslips").upsert(payload,{onConflict:"profile_id,month"}) : {error:null};
+    setBusy(false);
+    if (error) return toast(error.message,true);
+    toast(publishAll ? tr("تم الحفظ والنشر للموظفين","Saved and published to employees") : tr("تم حفظ رواتب الشهر","Month saved")); loadMonth(fixed);
+  };
+  const total = people.reduce((s,p)=>s+(rows[p.id]?netOf(rows[p.id]):0),0);
+  return <div className="card">
+    <div className="row" style={{justifyContent:"space-between",marginBottom:12}}>
+      <div className="seg"><button className={mode==="month"?"on":""} onClick={()=>setMode("month")}>{tr("رواتب الشهر","Monthly payroll")}</button><button className={mode==="fixed"?"on":""} onClick={()=>setMode("fixed")}>{tr("الراتب الثابت","Fixed salary")}</button></div>
+      {mode==="month" && <input type="month" style={{width:"auto"}} value={month} onChange={e=>e.target.value&&setMonth(e.target.value)}/>}
+    </div>
+    {mode==="fixed" && <>
+      <p className="small muted" style={{marginTop:0}}>{tr("تُسجّل مرة واحدة وتُعدّل عند تغيّرها فقط (كل 2–3 سنوات). تُنسخ تلقائيًا في رواتب كل شهر جديد.","Recorded once and changed only when they change (every 2–3 years). Copied into each new month automatically.")}</p>
+      <div className="tw"><table>
+        <thead><tr><th>{tr("الموظف","Employee")}</th>{SAL_FIXED.map(([k,ar,en])=><th key={k} className="num">{tr(ar,en)}</th>)}<th className="num">{tr("المجموع","Total")}</th><th></th></tr></thead>
+        <tbody>{people.map(p=>{ const cur={...(fixed[p.id]||{}),...(fEdit[p.id]||{})}; const dirty=!!fEdit[p.id];
+          return <tr key={p.id}><td>{p.full_name}<div className="small muted">{p.branch||""}</div></td>
+            {SAL_FIXED.map(([k])=><td key={k} className="num"><input type="number" step="0.01" value={cur[k]??""} placeholder="0" onChange={e=>setFEdit({...fEdit,[p.id]:{...(fEdit[p.id]||{}),[k]:e.target.value}})}/></td>)}
+            <td className="num"><b>{money(SAL_FIXED.reduce((s,[k])=>s+num(cur[k]),0))}</b></td>
+            <td>{dirty && <button className="btn sm" onClick={()=>saveFixed(p.id)}>{tr("حفظ","Save")}</button>}</td></tr>; })}</tbody></table></div>
+    </>}
+    {mode==="month" && <>
+      <p className="small muted" style={{marginTop:0}}>{monthLabel(month,lang)} — {tr("أدخل العمولات والخصومات والبدلات الأخرى، ثم احفظ. لا يرى الموظف راتبه إلا بعد النشر.","Enter commissions, deductions and other allowances, then save. Employees only see a payslip once it's published.")}</p>
+      <div className="tw"><table>
+        <thead><tr><th>{tr("الموظف","Employee")}</th><th className="num">{tr("الثابت","Fixed")}</th>{SAL_MONTH.map(([k,ar,en])=><th key={k} className="num">{tr(ar,en)}</th>)}<th className="num">{tr("الصافي","Net")}</th><th>{tr("ملاحظة","Note")}</th><th>{tr("منشور","Published")}</th></tr></thead>
+        <tbody>{people.map(p=>{ const r=rows[p.id]; if(!r) return null; const fx=SAL_FIXED.reduce((s,[k])=>s+num(r[k]),0);
+          return <tr key={p.id}><td>{p.full_name}<div className="small muted">{p.branch||""}</div></td>
+            <td className="num" title={SAL_FIXED.map(([k,ar,en])=>tr(ar,en)+": "+money(r[k])).join("\n")}>{money(fx)}</td>
+            {SAL_MONTH.map(([k])=><td key={k} className="num"><input type="number" step="0.01" value={r[k]} onChange={e=>setR(p.id,k,e.target.value)}/></td>)}
+            <td className="num"><b>{money(netOf(r))}</b></td>
+            <td><input style={{minWidth:140}} value={r.note||""} onChange={e=>setR(p.id,"note",e.target.value)}/></td>
+            <td style={{textAlign:"center"}}><input type="checkbox" style={{width:18,height:18}} checked={!!r.published} onChange={e=>setR(p.id,"published",e.target.checked)}/></td></tr>; })}</tbody>
+        <tfoot><tr><td colSpan={2+SAL_MONTH.length}><b>{tr("إجمالي الصافي","Total net")}</b></td><td className="num"><b>{money(total)}</b></td><td colSpan="2"></td></tr></tfoot>
+      </table></div>
+      <div className="row" style={{marginTop:12}}>
+        <button className="btn sec" disabled={busy} onClick={()=>saveMonth(false)}>{tr("حفظ","Save")}</button>
+        <button className="btn" disabled={busy} onClick={()=>saveMonth(true)}>{tr("حفظ ونشر للجميع","Save and publish to all")}</button>
+        <span className="small muted">{tr("مرّر على خانة الثابت لرؤية التفاصيل","Hover the fixed column to see its breakdown")}</span>
+      </div>
+    </>}
+  </div>;
+}
+
+/* ---------- settings: who is HR / CEO ---------- */
+function SettingsTab({people,toast}){
+  const tr = useT();
+  const [roles,setRoles] = useState({});
+  const load = () => sb.from("hr_roles").select("*").then(({data})=>{ const m={}; (data||[]).forEach(r=>m[r.profile_id]=r); setRoles(m); });
+  useEffect(()=>{load();},[]);
+  const toggle = async (pid,k,v) => {
+    const r = {profile_id:pid, is_hr:!!roles[pid]?.is_hr, is_ceo:!!roles[pid]?.is_ceo, [k]:v};
+    const {error} = await sb.from("hr_roles").upsert(r,{onConflict:"profile_id"});
+    if (error) return toast(error.message,true); toast(tr("تم الحفظ","Saved")); load();
+  };
+  return <div className="card">
+    <h2>{tr("أدوار الموافقة","Approval roles")}</h2>
+    <p className="small muted" style={{marginTop:0}}>{tr("مدير الصيدلية والمشرف يُحدَّدان تلقائيًا من المسمى الوظيفي في صفحة الفريق. حدّد هنا من يعمل كموارد بشرية ومن هو الرئيس التنفيذي.","Pharmacy manager and supervisor come automatically from the title on the Team page. Choose here who acts as HR and who is the CEO.")}</p>
+    <div className="tw"><table>
+      <thead><tr><th>{tr("الحساب","Account")}</th><th>{tr("المسمى","Title")}</th><th>{tr("الفرع","Branch")}</th><th>{tr("موارد بشرية","HR")}</th><th>{tr("رئيس تنفيذي","CEO")}</th></tr></thead>
+      <tbody>{people.map(p=><tr key={p.id}><td>{p.full_name}</td><td className="muted">{p.title||"—"}</td><td className="muted">{p.branch||"—"}</td>
+        <td><input type="checkbox" style={{width:18,height:18}} checked={!!roles[p.id]?.is_hr} onChange={e=>toggle(p.id,"is_hr",e.target.checked)}/></td>
+        <td><input type="checkbox" style={{width:18,height:18}} checked={!!roles[p.id]?.is_ceo} onChange={e=>toggle(p.id,"is_ceo",e.target.checked)}/></td></tr>)}</tbody>
+    </table></div>
+  </div>;
+}
+
+/* ---------- login ---------- */
+function Login({toast}){
+  const tr = useT();
+  const [email,setEmail] = useState(""); const [pw,setPw] = useState(""); const [busy,setBusy] = useState(false);
+  const go = async () => { setBusy(true); const {error} = await sb.auth.signInWithPassword({email:email.trim(),password:pw}); setBusy(false); if(error) toast(error.message,true); };
+  return <div className="card login grid" style={{gap:12}}>
+    <h1>{tr("تسجيل الدخول","Sign in")}</h1>
+    <p className="small muted" style={{margin:0}}>{tr("نفس حساب نظام مؤشرات الأداء","Same account as the KPI system")}</p>
+    <label className="f">{tr("البريد الإلكتروني","Email")}<input type="email" dir="ltr" value={email} onChange={e=>setEmail(e.target.value)}/></label>
+    <label className="f">{tr("كلمة المرور","Password")}<input type="password" dir="ltr" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()}/></label>
+    <button className="btn" disabled={busy||!email||!pw} onClick={go}>{tr("دخول","Sign in")}</button>
+  </div>;
+}
+
+/* ---------- app shell ---------- */
+function App(){
+  const [lang,setLang] = useState(()=>{ try{ return localStorage.getItem("hr_lang")||"ar"; }catch(e){ return "ar"; } });
+  const tr = useCallback((ar,en)=>lang==="ar"?ar:en,[lang]);
+  const [boot,setBoot] = useState("loading");
+  const [session,setSession] = useState(null);
+  const [me,setMe] = useState(null);
+  const [err,setErr] = useState("");
+  const [people,setPeople] = useState([]);
+  const [leaves,setLeaves] = useState([]);
+  const [acts,setActs] = useState([]);
+  const [srs,setSrs] = useState([]);
+  const [tab,setTab] = useState("leave");
+  const [msg,setMsg] = useState(null);
+  const toast = useCallback((text,bad)=>{ setMsg({text,bad}); clearTimeout(window.__t); window.__t=setTimeout(()=>setMsg(null),3500); },[]);
+
+  useEffect(()=>{ document.documentElement.lang=lang; document.documentElement.dir=lang==="ar"?"rtl":"ltr"; try{ localStorage.setItem("hr_lang",lang); }catch(e){} },[lang]);
+  useEffect(()=>{ (async()=>{
+    try{
+      sb = supabase.createClient(SB_URL, await getKey());
+      const {data} = await sb.auth.getSession(); setSession(data.session);
+      sb.auth.onAuthStateChange((_e,s)=>setSession(s));
+      setBoot("ok");
+    }catch(e){ setBoot("nokey"); }
+  })(); },[]);
+
+  const load = useCallback(async()=>{
+    if (!session) return;
+    const [m,p,l,a,s] = await Promise.all([
+      sb.rpc("hr_me"), sb.rpc("hr_people"),
+      sb.from("hr_leave_requests").select("*").order("created_at",{ascending:false}),
+      sb.from("hr_leave_actions").select("*").order("created_at"),
+      sb.from("hr_service_requests").select("*").order("created_at",{ascending:false})]);
+    if (m.error){ setErr(m.error.message); return; }
+    setErr(""); setMe(m.data); setPeople(p.data||[]); setLeaves(l.data||[]); setActs(a.data||[]); setSrs(s.data||[]);
+  },[session]);
+  useEffect(()=>{ load(); if(!session) return; const id=setInterval(load,60000); return ()=>clearInterval(id); },[load,session]);
+
+  const pmap = useMemo(()=>Object.fromEntries(people.map(p=>[p.id,p])),[people]);
+  const pending = me ? leaves.filter(r=>canAct(me,r)).length : 0;
+  const newReq = me?.is_hr ? srs.filter(s=>s.status==="new").length : 0;
+  useEffect(()=>{ const n=pending+newReq; document.title=(n?`(${n}) `:"")+"First Brand HR"; },[pending,newReq]);
+
+  const approver = me && (me.is_hr||me.is_ceo||me.is_supervisor||me.managed_branch||me.is_super);
+  const tabs = me ? [
+    ["leave",tr("إجازاتي","My leave")],
+    ["requests",tr("طلباتي","My requests")],
+    ["salary",tr("راتبي","My salary")],
+    approver && ["approvals",tr("الموافقات","Approvals"),pending],
+    me.is_hr && ["hrLeave",tr("الأرصدة والسجل","Balances & record")],
+    me.is_hr && ["hrReq",tr("طلبات الموظفين","Staff requests"),newReq],
+    me.is_hr && ["payroll",tr("الرواتب","Payroll")],
+    me.is_super && ["settings",tr("الأدوار","Roles")],
+  ].filter(Boolean) : [];
+  const active = tabs.find(t=>t[0]===tab) ? tab : "leave";
+
+  return <LangCtx.Provider value={tr}>
+    <header className="top"><div className="in">
+      <div className="brand">First Brand <small>{tr("الموارد البشرية","HR")}</small></div>
+      <div className="sp"/>
+      {me && <span className="small" style={{opacity:.9}}>{me.full_name}</span>}
+      <a href="./index.html">{tr("مؤشرات الأداء","KPI")}</a>
+      <button className="lnk" onClick={()=>setLang(lang==="ar"?"en":"ar")}>{lang==="ar"?"EN":"ع"}</button>
+      {session && <button className="lnk" onClick={()=>sb.auth.signOut()}>{tr("خروج","Sign out")}</button>}
+    </div></header>
+    {me && <nav className="tabs"><div className="in">{tabs.map(([k,label,n])=>
+      <button key={k} className={"tab"+(active===k?" on":"")} onClick={()=>setTab(k)}>{label}{n>0 && <span className="badge">{n}</span>}</button>)}</div></nav>}
+    <main className="wrap">
+      {boot==="loading" && <div className="empty">…</div>}
+      {boot==="nokey" && <div className="err">{tr("تعذّر قراءة مفتاح Supabase من index.html — الصقه في SB_KEY أعلى ملف hr.html","Couldn't read the Supabase key from index.html — paste it into SB_KEY at the top of hr.html")}</div>}
+      {boot==="ok" && !session && <Login toast={toast}/>}
+      {session && err && <div className="err">{err.includes("hr_me") ? tr("شغّل ملف hr.sql في Supabase أولًا.","Run hr.sql in Supabase first.")+" " : ""}{err}</div>}
+      {session && me && <>
+        {active==="leave" && <LeaveTab me={me} leaves={leaves} acts={acts} reload={load} toast={toast}/>}
+        {active==="requests" && <RequestsTab me={me} srs={srs} reload={load} toast={toast}/>}
+        {active==="salary" && <SalaryTab me={me} lang={lang}/>}
+        {active==="approvals" && <ApprovalsTab me={me} leaves={leaves} acts={acts} pmap={pmap} reload={load} toast={toast}/>}
+        {active==="hrLeave" && <HrLeaveTab people={people} leaves={leaves} acts={acts} pmap={pmap} toast={toast}/>}
+        {active==="hrReq" && <HrRequestsTab srs={srs} pmap={pmap} reload={load} toast={toast}/>}
+        {active==="payroll" && <PayrollTab people={people} toast={toast} lang={lang}/>}
+        {active==="settings" && <SettingsTab people={people} toast={toast}/>}
+      </>}
+    </main>
+    {msg && <div className={"toast"+(msg.bad?" bad":"")} role="status">{msg.text}</div>}
+  </LangCtx.Provider>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
