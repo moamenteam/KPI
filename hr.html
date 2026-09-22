@@ -724,7 +724,7 @@ function App(){
   const [leaves,setLeaves] = useState([]);
   const [acts,setActs] = useState([]);
   const [srs,setSrs] = useState([]);
-  const [tab,setTab] = useState("leave");
+  const [tab,setTab] = useState(()=>new URLSearchParams(location.search).get("tab")||"leave");
   const [msg,setMsg] = useState(null);
   const toast = useCallback((text,bad)=>{ setMsg({text,bad}); clearTimeout(window.__t); window.__t=setTimeout(()=>setMsg(null),3500); },[]);
 
