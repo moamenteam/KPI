@@ -788,8 +788,7 @@ function App(){
       {page==="dash"     && <Dashboard key={me.id} {...props}/>}
       {page==="visits"   && can("visits")   && <Visits {...props}/>}
       {page==="visitReports" && can("visitReports") && <VisitReports {...props}/>}
-      {page==="hr" && can("hr") && <HR {...props}/>}
-      {page==="profile" && <Profile {...props} setMe={setMe}/>}
+      {page==="hr" && (location.href="./hr.html",null)}      {page==="profile" && <Profile {...props} setMe={setMe}/>}
       {page==="targets"  && can("targets")  && <Targets {...props}/>}
       {page==="data"     && can("data")     && <Data {...props}/>}
       {page==="team"     && can("team")     && <Team {...props}/>}
