@@ -614,99 +614,6 @@ function Data({t,me,D,E,reload,toast,lang}){
   </div>;
 }
 
-/* ================= TEAM (admin) ================= */
-function Team({t,D,reload,toast}){
-  const {branches,pharmacists}=D; const [nb,setNb]=useState(""); const [np,setNp]=useState({}); const [sel,setSel]=useState("all"); const [mv,setMv]=useState({});
-  const run=async(q)=>{ const r=await q; toast(r.error?r.error.message:t.saved); reload(); return r; };
-  const addBranch=()=>{ if(!nb.trim()) return; run(sb.from("branches").insert({name:nb.trim()})); setNb(""); };
-  const removeBranch=b=>{ if(pharmacists.some(p=>p.branch_id===b.id)) return toast(t.deleteBranchBlocked); if(confirm(t.remove+" "+b.name+"?")) run(sb.from("branches").delete().eq("id",b.id)); };
-  const addPh=async bid=>{ const f=np[bid]||{}; if(!f.name?.trim()) return; const r=await sb.from("pharmacists").insert({full_name:f.name.trim(),emp_code:f.code||null,title:f.title||"community pharmacist",branch_id:bid==="none"?null:bid}).select().single(); if(r.error) return toast(r.error.message);
-    if(bid!=="none") await sb.from("pharmacist_assignments").insert({pharmacist_id:r.data.id,branch_id:bid,from_date:f.from||thisMonth()}); toast(t.saved); setNp({...np,[bid]:{}}); reload(); };
-  const removePh=p=>{ if(confirm(t.confirmRemove)) run(sb.from("pharmacists").delete().eq("id",p.id)); };
-  const move=async p=>{ const m=mv[p.id]||{}; const to=m.branch; const from=m.from||today(); if(!to||to===p.branch_id) return;
-    const prev=new Date(from+"T00:00:00Z"); prev.setUTCDate(prev.getUTCDate()-1);
-    await sb.from("pharmacist_assignments").update({to_date:prev.toISOString().slice(0,10)}).eq("pharmacist_id",p.id).is("to_date",null);
-    await run(sb.from("pharmacist_assignments").insert({pharmacist_id:p.id,branch_id:to,from_date:from})); setMv({...mv,[p.id]:{}}); };
-  const updPh=(id,patch)=>run(sb.from("pharmacists").update(patch).eq("id",id));
-  const shown = sel==="all"? branches : branches.filter(b=>b.id===sel);
-  const groups=[...shown.map(b=>({id:b.id,name:b.name,list:pharmacists.filter(p=>p.branch_id===b.id)})), ...(sel==="all"?[{id:"none",name:t.noBranch,list:pharmacists.filter(p=>!p.branch_id)}]:[])];
-  return <div className="grid">
-    <div className="row" style={{justifyContent:"space-between"}}><h1>{t.team}</h1><span className="muted small">{pharmacists.length} {t.pharmacists} · {branches.length} {t.branches}</span></div>
-    <div className="card grid"><h2>{t.branches}</h2>
-      <div className="row">{branches.map(b=><span key={b.id} className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel===b.id?"var(--teal)":"",color:sel===b.id?"#fff":""}} onClick={()=>setSel(sel===b.id?"all":b.id)}>{b.name} <span style={{opacity:.7}}>({pharmacists.filter(p=>p.branch_id===b.id).length})</span><button title={t.remove} onClick={e=>{e.stopPropagation();removeBranch(b)}} style={{background:"transparent",border:0,cursor:"pointer",color:"inherit",marginInlineStart:6}}>×</button></span>)}
-        <span className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel==="all"?"var(--teal)":"#EDF1EF",color:sel==="all"?"#fff":"var(--ink-2)"}} onClick={()=>setSel("all")}>{t.allBranches}</span></div>
-      <div className="row"><input placeholder={t.newBranch} value={nb} onChange={e=>setNb(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addBranch()} style={{maxWidth:280}}/><button className="btn sec" onClick={addBranch}>{t.add}</button></div></div>
-    {groups.map(g=><div key={g.id} className="card">
-      <div className="row" style={{justifyContent:"space-between",marginBottom:8}}><h2>{g.name}</h2><span className="muted small">{g.list.length} {t.pharmacists}</span></div>
-      {g.list.length>0 && <table><thead><tr><th>{t.name}</th><th>{t.empCode}</th><th>{t.title}</th><th>{t.moveTo}</th><th>{t.effective}</th><th>{t.status}</th><th></th></tr></thead><tbody>
-        {g.list.map(p=><tr key={p.id} style={{opacity:p.active?1:.55}}>
-          <td>{p.full_name}</td><td className="muted">{p.emp_code||"—"}</td>
-          <td><select value={p.title||"community pharmacist"} onChange={e=>updPh(p.id,{title:e.target.value})}><option value="community pharmacist">{t.tPh}</option><option value="pharmacy manager">{t.tPm}</option><option value="supervisor">{t.tSup}</option><option value="management">{t.tMgmt}</option></select></td>
-          <td><select value={mv[p.id]?.branch||""} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),branch:e.target.value}})}><option value="">—</option>{branches.filter(b=>b.id!==p.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></td>
-          <td className="row" style={{gap:6,flexWrap:"nowrap"}}><input type="date" value={mv[p.id]?.from||today()} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),from:e.target.value}})} style={{width:150}}/><button className="btn sec" style={{padding:"5px 10px"}} disabled={!mv[p.id]?.branch} onClick={()=>move(p)}>{t.move}</button></td>
-          <td><label className="check"><input type="checkbox" checked={p.active} onChange={e=>updPh(p.id,{active:e.target.checked})}/>{t.active}</label></td>
-          <td><button className="btn warn" style={{padding:"5px 10px"}} onClick={()=>removePh(p)}>{t.remove}</button></td></tr>)}
-      </tbody></table>}
-      <div className="row" style={{marginTop:10}}>
-        <input placeholder={t.pharmacistName} value={np[g.id]?.name||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),name:e.target.value}})} onKeyDown={e=>e.key==="Enter"&&addPh(g.id)} style={{maxWidth:240}}/>
-        <input placeholder={t.empCode} value={np[g.id]?.code||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),code:e.target.value}})} style={{maxWidth:130}}/>
-        <select value={np[g.id]?.title||"community pharmacist"} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),title:e.target.value}})} style={{maxWidth:180}}><option value="community pharmacist">{t.tPh}</option><option value="pharmacy manager">{t.tPm}</option><option value="supervisor">{t.tSup}</option><option value="management">{t.tMgmt}</option></select>
-        {g.id!=="none" && <input type="date" title={t.effective} value={np[g.id]?.from||thisMonth()} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),from:e.target.value}})} style={{maxWidth:160}}/>}
-        <button className="btn sec" onClick={()=>addPh(g.id)}>{t.addPharmacist}</button></div>
-    </div>)}
-  </div>;
-}
-
-/* ================= ACCOUNTS (admin) ================= */
-function Accounts({t,me,D,toast}){
-  const {branches,pharmacists}=D; const [profiles,setProfiles]=useState([]);
-  const load=useCallback(async()=>{ const r=await sb.from("profiles").select("*").order("created_at",{ascending:false}); setProfiles(r.data||[]); },[]);
-  useEffect(()=>{load()},[load]);
-  const upd=async(id,patch)=>{ const r=await sb.from("profiles").update(patch).eq("id",id); toast(r.error?r.error.message:t.saved); load(); };
-  const takenBy=pid=>profiles.find(p=>p.pharmacist_id===pid);
-  return <div className="grid"><h1>{t.accounts}</h1><div className="muted small">{t.linkHint}</div><div className="card">
-    <table><thead><tr><th>{t.name}</th><th>{t.email}</th><th>{t.role}</th><th>{t.linkedTo}</th><th>{t.tabs}</th><th>{t.scope}</th><th>{t.superAdmin}</th><th>{t.status}</th></tr></thead><tbody>
-      {profiles.map(p=>{ const linked=pharmacists.find(x=>x.id===p.pharmacist_id); return <tr key={p.id}>
-        <td>{p.full_name}{!p.pharmacist_id&&p.role==="pharmacist"&&<div><span className="chip bad">{t.unlinked}</span></div>}</td>
-        <td className="small" dir="ltr">{p.email||"—"}</td>
-        <td><select value={p.role} disabled={p.id===me.id} onChange={e=>upd(p.id,{role:e.target.value})}><option value="pharmacist">{t.pharmacist}</option><option value="supervisor">{t.supervisor}</option><option value="admin">{t.admin}</option></select></td>
-        <td><select value={p.pharmacist_id||""} onChange={e=>upd(p.id,{pharmacist_id:e.target.value||null})}><option value="">{t.notLinked}</option>{pharmacists.map(x=>{ const tb=takenBy(x.id); return <option key={x.id} value={x.id} disabled={tb&&tb.id!==p.id}>{x.full_name} — {bname(branches,x.branch_id)}{tb&&tb.id!==p.id?" ✓":""}</option>; })}</select>{linked&&<div className="muted small">{bname(branches,linked.branch_id)}</div>}</td>
-        <td><div className="row" style={{gap:8}}>{["dash","visits","hr","data","targets","team"].map(k=><label key={k} className="check small"><input type="checkbox" checked={(p.pages||[]).includes(k)} disabled={p.is_super&&p.role==="admin"} onChange={e=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:e.target.checked?[...cur,k]:cur}); }}/>{t[k]}</label>)}</div></td>
-        <td>{p.role==="supervisor"? <select value={p.branch_id||""} onChange={e=>upd(p.id,{branch_id:e.target.value||null})}><option value="">{t.allBranches}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select> : <span className="muted">—</span>}</td>
-        <td>{p.role==="admin"? <input type="checkbox" checked={!!p.is_super} disabled={p.id===me.id} onChange={e=>upd(p.id,{is_super:e.target.checked})}/> : <span className="muted">—</span>}</td>
-        <td><label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{t.active}</label></td></tr>; })}
-    </tbody></table></div></div>;
-}
-
-/* ================= SETTINGS (admin): weights/caps + checklist ================= */
-function Settings({t,D,E,reload,toast,lang}){
-  const q0=qOf(thisMonth()); const [year,setYear]=useState(q0.year); const [quarter,setQuarter]=useState(q0.quarter);
-  const [ed,setEd]=useState({}); const [ni,setNi]=useState({en:"",ar:""}); useEffect(()=>setEd({}),[year,quarter]);
-  const mk=`${year}-${String((quarter-1)*3+1).padStart(2,"0")}-01`; const kpis=E.kpisFor(mk);
-  const val=(k,f)=> ed[k.code]?.[f] ?? (k[f]??"");
-  const saveK=async()=>{ const rows=kpis.map(k=>({kpi_code:k.code,year,quarter,weight:Number(val(k,"weight"))||0,cap:val(k,"cap")===""?null:Number(val(k,"cap")),threshold:k.threshold==null?null:Number(val(k,"threshold")),active:ed[k.code]?.active??k.active}));
-    const r=await sb.from("kpi_periods").upsert(rows,{onConflict:"kpi_code,year,quarter"}); toast(r.error?r.error.message:t.saved); if(!r.error){ setEd({}); reload(); } };
-  const addItem=async()=>{ if(!ni.en.trim()) return; const r=await sb.from("visit_items").insert({text_en:ni.en.trim(),text_ar:(ni.ar||"").trim(),section_en:(ni.sen||"").trim()||null,section_ar:(ni.sar||"").trim()||null,points:Number(ni.pts)||1,sort:(Math.max(0,...D.visit_items.map(x=>x.sort))||0)+1}); toast(r.error?r.error.message:t.saved); setNi({en:"",ar:""}); reload(); };
-  const updItem=async(id,patch)=>{ const r=await sb.from("visit_items").update(patch).eq("id",id); toast(r.error?r.error.message:t.saved); reload(); };
-  const total=kpis.filter(k=>(ed[k.code]?.active??k.active)).reduce((a,k)=>a+Number(val(k,"weight")||0),0);
-  return <div className="grid"><h1>{t.settings}</h1>
-    <div className="card"><div className="row" style={{justifyContent:"space-between"}}><div className="row"><h2>{t.kpi}</h2><select value={year} onChange={e=>setYear(Number(e.target.value))} style={{width:"auto"}}>{[q0.year-1,q0.year,q0.year+1].map(y=><option key={y}>{y}</option>)}</select><select value={quarter} onChange={e=>setQuarter(Number(e.target.value))} style={{width:"auto"}}>{[1,2,3,4].map(q=><option key={q} value={q}>Q{q}</option>)}</select></div><span className={"chip "+(total===100?"":"bad")}>Σ {t.weight} = {total}</span></div>
-      <table><thead><tr><th>{t.kpi}</th><th>{t.level}</th><th className="num">{t.weight}</th><th className="num">{t.cap}</th><th className="num">%</th><th>{t.active}</th></tr></thead><tbody>
-        {kpis.map(k=><tr key={k.code}><td><strong>{kname(k,lang)}</strong><div className="muted small">{k.code} · {k.rule}</div></td><td>{k.level==="branch"?t.branch:t.pharmacist}</td>
-          <td><input type="number" className="num" value={val(k,"weight")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],weight:e.target.value}})}/></td>
-          <td>{k.rule==="all_or_none"?<span className="muted">—</span>:<input type="number" step="0.1" className="num" placeholder={t.noCap} value={val(k,"cap")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],cap:e.target.value}})}/>}</td>
-          <td>{k.threshold!=null?<input type="number" step="0.001" className="num" value={val(k,"threshold")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],threshold:e.target.value}})}/>:<span className="muted">—</span>}</td>
-          <td><input type="checkbox" checked={ed[k.code]?.active??k.active} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],active:e.target.checked}})}/></td></tr>)}
-      </tbody></table><div style={{marginTop:12}}><button className="btn" onClick={saveK}>{t.save} Q{quarter} {year}</button></div></div>
-    <div className="card grid"><h2>{t.checklist} <span className="muted small">Σ {D.visit_items.filter(i=>i.active).reduce((a,i)=>a+Number(i.points),0)}</span></h2>
-      <table><thead><tr><th>{t.sectionEn}</th><th>{t.itemEn}</th><th className="num">{t.points}</th><th>{t.active}</th></tr></thead><tbody>
-      {D.visit_items.map(i=><tr key={i.id} style={{opacity:i.active?1:.5}}><td className="small">{lang==="ar"&&i.section_ar?i.section_ar:i.section_en}</td><td>{lang==="ar"&&i.text_ar?i.text_ar:i.text_en}</td><td className="num">{i.points}</td><td><input type="checkbox" checked={i.active} onChange={e=>updItem(i.id,{active:e.target.checked})}/></td></tr>)}
-      </tbody></table>
-      <div className="row"><input placeholder={t.sectionEn} value={ni.sen||""} onChange={e=>setNi({...ni,sen:e.target.value})}/><input placeholder={t.sectionAr} dir="rtl" value={ni.sar||""} onChange={e=>setNi({...ni,sar:e.target.value})}/></div>
-      <div className="row"><input placeholder={t.itemEn} value={ni.en} onChange={e=>setNi({...ni,en:e.target.value})}/><input placeholder={t.itemAr} dir="rtl" value={ni.ar} onChange={e=>setNi({...ni,ar:e.target.value})}/><input type="number" placeholder={t.points} value={ni.pts||""} onChange={e=>setNi({...ni,pts:e.target.value})} style={{maxWidth:100}}/><button className="btn sec" onClick={addItem}>{t.add}</button></div></div>
-  </div>;
-}
-
 /* ================= PROFILE (everyone) ================= */
 function Profile({t,me,D,lang,toast,setMe}){
   const rec=D.pharmacists.find(p=>p.id===me.pharmacist_id); const [phone,setPhone]=useState(me.phone||rec?.phone||""); const [docs,setDocs]=useState([]); const [photo,setPhoto]=useState(null); const [busy,setBusy]=useState(false); const [kind,setKind]=useState("cv");
@@ -765,8 +672,8 @@ function App(){
   if(!me||!D) return <div className="empty">…</div>;
   const linked = me.role!=="pharmacist" || !!me.pharmacist_id;
   // tab visibility: super admin sees everything; others follow the page_access matrix (Admin → Settings)
-  const can=k=> me.is_super&&me.role==="admin"? true : (k==="accounts"||k==="settings")? false : (me.pages||[]).includes(k==="visitReports"?"visits":k);
-  const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["data",t.data,["data","targets"]],["admin",t.admin2,["team","accounts","settings"]]];
+  const can=k=> me.is_super&&me.role==="admin"? true : (me.pages||[]).includes(k==="visitReports"?"visits":k);
+  const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["data",t.data,["data","targets"]]];
   const tabs=GROUPS.filter(g=>g[2].some(can)).map(g=>[g[0],g[1]]);
   const firstAllowed=GROUPS.flatMap(g=>g[2]).find(can);
   const group=GROUPS.find(g=>g[2].includes(page))?.[0]||""; const subs=(GROUPS.find(g=>g[0]===group)?.[2]||[]).filter(can);
@@ -774,8 +681,7 @@ function App(){
   return <>
     <div className="bar">
       <a className="home" href="./index.html" title={t.home}><span style={{fontSize:18}}>‹</span><div className="brand">{t.app} <span>{t.kpi}</span></div></a>
-      <div className="tabs">{linked && tabs.map(([k,l])=><button key={k} className={"tab"+(group===k?" on":"")} onClick={()=>setPage(GROUPS.find(g=>g[0]===k)[2].filter(can)[0])}>{l}</button>)}
-        {linked && <a className="tab" href="./hr.html">{t.hr}</a>}</div>
+      <div className="tabs">{linked && tabs.map(([k,l])=><button key={k} className={"tab"+(group===k?" on":"")} onClick={()=>setPage(GROUPS.find(g=>g[0]===k)[2].filter(can)[0])}>{l}</button>)}</div>
       <button className="who" style={{background:"transparent",border:0,cursor:"pointer"}} onClick={()=>setPage("profile")} title={t.profile}>{me.full_name} · {me.is_super?t.superAdmin:(t[me.role]||me.role)}</button>
       <button className="ghost" onClick={()=>setLang(lang==="en"?"ar":"en")}>{t.lang}</button><button className="ghost" onClick={()=>sb.auth.signOut()}>{t.out}</button></div>
     <div className="wrap">{!linked&&page!=="profile" ? <div className="card empty">{t.notLinkedMsg}<div style={{marginTop:10}}><button className="btn sec" onClick={()=>setPage("profile")}>{t.profile}</button></div></div> : !firstAllowed ? <div className="card empty">{t.noAccess}</div> : (page!=="profile"&&!can(page)) ? (setPage(firstAllowed),null) : <>
@@ -786,9 +692,7 @@ function App(){
       {page==="profile" && <Profile {...props} setMe={setMe}/>}
       {page==="targets"  && can("targets")  && <Targets {...props}/>}
       {page==="data"     && can("data")     && <Data {...props}/>}
-      {page==="team"     && can("team")     && <Team {...props}/>}
-      {page==="accounts" && can("accounts") && <Accounts {...props}/>}
-      {page==="settings" && can("settings") && <Settings {...props}/>}</>}</div>
+</>}</div>
     <Toast msg={msg}/>
   </>;
 }
