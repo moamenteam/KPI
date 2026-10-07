@@ -99,6 +99,36 @@ td.num,th.num{text-align:end;font-variant-numeric:tabular-nums}
 </head>
 <body>
 <div id="root"></div>
+<style>
+html[data-ui="soft"] .card,html[data-ui="soft"] .lv{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
+html[data-ui="3d"] body{background:radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb,var(--teal) 12%,#fff), var(--paper))}
+html[data-ui="3d"] .top{background:linear-gradient(135deg,var(--teal),color-mix(in srgb,var(--teal) 62%,#000));box-shadow:0 8px 22px -10px rgba(0,0,0,.45)}
+html[data-ui="3d"] .card,html[data-ui="3d"] .lv{border:0;border-radius:18px;background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--teal) 4%,#fff));
+  box-shadow:0 14px 28px -18px rgba(20,40,38,.55),0 2px 6px rgba(20,40,38,.08)}
+html[data-ui="3d"] .btn{box-shadow:0 4px 0 color-mix(in srgb,var(--teal) 62%,#000),0 8px 16px -8px rgba(0,0,0,.5)}
+html[data-ui="3d"] .btn:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--teal) 62%,#000)}
+html[data-ui="3d"] .st .dot{box-shadow:0 4px 10px -5px rgba(0,0,0,.5)}
+</style>
+<script>
+/* shared look: colour theme + interface style set on the home page */
+(function(){
+  try{
+    var c = supabase.createClient("https://occubmnoepgdysbyacgj.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc");
+    c.from("app_settings").select("value").eq("key","brand").maybeSingle().then(function(r){
+      var b = r && r.data && r.data.value; if(!b) return;
+      var T = {teal:["#0F6B63","#E3F0EE","#14383A"],navy:["#1F3A68","#E5EAF4","#16243D"],olive:["#4F6B2A","#ECF1E1","#2C3A1A"],
+               plum:["#6B2F56","#F3E6EE","#351828"],charcoal:["#37474F","#E8EDEF","#1E2A30"],sand:["#9A6B2F","#F6EDE0","#3C2A14"]};
+      var p = T[b.preset];
+      var primary = b.preset==="custom" ? (b.primary||"#0F6B63") : (p?p[0]:"#0F6B63");
+      var st = document.documentElement.style;
+      st.setProperty("--teal", primary);
+      st.setProperty("--teal2", p ? p[1] : "color-mix(in srgb,"+primary+" 14%,#fff)");
+      st.setProperty("--ink", p ? p[2] : "#14383A");
+      document.documentElement.dataset.ui = b.ui || "flat";
+    }).catch(function(){});
+  }catch(e){}
+})();
+</script>
 <script type="text/babel" data-presets="react">
 const {useState,useEffect,useMemo,useCallback,useContext,createContext} = React;
 
@@ -782,7 +812,6 @@ function App(){
       <div className="sp"/>
       {me && <span className="small" style={{opacity:.9}}>{me.full_name}</span>}
       <a href="./index.html">{tr("الرئيسية","Home")}</a>
-      <a href="./kpi.html">{tr("مؤشرات الأداء","KPI")}</a>
       <button className="lnk" onClick={()=>setLang(lang==="ar"?"en":"ar")}>{lang==="ar"?"EN":"ع"}</button>
       {session && <button className="lnk" onClick={()=>setPwOpen(true)}>{tr("كلمة المرور","Password")}</button>}
       {session && <button className="lnk" onClick={()=>sb.auth.signOut()}>{tr("خروج","Sign out")}</button>}
