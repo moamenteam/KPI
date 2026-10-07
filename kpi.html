@@ -127,6 +127,37 @@ window.addEventListener("unhandledrejection",e=>{document.getElementById("root")
   .vform input[readonly]{background:#F4F7F5}
   @media print{ .bar,.noprint,.btn{display:none!important} body{background:#fff} .wrap{max-width:none;padding:0} .card{break-inside:avoid;border-color:#999;margin-bottom:8px;padding:10px} input,select,textarea{border:0;border-bottom:1px solid #999;border-radius:0;padding:2px 4px} h1{font-size:18px} h2{font-size:14px} table{font-size:12px} }
 </style>
+<style>
+html[data-ui="soft"] .card{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
+html[data-ui="3d"] body{background:radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb,var(--teal) 12%,#fff), var(--paper))}
+html[data-ui="3d"] .bar{background:linear-gradient(135deg,var(--ink),color-mix(in srgb,var(--teal) 55%,#000));box-shadow:0 8px 22px -10px rgba(0,0,0,.45)}
+html[data-ui="3d"] .card{border:0;border-radius:18px;background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--teal) 4%,#fff));
+  box-shadow:0 14px 28px -18px rgba(20,40,38,.55),0 2px 6px rgba(20,40,38,.08)}
+html[data-ui="3d"] .mo{box-shadow:0 18px 34px -20px rgba(0,0,0,.6);background:linear-gradient(135deg,var(--ink),color-mix(in srgb,var(--teal) 60%,#000))}
+html[data-ui="3d"] .btn{box-shadow:0 4px 0 color-mix(in srgb,var(--teal) 62%,#000),0 8px 16px -8px rgba(0,0,0,.5)}
+html[data-ui="3d"] .btn:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--teal) 62%,#000)}
+html[data-ui="3d"] .subtabs button.on{box-shadow:0 4px 10px -4px color-mix(in srgb,var(--teal) 70%,#000)}
+</style>
+<script>
+/* shared look: colour theme + interface style set on the home page */
+(function(){
+  try{
+    var c = supabase.createClient("https://occubmnoepgdysbyacgj.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc");
+    c.from("app_settings").select("value").eq("key","brand").maybeSingle().then(function(r){
+      var b = r && r.data && r.data.value; if(!b) return;
+      var T = {teal:["#0F6B63","#E3F0EE","#14383A"],navy:["#1F3A68","#E5EAF4","#16243D"],olive:["#4F6B2A","#ECF1E1","#2C3A1A"],
+               plum:["#6B2F56","#F3E6EE","#351828"],charcoal:["#37474F","#E8EDEF","#1E2A30"],sand:["#9A6B2F","#F6EDE0","#3C2A14"]};
+      var p = T[b.preset];
+      var primary = b.preset==="custom" ? (b.primary||"#0F6B63") : (p?p[0]:"#0F6B63");
+      var st = document.documentElement.style;
+      st.setProperty("--teal", primary);
+      st.setProperty("--teal-soft", p ? p[1] : "color-mix(in srgb,"+primary+" 14%,#fff)");
+      st.setProperty("--ink", p ? p[2] : "#14383A");
+      document.documentElement.dataset.ui = b.ui || "flat";
+    }).catch(function(){});
+  }catch(e){}
+})();
+</script>
 <script type="text/babel" data-presets="react">
 /* ================= CONFIG ================= */
 const SUPABASE_URL = "https://occubmnoepgdysbyacgj.supabase.co";
@@ -331,33 +362,6 @@ function Dashboard({t,me,D,E,lang}){
     {visitCard}
     {extra}
     </>}
-  </div>;
-}
-
-/* ================= TARGETS (admin) ================= */
-function Targets({t,me,D,E,reload,toast,lang}){
-  const q0=qOf(thisMonth()); const [year,setYear]=useState(q0.year); const [quarter,setQuarter]=useState(q0.quarter); const [tab,setTab]=useState("branch");
-  const [edits,setEdits]=useState({}); // key -> {m1,m2,m3}
-  useEffect(()=>setEdits({}),[year,quarter,tab]);
-  const key=(code,id)=>code+"|"+id;
-  const row=(code,bid,pid)=>{ const k=key(code,bid||pid); if(edits[k]) return edits[k]; const r=D.targets.find(x=>x.kpi_code===code&&x.year===year&&x.quarter===quarter&&(bid?x.branch_id===bid:x.pharmacist_id===pid)); return r?{m1:r.m1,m2:r.m2,m3:r.m3}:{m1:"",m2:"",m3:""}; };
-  const setCell=(code,id,m,v)=>setEdits({...edits,[key(code,id)]:{...row(code,tab==="branch"?id:null,tab==="branch"?null:id),[m]:v}});
-  const save=async()=>{ const rows=Object.entries(edits).map(([k,v])=>{ const [code,id]=k.split("|"); return {kpi_code:code,year,quarter,branch_id:tab==="branch"?id:null,pharmacist_id:tab==="branch"?null:id,m1:Number(v.m1)||0,m2:Number(v.m2)||0,m3:Number(v.m3)||0}; });
-    if(!rows.length) return; const r=await sb.from("targets").upsert(rows,{onConflict:"kpi_code,year,quarter,branch_id,pharmacist_id"}); toast(r.error?r.error.message:t.saved); if(!r.error){ setEdits({}); reload(); } };
-  const kp=E.kpisFor(`${year}-${String((quarter-1)*3+1).padStart(2,"0")}-01`).filter(k=>k.active&&k.level===(tab==="branch"?"branch":"pharmacist")&&k.rule!=="visit"&&k.code!=="expire");
-  const subjects= tab==="branch"? D.branches : D.pharmacists.filter(scored);
-  const mlabels=[0,1,2].map(i=>new Date(year,(quarter-1)*3+i,1).toLocaleDateString(lang==="ar"?"ar-SA":"en-GB",{month:"short"}));
-  return <div className="grid">
-    <div className="row" style={{justifyContent:"space-between"}}><h1>{t.targets}</h1><div className="row"><select value={year} onChange={e=>setYear(Number(e.target.value))} style={{width:"auto"}}>{[q0.year-1,q0.year,q0.year+1].map(y=><option key={y}>{y}</option>)}</select><select value={quarter} onChange={e=>setQuarter(Number(e.target.value))} style={{width:"auto"}}>{[1,2,3,4].map(q=><option key={q} value={q}>Q{q}</option>)}</select></div></div>
-    <div className="subtabs"><button className={tab==="branch"?"on":""} onClick={()=>setTab("branch")}>{t.branchKpis}</button><button className={tab==="ph"?"on":""} onClick={()=>setTab("ph")}>{t.phKpis}</button></div>
-    {kp.map(k=><div key={k.code} className="card"><h2 style={{marginBottom:8}}>{kname(k,lang)} <span className="muted small">{k.rule==="rate"?`(${t.regRate}: ${k.threshold*100}% ${t.noCap.toLowerCase()} — override optional)`:""}</span></h2>
-      <table><thead><tr><th>{tab==="branch"?t.branch:t.pharmacist}</th>{mlabels.map(m=><th key={m} className="num">{m}</th>)}<th className="num">{t.qTotal}</th></tr></thead><tbody>
-        {subjects.map(s=>{ const r=row(k.code,tab==="branch"?s.id:null,tab==="branch"?null:s.id); const tot=["m1","m2","m3"].reduce((a,m)=>a+(Number(r[m])||0),0);
-          return <tr key={s.id}><td>{s.full_name||s.name}{tab==="ph"&&<div className="muted small">{bname(D.branches,s.branch_id)}</div>}</td>
-            {["m1","m2","m3"].map(m=><td key={m}><input type="number" step="any" className="num" value={r[m]} readOnly={!me.is_super} onChange={e=>setCell(k.code,s.id,m,e.target.value)} placeholder={k.rule==="rate"?String(k.threshold):"0"}/></td>)}
-            <td className="num">{k.rule==="rate"?"":fmt(tot)}</td></tr>; })}
-      </tbody></table></div>)}
-    {me.is_super ? <div><button className="btn" onClick={save} disabled={!Object.keys(edits).length}>{t.save}</button></div> : <div className="muted small">{t.targetsRO}</div>}
   </div>;
 }
 
@@ -673,7 +677,7 @@ function App(){
   const linked = me.role!=="pharmacist" || !!me.pharmacist_id;
   // tab visibility: super admin sees everything; others follow the page_access matrix (Admin → Settings)
   const can=k=> me.is_super&&me.role==="admin"? true : (me.pages||[]).includes(k);
-  const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["data",t.data,["data","targets"]]];
+  const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["data",t.data,["data"]]];
   const tabs=GROUPS.filter(g=>g[2].some(can)).map(g=>[g[0],g[1]]);
   const firstAllowed=GROUPS.flatMap(g=>g[2]).find(can);
   const group=GROUPS.find(g=>g[2].includes(page))?.[0]||""; const subs=(GROUPS.find(g=>g[0]===group)?.[2]||[]).filter(can);
@@ -691,7 +695,6 @@ function App(){
       {page==="visits"   && can("visits")   && <Visits {...props}/>}
       {page==="visitReports" && can("visitReports") && <VisitReports {...props}/>}
       {page==="profile" && <Profile {...props} setMe={setMe}/>}
-      {page==="targets"  && can("targets")  && <Targets {...props}/>}
       {page==="data"     && can("data")     && <Data {...props}/>}
 </>}</div>
     <Toast msg={msg}/>
