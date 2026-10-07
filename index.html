@@ -72,6 +72,20 @@ td input,td select{padding:6px 8px}
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));inset-inline-start:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;z-index:60;max-width:90vw}
 [dir=rtl] .toast{transform:translateX(50%)}
 footer{max-width:1060px;margin:0 auto;padding:0 18px 36px;color:var(--muted);font-size:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+/* ---- surface styles ---- */
+html[data-ui="soft"] .card,html[data-ui="soft"] .app{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
+html[data-ui="3d"] body{background:radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb,var(--teal) 14%,#fff), var(--paper))}
+html[data-ui="3d"] header{background:linear-gradient(135deg,var(--teal),color-mix(in srgb,var(--teal) 62%,#000));box-shadow:0 8px 22px -10px rgba(0,0,0,.45)}
+html[data-ui="3d"] .card,html[data-ui="3d"] .app{border:0;border-radius:18px;background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--teal) 4%,#fff));
+  box-shadow:0 14px 28px -18px rgba(20,40,38,.55),0 2px 6px rgba(20,40,38,.08)}
+html[data-ui="3d"] .app{transition:transform .15s ease,box-shadow .15s ease}
+html[data-ui="3d"] .app:hover{transform:translateY(-3px);box-shadow:0 22px 38px -20px rgba(20,40,38,.6)}
+html[data-ui="3d"] .app .ic{box-shadow:inset 0 -2px 0 rgba(0,0,0,.08),0 6px 12px -6px color-mix(in srgb,var(--teal) 60%,#000)}
+html[data-ui="3d"] .btn{box-shadow:0 4px 0 color-mix(in srgb,var(--teal) 62%,#000),0 8px 16px -8px rgba(0,0,0,.5)}
+html[data-ui="3d"] .btn:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--teal) 62%,#000)}
+html[data-ui="3d"] .btn.sec{box-shadow:0 3px 0 color-mix(in srgb,var(--teal) 22%,#000)}
+html[data-ui="3d"] .subtabs button.on{box-shadow:0 4px 10px -4px color-mix(in srgb,var(--teal) 70%,#000)}
+@media (prefers-reduced-motion:reduce){html[data-ui="3d"] .app{transition:none}}
 footer button{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:12px;padding:0}
 footer button:hover{color:var(--teal)}
 .modal{position:fixed;inset:0;background:rgba(20,40,38,.5);display:grid;place-items:center;padding:16px;z-index:70}
@@ -109,8 +123,11 @@ const THEMES = {
 };
 const themeName = (tr,k) => ({teal:tr("أخضر مزرق","Teal"), navy:tr("كحلي","Navy"), olive:tr("زيتوني","Olive"),
   plum:tr("عنابي","Plum"), charcoal:tr("رمادي داكن","Charcoal"), sand:tr("رملي","Sand"), custom:tr("لون مخصص","Custom colour")}[k]||k);
+const UI_STYLES=["flat","soft","3d"];
+const uiName=(tr,k)=>({flat:tr("مسطّح","Flat"), soft:tr("ناعم","Soft"), "3d":tr("ثلاثي الأبعاد","3D")}[k]||k);
 function applyBrand(b){
   const st=document.documentElement.style;
+  document.documentElement.dataset.ui=(b&&b.ui)||"flat";
   const preset=(b&&b.preset)||"teal";
   const c=THEMES[preset];
   const primary = preset==="custom" ? ((b&&b.primary)||"#0F6B63") : c[0];
@@ -268,77 +285,114 @@ function Team({tr,D,reload,toast,lang}){
   </div>;
 }
 
-/* ================= ACCOUNTS ================= */
-function Accounts({tr,me,D,toast}){
-  const {branches,pharmacists}=D; const [profiles,setProfiles]=useState([]);
-  const load=useCallback(async()=>{ const r=await sb.from("profiles").select("*").order("created_at",{ascending:false}); setProfiles(r.data||[]); },[]);
+/* ================= ACCOUNTS & PERMISSIONS (KPI + HR + future apps) ================= */
+const KPI_TABS = [["dash","لوحة المتابعة","Dashboard"],["visits","نموذج الزيارة","Visit form"],["visitReports","تقارير الزيارات","Visit reports"],["data","البيانات","Data"]];
+
+function Access({tr,me,D,toast}){
+  const {branches,pharmacists}=D;
+  const [profiles,setProfiles]=useState([]);
+  const [roles,setRoles]=useState({});
+  const [open,setOpen]=useState("");
+  const [q,setQ]=useState("");
+  const load=useCallback(async()=>{
+    const [pr,ro]=await Promise.all([sb.from("profiles").select("*").order("full_name"), sb.from("hr_roles").select("*")]);
+    setProfiles(pr.data||[]); const m={}; (ro.data||[]).forEach(r=>m[r.profile_id]=r); setRoles(m);
+  },[]);
   useEffect(()=>{ load(); },[load]);
+
   const upd=async(id,patch)=>{ const r=await sb.from("profiles").update(patch).eq("id",id); toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); load(); };
-  const takenBy=pid=>profiles.find(p=>p.pharmacist_id===pid);
-  const pages=[["dash",tr("لوحة المتابعة","Dashboard")],["visits",tr("نموذج الزيارة","Visit form")],["visitReports",tr("تقارير الزيارات","Visit reports")],["data",tr("البيانات","Data")],["targets",tr("الأهداف","Targets")]];
   const del=async p=>{ if(p.id===me.id) return;
     if(!confirm(tr("حذف حساب "+p.full_name+"؟ سيفقد الدخول نهائيًا.","Delete the account of "+p.full_name+"? They will lose access permanently."))) return;
     const r=await sb.from("profiles").delete().eq("id",p.id);
     toast(r.error?r.error.message:tr("تم حذف الحساب — احذفه أيضًا من Supabase ← Authentication","Account deleted — also delete it in Supabase → Authentication"), !!r.error); load(); };
-  return <div className="grid">
-    <div className="muted small">{tr("هنا يتم ربط حسابات الدخول بسجلات الصيادلة وتحديد تبويبات مؤشرات الأداء. صلاحيات الموارد البشرية تُضبط داخل صفحة الموارد البشرية.","Login accounts are linked to pharmacist records here, and KPI tabs are set here. HR permissions are set inside the HR page.")}</div>
-    <div className="card tw">
-      <table><thead><tr><th>{tr("الاسم","Name")}</th><th>{tr("البريد","Email")}</th><th>{tr("الدور","Role")}</th><th>{tr("الصيدلي المرتبط","Linked pharmacist")}</th><th>{tr("تبويبات مؤشرات الأداء","KPI tabs")}</th><th>{tr("النطاق","Scope")}</th><th>{tr("مدير النظام","Super admin")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead><tbody>
-        {profiles.map(p=>{ const linked=pharmacists.find(x=>x.id===p.pharmacist_id); return <tr key={p.id}>
-          <td>{p.full_name}{!p.pharmacist_id&&p.role==="pharmacist"&&<div><span className="chip bad">{tr("غير مرتبط","Unlinked")}</span></div>}</td>
-          <td className="small" dir="ltr">{p.email||"—"}</td>
-          <td><select value={p.role} disabled={p.id===me.id} onChange={e=>upd(p.id,{role:e.target.value})}>
-            <option value="pharmacist">{tr("صيدلي","Pharmacist")}</option><option value="supervisor">{tr("مشرف","Supervisor")}</option><option value="admin">{tr("إدارة","Management")}</option></select></td>
-          <td><select value={p.pharmacist_id||""} onChange={e=>upd(p.id,{pharmacist_id:e.target.value||null})}>
-            <option value="">{tr("— غير مرتبط —","— not linked —")}</option>
-            {pharmacists.map(x=>{ const tb=takenBy(x.id); return <option key={x.id} value={x.id} disabled={tb&&tb.id!==p.id}>{x.full_name} — {bname(branches,x.branch_id)}</option>; })}</select>
-            {linked&&<div className="muted small">{bname(branches,linked.branch_id)}</div>}</td>
-          <td><div className="row" style={{gap:8}}>{pages.map(([k,l])=><label key={k} className="check small"><input type="checkbox" checked={(p.pages||[]).includes(k)} disabled={p.is_super&&p.role==="admin"} onChange={e=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:e.target.checked?[...cur,k]:cur}); }}/>{l}</label>)}</div></td>
-          <td>{p.role==="supervisor"? <select value={p.branch_id||""} onChange={e=>upd(p.id,{branch_id:e.target.value||null})}><option value="">{tr("كل الفروع","All branches")}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select> : <span className="muted">—</span>}</td>
-          <td>{p.role==="admin"? <input type="checkbox" checked={!!p.is_super} disabled={p.id===me.id} onChange={e=>upd(p.id,{is_super:e.target.checked})}/> : <span className="muted">—</span>}</td>
-          <td><label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{tr("فعّال","Active")}</label></td>
-          <td>{p.id!==me.id && <button className="btn warn" style={{padding:"5px 10px"}} onClick={()=>del(p)}>{tr("حذف","Delete")}</button>}</td></tr>; })}
-      </tbody></table></div>
-  </div>;
-}
+  const takenBy=pid=>profiles.find(p=>p.pharmacist_id===pid);
 
-/* ================= HR PERMISSIONS ================= */
-function HrRoles({tr,toast}){
-  const [people,setPeople]=useState([]); const [roles,setRoles]=useState({}); const [q,setQ]=useState("");
-  const load=useCallback(async()=>{
-    const [pe,ro]=await Promise.all([sb.rpc("hr_people"), sb.from("hr_roles").select("*")]);
-    setPeople(pe.data||[]); const m={}; (ro.data||[]).forEach(r=>m[r.profile_id]=r); setRoles(m);
-  },[]);
-  useEffect(()=>{ load(); },[load]);
-  const cur=pid=>({is_hr:!!(roles[pid]&&roles[pid].is_hr), is_ceo:!!(roles[pid]&&roles[pid].is_ceo),
-    pages: (roles[pid]&&Array.isArray(roles[pid].pages)) ? roles[pid].pages : TAB_DEFAULT});
-  const save=async(pid,patch)=>{ const r={profile_id:pid,...cur(pid),...patch};
+  const hrCur=pid=>({is_hr:!!(roles[pid]&&roles[pid].is_hr), is_ceo:!!(roles[pid]&&roles[pid].is_ceo),
+    pages:(roles[pid]&&Array.isArray(roles[pid].pages))?roles[pid].pages:TAB_DEFAULT});
+  const hrSave=async(pid,patch)=>{ const r={profile_id:pid,...hrCur(pid),...patch};
     const {error}=await sb.from("hr_roles").upsert(r,{onConflict:"profile_id"});
     toast(error?error.message:tr("تم الحفظ","Saved"), !!error); load(); };
-  const setHr=(pid,v)=>{ const pg=new Set(cur(pid).pages); if(v) ["approvals",...STAFF_TABS].forEach(k=>pg.add(k)); else STAFF_TABS.forEach(k=>pg.delete(k)); save(pid,{is_hr:v,pages:[...pg]}); };
-  const setCeo=(pid,v)=>{ const pg=new Set(cur(pid).pages); if(v) pg.add("approvals"); save(pid,{is_ceo:v,pages:[...pg]}); };
-  const setTab=(pid,k,v)=>{ const pg=new Set(cur(pid).pages); v?pg.add(k):pg.delete(k); save(pid,{pages:[...pg]}); };
-  const list=people.filter(p=>!q || (p.full_name||"").toLowerCase().includes(q.toLowerCase()) || (p.branch||"").toLowerCase().includes(q.toLowerCase()));
+  const setHr=(pid,v)=>{ const pg=new Set(hrCur(pid).pages); if(v) ["approvals",...STAFF_TABS].forEach(k=>pg.add(k)); else STAFF_TABS.forEach(k=>pg.delete(k)); hrSave(pid,{is_hr:v,pages:[...pg]}); };
+  const setCeo=(pid,v)=>{ const pg=new Set(hrCur(pid).pages); if(v) pg.add("approvals"); hrSave(pid,{is_ceo:v,pages:[...pg]}); };
+  const setHrTab=(pid,k,v)=>{ const pg=new Set(hrCur(pid).pages); v?pg.add(k):pg.delete(k); hrSave(pid,{pages:[...pg]}); };
+  const setKpiTab=(p,k,v)=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:v?[...cur,k]:cur}); };
+
+  const list=profiles.filter(p=>!q || (p.full_name||"").toLowerCase().includes(q.toLowerCase()) || (p.email||"").toLowerCase().includes(q.toLowerCase()));
   const cb={width:18,height:18};
-  return <div className="card">
-    <div className="row" style={{justifyContent:"space-between",marginBottom:6}}>
-      <h2 style={{margin:0}}>{tr("صلاحيات الموارد البشرية","HR permissions")}</h2>
-      <input style={{maxWidth:220}} placeholder={tr("بحث بالاسم أو الفرع","Search name or branch")} value={q} onChange={e=>setQ(e.target.value)}/>
+  const roleName=r=>r==="admin"?tr("إدارة","Management"):r==="supervisor"?tr("مشرف","Supervisor"):tr("صيدلي","Pharmacist");
+
+  return <div className="grid">
+    <div className="card">
+      <div className="row" style={{justifyContent:"space-between"}}>
+        <div><h2 style={{margin:0}}>{tr("الحسابات والصلاحيات","Accounts & permissions")}</h2>
+          <span className="small muted">{tr("حساب واحد لكل موظف، ومن هنا تُحدَّد صلاحياته في كل نظام.","One account per employee; their access to every system is set here.")}</span></div>
+        <input style={{maxWidth:240}} placeholder={tr("بحث بالاسم أو البريد","Search name or email")} value={q} onChange={e=>setQ(e.target.value)}/>
+      </div>
     </div>
-    <p className="small muted" style={{marginTop:0}}>{tr(
-      "الموظف يرى بياناته فقط في «إجازاتي» و«طلباتي» و«راتبي». التبويبات المظللة تفتح بيانات كل الموظفين. مدير الصيدلية والمشرف يُحدَّدان تلقائيًا من المسمى الوظيفي.",
-      "Employees only ever see their own data in My leave, My requests and My salary. The shaded tabs open everyone's data. Pharmacy manager and supervisor come automatically from the job title.")}</p>
-    <div className="tw"><table>
-      <thead><tr><th>{tr("الحساب","Account")}</th><th>{tr("موارد بشرية","HR")}</th><th>{tr("رئيس تنفيذي","CEO")}</th>
-        {TAB_KEYS.map(k=><th key={k} style={{background:STAFF_TABS.includes(k)?"var(--amber2)":undefined}}>{hrTabName(tr,k)}</th>)}</tr></thead>
-      <tbody>{list.map(p=>{ const c=cur(p.id); return <tr key={p.id}>
-        <td>{p.full_name}<div className="small muted">{[p.title,p.branch].filter(Boolean).join(" / ")||"—"}</div></td>
-        <td><input type="checkbox" style={cb} checked={c.is_hr} onChange={e=>setHr(p.id,e.target.checked)}/></td>
-        <td><input type="checkbox" style={cb} checked={c.is_ceo} onChange={e=>setCeo(p.id,e.target.checked)}/></td>
-        {TAB_KEYS.map(k=><td key={k} style={{textAlign:"center",background:STAFF_TABS.includes(k)?"#FFFBF2":undefined}}>
-          <input type="checkbox" style={cb} checked={c.pages.includes(k)} onChange={e=>setTab(p.id,k,e.target.checked)}/></td>)}
-      </tr>; })}</tbody>
-    </table></div>
+
+    {list.map(p=>{ const linked=pharmacists.find(x=>x.id===p.pharmacist_id); const hc=hrCur(p.id); const isOpen=open===p.id;
+      return <div key={p.id} className="card">
+        <div className="row" style={{justifyContent:"space-between",cursor:"pointer"}} onClick={()=>setOpen(isOpen?"":p.id)}>
+          <div>
+            <b>{p.full_name}</b> {!p.active && <span className="chip bad">{tr("موقوف","Disabled")}</span>}
+            {p.is_super && <span className="chip">{tr("مدير النظام","Super admin")}</span>}
+            <div className="small muted" dir="ltr">{p.email||"—"}</div>
+            <div className="small muted">{roleName(p.role)}{linked?" · "+linked.full_name+" · "+bname(branches,linked.branch_id):" · "+tr("غير مرتبط","unlinked")}
+              {hc.is_hr?" · HR":""}{hc.is_ceo?" · CEO":""}</div>
+          </div>
+          <button className="btn sec">{isOpen?tr("إغلاق","Close"):tr("الصلاحيات","Permissions")}</button>
+        </div>
+
+        {isOpen && <div className="grid" style={{marginTop:14}}>
+          <div className="row">
+            <label className="f">{tr("الدور","Role")}
+              <select value={p.role} disabled={p.id===me.id} onChange={e=>upd(p.id,{role:e.target.value})}>
+                <option value="pharmacist">{tr("صيدلي","Pharmacist")}</option>
+                <option value="supervisor">{tr("مشرف","Supervisor")}</option>
+                <option value="admin">{tr("إدارة","Management")}</option></select></label>
+            <label className="f">{tr("السجل المرتبط","Linked staff record")}
+              <select value={p.pharmacist_id||""} onChange={e=>upd(p.id,{pharmacist_id:e.target.value||null})}>
+                <option value="">{tr("— غير مرتبط —","— not linked —")}</option>
+                {pharmacists.map(x=>{ const tb=takenBy(x.id); return <option key={x.id} value={x.id} disabled={tb&&tb.id!==p.id}>{x.full_name} — {bname(branches,x.branch_id)}</option>; })}</select></label>
+            {p.role==="supervisor" && <label className="f">{tr("النطاق","Scope")}
+              <select value={p.branch_id||""} onChange={e=>upd(p.id,{branch_id:e.target.value||null})}>
+                <option value="">{tr("كل الفروع","All branches")}</option>
+                {branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>}
+          </div>
+
+          <div className="row" style={{gap:18}}>
+            <label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{tr("فعّال","Active")}</label>
+            {p.role==="admin" && <label className="check"><input type="checkbox" checked={!!p.is_super} disabled={p.id===me.id} onChange={e=>upd(p.id,{is_super:e.target.checked})}/>{tr("مدير النظام","Super admin")}</label>}
+            {p.id!==me.id && <button className="btn warn" onClick={()=>del(p)}>{tr("حذف الحساب","Delete account")}</button>}
+          </div>
+
+          <div style={{borderTop:"1px solid var(--line)",paddingTop:12}}>
+            <b>{tr("مؤشرات الأداء","KPI")}</b>
+            <div className="row" style={{gap:14,marginTop:8}}>
+              {KPI_TABS.map(([k,ar,en])=><label key={k} className="check small">
+                <input type="checkbox" style={cb} checked={(p.pages||[]).includes(k)} disabled={!!p.is_super} onChange={e=>setKpiTab(p,k,e.target.checked)}/>{tr(ar,en)}</label>)}
+            </div>
+          </div>
+
+          <div style={{borderTop:"1px solid var(--line)",paddingTop:12}}>
+            <b>{tr("الموارد البشرية","HR")}</b>
+            <div className="row" style={{gap:14,marginTop:8}}>
+              <label className="check small"><input type="checkbox" style={cb} checked={hc.is_hr} onChange={e=>setHr(p.id,e.target.checked)}/>{tr("موظف موارد بشرية","HR officer")}</label>
+              <label className="check small"><input type="checkbox" style={cb} checked={hc.is_ceo} onChange={e=>setCeo(p.id,e.target.checked)}/>{tr("رئيس تنفيذي","CEO")}</label>
+            </div>
+            <div className="row" style={{gap:14,marginTop:8}}>
+              {TAB_KEYS.map(k=><label key={k} className="check small" style={STAFF_TABS.includes(k)?{background:"var(--amber2)",borderRadius:8,padding:"2px 8px"}:null}>
+                <input type="checkbox" style={cb} checked={hc.pages.includes(k)} onChange={e=>setHrTab(p.id,k,e.target.checked)}/>{hrTabName(tr,k)}</label>)}
+            </div>
+            <div className="small muted" style={{marginTop:6}}>{tr("المظلّل بالأصفر يفتح بيانات كل الموظفين. مدير الصيدلية والمشرف يُحدَّدان تلقائيًا من المسمى الوظيفي.","The highlighted tabs open everyone's data. Pharmacy manager and supervisor come automatically from the job title.")}</div>
+          </div>
+
+          <div style={{borderTop:"1px solid var(--line)",paddingTop:12,opacity:.55}}>
+            <b>{tr("التسويق","Marketing")}</b> <span className="chip">{tr("قريبًا","Soon")}</span>
+            <div className="small muted">{tr("ستظهر صلاحيات التسويق هنا عند إطلاق النظام.","Marketing permissions will appear here when that system launches.")}</div>
+          </div>
+        </div>}
+      </div>; })}
   </div>;
 }
 
@@ -376,6 +430,11 @@ function Appearance({tr,brand,setBrand,toast}){
       </div>
     </div>
     <div className="card">
+      <h2>{tr("شكل الواجهة","Interface style")}</h2>
+      <p className="small muted" style={{marginTop:0}}>{tr("يسري على الصفحة الرئيسية ومؤشرات الأداء والموارد البشرية.","Applies to the home, KPI and HR pages.")}</p>
+      <div className="row">{UI_STYLES.map(k=><button key={k} className={"btn "+(brand.ui===k?"":"sec")} onClick={()=>save({...brand,ui:k})}>{uiName(tr,k)}</button>)}</div>
+    </div>
+    <div className="card">
       <h2>{tr("شعار الشركة","Company logo")}</h2>
       <div className="row" style={{gap:16}}>
         <div style={{width:120,height:120,borderRadius:14,background:"var(--teal2)",display:"grid",placeItems:"center",overflow:"hidden"}}>
@@ -401,7 +460,7 @@ function App(){
   const [D,setD]=useState(null);
   const [admin,setAdmin]=useState("");      // "", team, accounts, kpi
   const [doc,setDoc]=useState("");          // policy modal
-  const [brand,setBrand]=useState({preset:"teal",primary:"#0F6B63",logo_url:null});
+  const [brand,setBrand]=useState({preset:"teal",primary:"#0F6B63",ui:"flat",logo_url:null});
   const [msg,setMsg]=useState(null);
   const [f,setF]=useState({email:"",pass:""}); const [err,setErr]=useState(""); const [ok,setOk]=useState(""); const [busy,setBusy]=useState(false);
   const toast=useCallback((text,bad)=>{ setMsg({text,bad}); clearTimeout(window.__t); window.__t=setTimeout(()=>setMsg(null),3000); },[]);
@@ -473,15 +532,13 @@ function App(){
       {isSuper && admin && <section>
         <div className="subtabs">
           <button className={admin==="team"?"on":""} onClick={()=>setAdmin("team")}>{tr("الفروع والفريق","Branches & team")}</button>
-          <button className={admin==="accounts"?"on":""} onClick={()=>setAdmin("accounts")}>{tr("الحسابات","Accounts")}</button>
-          <button className={admin==="hr"?"on":""} onClick={()=>setAdmin("hr")}>{tr("صلاحيات الموارد البشرية","HR permissions")}</button>
+          <button className={admin==="accounts"?"on":""} onClick={()=>setAdmin("accounts")}>{tr("الحسابات والصلاحيات","Accounts & permissions")}</button>
           <button className={admin==="look"?"on":""} onClick={()=>setAdmin("look")}>{tr("المظهر والشعار","Look & logo")}</button>
         </div>
-        {admin==="hr" && <HrRoles tr={tr} toast={toast}/>}
         {admin==="look" && <Appearance tr={tr} brand={brand} setBrand={setBrand} toast={toast}/>}
         {(admin==="team"||admin==="accounts") && (!D ? <div className="card empty">…</div> : <>
           {admin==="team" && <Team tr={tr} D={D} reload={reload} toast={toast} lang={lang}/>}
-          {admin==="accounts" && <Accounts tr={tr} me={me} D={D} toast={toast}/>}
+          {admin==="accounts" && <Access tr={tr} me={me} D={D} toast={toast}/>}
         </>)}
       </section>}
     </main>
