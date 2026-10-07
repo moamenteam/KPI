@@ -672,7 +672,7 @@ function App(){
   if(!me||!D) return <div className="empty">…</div>;
   const linked = me.role!=="pharmacist" || !!me.pharmacist_id;
   // tab visibility: super admin sees everything; others follow the page_access matrix (Admin → Settings)
-  const can=k=> me.is_super&&me.role==="admin"? true : (me.pages||[]).includes(k==="visitReports"?"visits":k);
+  const can=k=> me.is_super&&me.role==="admin"? true : (me.pages||[]).includes(k);
   const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["data",t.data,["data","targets"]]];
   const tabs=GROUPS.filter(g=>g[2].some(can)).map(g=>[g[0],g[1]]);
   const firstAllowed=GROUPS.flatMap(g=>g[2]).find(can);
