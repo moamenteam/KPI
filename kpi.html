@@ -33,6 +33,8 @@
   .bar{background:var(--ink);color:#fff;padding:0 18px;display:flex;align-items:center;gap:18px;height:56px;position:sticky;top:0;z-index:5}
   .brand{font-weight:700;letter-spacing:.02em;white-space:nowrap}
   .brand span{color:var(--amber)}
+  .home{color:#fff;text-decoration:none;display:flex;align-items:center;gap:6px}
+  .home:hover{opacity:.85}
   .tabs{display:flex;gap:4px;flex:1;overflow:auto}
   .tab{background:transparent;border:0;color:#CFE0DC;padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
   .tab.on{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
@@ -135,7 +137,7 @@ const { useState, useEffect, useMemo, useCallback } = React;
 
 const T = {
   en:{ app:"First Brand", kpi:"KPI", login:"Sign in", signup:"Create account", email:"Email", pass:"Password", name:"Full name",
-    haveAcc:"Already have an account? Sign in", noAcc:"New here? Create an account", out:"Sign out",
+    haveAcc:"Already have an account? Sign in", noAcc:"New here? Create an account", out:"Sign out", home:"Home",
     dash:"Dashboard", date:"Date", admin2:"Admin", tabs:"Tabs", profile:"My profile", phone:"Phone", changePhoto:"Change photo", documents:"Documents", upload:"Upload file", docHint:"PDF or image, up to 10 MB", docCv:"CV", docCert:"Certificate", docId:"ID / licence", docOther:"Other", hr:"HR", hrSoon:"HR module — coming next", hrHint:"Same login, same staff records and branches, same per-account permissions. Modules planned:", hrStaff:"Staff file", hrAttendance:"Attendance & shifts", hrLeave:"Leave requests", hrDocs:"Documents & licence expiry", visitReports:"Visit reports", from:"From", to:"To", lastVisit:"Last visit", lastScore:"Last score", avgScore:"Average", access:"Tab access", accessHint:"Tick which tabs each account type can see. Changes apply on next reload.", accessSuper:"Accounts and Settings are always super-admin only.", noAccess:"No pages are enabled for your account yet.", targets:"Targets", visits:"Visits", data:"Data", team:"Team", accounts:"Accounts", settings:"Settings", lang:"العربية",
     pharmacist:"Pharmacist", pharmacists:"Pharmacists", branch:"Branch", branches:"Branches", company:"Company", month:"Month", quarter:"Quarter",
     score:"Score", vsPrev:"vs last month", qAvg:"Quarter average", momentum:"Momentum (monthly score)", actual:"Actual", target:"Target", ach:"Ach.", pts:"pts",
@@ -153,7 +155,7 @@ const T = {
     linkHint:"Login accounts are linked here to confidential pharmacist records. Unlinked accounts cannot see any data.", notLinkedMsg:"Your account is not linked to a pharmacist record yet. Ask your supervisor.",
     title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
-    haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج",
+    haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج", home:"الرئيسية",
     dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", profile:"ملفي", phone:"الجوال", changePhoto:"تغيير الصورة", documents:"المستندات", upload:"رفع ملف", docHint:"PDF أو صورة، حتى 10 ميجابايت", docCv:"السيرة الذاتية", docCert:"شهادة", docId:"هوية / ترخيص", docOther:"أخرى", hr:"الموارد البشرية", hrSoon:"وحدة الموارد البشرية — قريبًا", hrHint:"نفس تسجيل الدخول، نفس سجلات الموظفين والفروع، ونفس صلاحيات الحسابات. الوحدات المخطط لها:", hrStaff:"ملف الموظف", hrAttendance:"الحضور والورديات", hrLeave:"طلبات الإجازة", hrDocs:"المستندات وانتهاء التراخيص", visitReports:"تقارير الزيارات", from:"من", to:"إلى", lastVisit:"آخر زيارة", lastScore:"آخر نتيجة", avgScore:"المتوسط", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
     pharmacist:"الصيدلي", pharmacists:"الصيادلة", branch:"الفرع", branches:"الفروع", company:"الشركة", month:"الشهر", quarter:"الربع",
     score:"النقاط", vsPrev:"مقارنة بالشهر الماضي", qAvg:"متوسط الربع", momentum:"الزخم (نقاط شهرية)", actual:"الفعلي", target:"الهدف", ach:"التحقق", pts:"نقطة",
@@ -269,6 +271,7 @@ function Login({t,lang,setLang}){
       {err && <div className="err">{err}</div>}
       <button className="btn" disabled={busy} onClick={go}>{mode==="in"?t.login:t.signup}</button>
       <button className="btn sec" onClick={()=>setMode(mode==="in"?"up":"in")}>{mode==="in"?t.noAcc:t.haveAcc}</button>
+      <a className="small" href="./index.html" style={{textAlign:"center"}}>{t.home}</a>
     </div></div></div>;
 }
 
@@ -738,16 +741,6 @@ function Profile({t,me,D,lang,toast,setMe}){
   </div>;
 }
 
-/* ================= HR (placeholder) ================= */
-function HR({t,me,D,lang}){
-  const staff=D.pharmacists.filter(p=>p.active).length;
-  return <div className="grid"><h1>{t.hr}</h1>
-    <div className="card"><h2>{t.hrSoon}</h2><div className="muted" style={{marginTop:6}}>{t.hrHint}</div>
-      <div className="row" style={{marginTop:14}}>{[t.hrStaff,t.hrAttendance,t.hrLeave,t.hrDocs].map(x=><span key={x} className="chip grey" style={{padding:"6px 10px",fontSize:13}}>{x}</span>)}</div>
-      <div className="muted small" style={{marginTop:14}}>{staff} {t.pharmacists} · {D.branches.length} {t.branches}</div></div>
-  </div>;
-}
-
 /* ================= APP ================= */
 function App(){
   const [lang,setLang]=useState(localStorage.getItem("lang")||"en"); const t=T[lang];
@@ -773,14 +766,16 @@ function App(){
   const linked = me.role!=="pharmacist" || !!me.pharmacist_id;
   // tab visibility: super admin sees everything; others follow the page_access matrix (Admin → Settings)
   const can=k=> me.is_super&&me.role==="admin"? true : (k==="accounts"||k==="settings")? false : (me.pages||[]).includes(k==="visitReports"?"visits":k);
-  const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["hr",t.hr,["hr"]],["data",t.data,["data","targets"]],["admin",t.admin2,["team","accounts","settings"]]];
+  const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["data",t.data,["data","targets"]],["admin",t.admin2,["team","accounts","settings"]]];
   const tabs=GROUPS.filter(g=>g[2].some(can)).map(g=>[g[0],g[1]]);
   const firstAllowed=GROUPS.flatMap(g=>g[2]).find(can);
   const group=GROUPS.find(g=>g[2].includes(page))?.[0]||""; const subs=(GROUPS.find(g=>g[0]===group)?.[2]||[]).filter(can);
   const props={t,me,D,E,toast,lang,reload};
   return <>
-    <div className="bar"><div className="brand">{t.app} <span>{t.kpi}</span></div>
-      <div className="tabs">{linked && tabs.map(([k,l])=><button key={k} className={"tab"+(group===k?" on":"")} onClick={()=>setPage(GROUPS.find(g=>g[0]===k)[2].filter(can)[0])}>{l}</button>)}</div>
+    <div className="bar">
+      <a className="home" href="./index.html" title={t.home}><span style={{fontSize:18}}>‹</span><div className="brand">{t.app} <span>{t.kpi}</span></div></a>
+      <div className="tabs">{linked && tabs.map(([k,l])=><button key={k} className={"tab"+(group===k?" on":"")} onClick={()=>setPage(GROUPS.find(g=>g[0]===k)[2].filter(can)[0])}>{l}</button>)}
+        {linked && <a className="tab" href="./hr.html">{t.hr}</a>}</div>
       <button className="who" style={{background:"transparent",border:0,cursor:"pointer"}} onClick={()=>setPage("profile")} title={t.profile}>{me.full_name} · {me.is_super?t.superAdmin:(t[me.role]||me.role)}</button>
       <button className="ghost" onClick={()=>setLang(lang==="en"?"ar":"en")}>{t.lang}</button><button className="ghost" onClick={()=>sb.auth.signOut()}>{t.out}</button></div>
     <div className="wrap">{!linked&&page!=="profile" ? <div className="card empty">{t.notLinkedMsg}<div style={{marginTop:10}}><button className="btn sec" onClick={()=>setPage("profile")}>{t.profile}</button></div></div> : !firstAllowed ? <div className="card empty">{t.noAccess}</div> : (page!=="profile"&&!can(page)) ? (setPage(firstAllowed),null) : <>
@@ -788,7 +783,7 @@ function App(){
       {page==="dash"     && <Dashboard key={me.id} {...props}/>}
       {page==="visits"   && can("visits")   && <Visits {...props}/>}
       {page==="visitReports" && can("visitReports") && <VisitReports {...props}/>}
-      {page==="hr" && (location.href="./hr.html",null)}      {page==="profile" && <Profile {...props} setMe={setMe}/>}
+      {page==="profile" && <Profile {...props} setMe={setMe}/>}
       {page==="targets"  && can("targets")  && <Targets {...props}/>}
       {page==="data"     && can("data")     && <Data {...props}/>}
       {page==="team"     && can("team")     && <Team {...props}/>}
