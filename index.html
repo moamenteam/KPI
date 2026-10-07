@@ -98,6 +98,35 @@ const bname = (branches,id) => (branches.find(b=>b.id===id)||{}).name || "—";
 const kname = (k,lang) => lang==="ar"&&k.name_ar ? k.name_ar : k.name_en;
 const kpisFor = (D,mk) => { const q=qOf(mk); return (D.kpis||[]).map(k=>{ const o=(D.schemes||[]).find(x=>x.kpi_code===k.code&&x.year===q.year&&x.quarter===q.quarter); return o? {...k,weight:o.weight,cap:o.cap,threshold:o.threshold??k.threshold,active:o.active} : k; }).sort((a,b)=>a.sort-b.sort); };
 
+/* ---------- look of the site ---------- */
+const THEMES = {
+  teal:     ["#0F6B63","#E3F0EE","#14383A"],
+  navy:     ["#1F3A68","#E5EAF4","#16243D"],
+  olive:    ["#4F6B2A","#ECF1E1","#2C3A1A"],
+  plum:     ["#6B2F56","#F3E6EE","#351828"],
+  charcoal: ["#37474F","#E8EDEF","#1E2A30"],
+  sand:     ["#9A6B2F","#F6EDE0","#3C2A14"]
+};
+const themeName = (tr,k) => ({teal:tr("أخضر مزرق","Teal"), navy:tr("كحلي","Navy"), olive:tr("زيتوني","Olive"),
+  plum:tr("عنابي","Plum"), charcoal:tr("رمادي داكن","Charcoal"), sand:tr("رملي","Sand"), custom:tr("لون مخصص","Custom colour")}[k]||k);
+function applyBrand(b){
+  const st=document.documentElement.style;
+  const preset=(b&&b.preset)||"teal";
+  const c=THEMES[preset];
+  const primary = preset==="custom" ? ((b&&b.primary)||"#0F6B63") : c[0];
+  st.setProperty("--teal", primary);
+  st.setProperty("--teal2", c ? c[1] : "color-mix(in srgb, "+primary+" 14%, #fff)");
+  st.setProperty("--ink", c ? c[2] : "#14383A");
+}
+
+/* ---------- HR permission tabs (same keys as hr.html) ---------- */
+const TAB_DEFAULT = ["leave","requests","salary","approvals"];
+const STAFF_TABS  = ["hrLeave","hrReq","payroll"];
+const TAB_KEYS    = ["leave","requests","salary","approvals",...STAFF_TABS];
+const hrTabName = (tr,k) => ({leave:tr("إجازاتي","My leave"), requests:tr("طلباتي","My requests"), salary:tr("راتبي","My salary"),
+  approvals:tr("الموافقات","Approvals"), hrLeave:tr("الأرصدة والسجل","Balances & record"),
+  hrReq:tr("طلبات الموظفين","Staff requests"), payroll:tr("الرواتب","Payroll")}[k]||k);
+
 /* ---------- policy texts ---------- */
 const POLICY = {
   privacy: tr => tr(
@@ -273,6 +302,96 @@ function Accounts({tr,me,D,toast}){
   </div>;
 }
 
+/* ================= HR PERMISSIONS ================= */
+function HrRoles({tr,toast}){
+  const [people,setPeople]=useState([]); const [roles,setRoles]=useState({}); const [q,setQ]=useState("");
+  const load=useCallback(async()=>{
+    const [pe,ro]=await Promise.all([sb.rpc("hr_people"), sb.from("hr_roles").select("*")]);
+    setPeople(pe.data||[]); const m={}; (ro.data||[]).forEach(r=>m[r.profile_id]=r); setRoles(m);
+  },[]);
+  useEffect(()=>{ load(); },[load]);
+  const cur=pid=>({is_hr:!!(roles[pid]&&roles[pid].is_hr), is_ceo:!!(roles[pid]&&roles[pid].is_ceo),
+    pages: (roles[pid]&&Array.isArray(roles[pid].pages)) ? roles[pid].pages : TAB_DEFAULT});
+  const save=async(pid,patch)=>{ const r={profile_id:pid,...cur(pid),...patch};
+    const {error}=await sb.from("hr_roles").upsert(r,{onConflict:"profile_id"});
+    toast(error?error.message:tr("تم الحفظ","Saved"), !!error); load(); };
+  const setHr=(pid,v)=>{ const pg=new Set(cur(pid).pages); if(v) ["approvals",...STAFF_TABS].forEach(k=>pg.add(k)); else STAFF_TABS.forEach(k=>pg.delete(k)); save(pid,{is_hr:v,pages:[...pg]}); };
+  const setCeo=(pid,v)=>{ const pg=new Set(cur(pid).pages); if(v) pg.add("approvals"); save(pid,{is_ceo:v,pages:[...pg]}); };
+  const setTab=(pid,k,v)=>{ const pg=new Set(cur(pid).pages); v?pg.add(k):pg.delete(k); save(pid,{pages:[...pg]}); };
+  const list=people.filter(p=>!q || (p.full_name||"").toLowerCase().includes(q.toLowerCase()) || (p.branch||"").toLowerCase().includes(q.toLowerCase()));
+  const cb={width:18,height:18};
+  return <div className="card">
+    <div className="row" style={{justifyContent:"space-between",marginBottom:6}}>
+      <h2 style={{margin:0}}>{tr("صلاحيات الموارد البشرية","HR permissions")}</h2>
+      <input style={{maxWidth:220}} placeholder={tr("بحث بالاسم أو الفرع","Search name or branch")} value={q} onChange={e=>setQ(e.target.value)}/>
+    </div>
+    <p className="small muted" style={{marginTop:0}}>{tr(
+      "الموظف يرى بياناته فقط في «إجازاتي» و«طلباتي» و«راتبي». التبويبات المظللة تفتح بيانات كل الموظفين. مدير الصيدلية والمشرف يُحدَّدان تلقائيًا من المسمى الوظيفي.",
+      "Employees only ever see their own data in My leave, My requests and My salary. The shaded tabs open everyone's data. Pharmacy manager and supervisor come automatically from the job title.")}</p>
+    <div className="tw"><table>
+      <thead><tr><th>{tr("الحساب","Account")}</th><th>{tr("موارد بشرية","HR")}</th><th>{tr("رئيس تنفيذي","CEO")}</th>
+        {TAB_KEYS.map(k=><th key={k} style={{background:STAFF_TABS.includes(k)?"var(--amber2)":undefined}}>{hrTabName(tr,k)}</th>)}</tr></thead>
+      <tbody>{list.map(p=>{ const c=cur(p.id); return <tr key={p.id}>
+        <td>{p.full_name}<div className="small muted">{[p.title,p.branch].filter(Boolean).join(" / ")||"—"}</div></td>
+        <td><input type="checkbox" style={cb} checked={c.is_hr} onChange={e=>setHr(p.id,e.target.checked)}/></td>
+        <td><input type="checkbox" style={cb} checked={c.is_ceo} onChange={e=>setCeo(p.id,e.target.checked)}/></td>
+        {TAB_KEYS.map(k=><td key={k} style={{textAlign:"center",background:STAFF_TABS.includes(k)?"#FFFBF2":undefined}}>
+          <input type="checkbox" style={cb} checked={c.pages.includes(k)} onChange={e=>setTab(p.id,k,e.target.checked)}/></td>)}
+      </tr>; })}</tbody>
+    </table></div>
+  </div>;
+}
+
+/* ================= APPEARANCE ================= */
+function Appearance({tr,brand,setBrand,toast}){
+  const [busy,setBusy]=useState(false);
+  const save=async next=>{
+    setBrand(next); applyBrand(next);
+    const {error}=await sb.from("app_settings").upsert({key:"brand",value:next,updated_at:new Date().toISOString()},{onConflict:"key"});
+    if(error) toast(error.message,true); else toast(tr("تم الحفظ للجميع","Saved for everyone"));
+  };
+  const upLogo=async e=>{
+    const file=e.target.files[0]; if(!file) return;
+    if(file.size>2*1024*1024) return toast(tr("حجم الشعار أكبر من 2 ميجابايت","The logo is larger than 2 MB"),true);
+    setBusy(true);
+    const ext=(file.name.split(".").pop()||"png").toLowerCase();
+    const path="logo_"+Date.now()+"."+ext;
+    const up=await sb.storage.from("brand").upload(path,file,{upsert:true,contentType:file.type});
+    if(up.error){ setBusy(false); return toast(up.error.message,true); }
+    const url=sb.storage.from("brand").getPublicUrl(path).data.publicUrl;
+    await save({...brand,logo_url:url}); setBusy(false); e.target.value="";
+  };
+  return <div className="grid">
+    <div className="card">
+      <h2>{tr("لون المنصة","Platform colour")}</h2>
+      <div className="row" style={{gap:10}}>
+        {Object.keys(THEMES).map(k=><button key={k} className="btn sec" onClick={()=>save({...brand,preset:k})}
+          style={{display:"flex",alignItems:"center",gap:8,border:(brand.preset===k?"2px solid "+THEMES[k][0]:"2px solid transparent")}}>
+          <span style={{width:18,height:18,borderRadius:"50%",background:THEMES[k][0],display:"inline-block"}}/>{themeName(tr,k)}</button>)}
+      </div>
+      <div className="row" style={{marginTop:14,alignItems:"flex-end"}}>
+        <label className="f" style={{maxWidth:180}}>{themeName(tr,"custom")}
+          <input type="color" value={brand.primary||"#0F6B63"} onChange={e=>setBrand({...brand,preset:"custom",primary:e.target.value})}/></label>
+        <button className="btn" onClick={()=>save({...brand,preset:"custom"})}>{tr("تطبيق اللون المخصص","Apply custom colour")}</button>
+      </div>
+    </div>
+    <div className="card">
+      <h2>{tr("شعار الشركة","Company logo")}</h2>
+      <div className="row" style={{gap:16}}>
+        <div style={{width:120,height:120,borderRadius:14,background:"var(--teal2)",display:"grid",placeItems:"center",overflow:"hidden"}}>
+          {brand.logo_url ? <img src={brand.logo_url} alt="" style={{maxWidth:"100%",maxHeight:"100%",objectFit:"contain"}}/> : <span className="muted small">{tr("لا يوجد شعار","No logo")}</span>}
+        </div>
+        <div className="grid" style={{gap:8}}>
+          <label className="btn sec" style={{cursor:"pointer",display:"inline-block"}}>{tr("رفع شعار","Upload logo")}
+            <input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" onChange={upLogo} disabled={busy} style={{display:"none"}}/></label>
+          {brand.logo_url && <button className="btn warn" onClick={()=>save({...brand,logo_url:null})}>{tr("إزالة الشعار","Remove logo")}</button>}
+          <span className="small muted">{tr("PNG أو SVG بخلفية شفافة، حتى 2 ميجابايت","PNG or SVG with a transparent background, up to 2 MB")}</span>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
 /* ================= APP ================= */
 function App(){
   const [lang,setLang]=useState(()=>{ try{ return localStorage.getItem("lang")||"ar"; }catch(e){ return "ar"; } });
@@ -282,11 +401,14 @@ function App(){
   const [D,setD]=useState(null);
   const [admin,setAdmin]=useState("");      // "", team, accounts, kpi
   const [doc,setDoc]=useState("");          // policy modal
+  const [brand,setBrand]=useState({preset:"teal",primary:"#0F6B63",logo_url:null});
   const [msg,setMsg]=useState(null);
   const [f,setF]=useState({email:"",pass:""}); const [err,setErr]=useState(""); const [ok,setOk]=useState(""); const [busy,setBusy]=useState(false);
   const toast=useCallback((text,bad)=>{ setMsg({text,bad}); clearTimeout(window.__t); window.__t=setTimeout(()=>setMsg(null),3000); },[]);
 
   useEffect(()=>{ document.documentElement.lang=lang; document.documentElement.dir=lang==="ar"?"rtl":"ltr"; try{ localStorage.setItem("lang",lang); }catch(e){} },[lang]);
+  useEffect(()=>{ sb.from("app_settings").select("value").eq("key","brand").maybeSingle()
+      .then(({data})=>{ if(data&&data.value){ setBrand(data.value); applyBrand(data.value); } }); },[]);
   useEffect(()=>{ sb.auth.getSession().then(({data})=>setSession(data.session||null));
     const {data:sub}=sb.auth.onAuthStateChange((_e,s)=>setSession(s)); return ()=>sub.subscription.unsubscribe(); },[]);
   useEffect(()=>{ if(!session){ setMe(null); setD(null); return; }
@@ -299,7 +421,7 @@ function App(){
       sb.from("pharmacist_assignments").select("*")]);
     setD({branches:b.data||[],pharmacists:p.data||[],assignments:a.data||[]});
   },[]);
-  useEffect(()=>{ if(admin && !D) reload(); },[admin,D,reload]);
+  useEffect(()=>{ if((admin==="team"||admin==="accounts") && !D) reload(); },[admin,D,reload]);
 
   const signIn=async()=>{ setBusy(true); setErr(""); const r=await sb.auth.signInWithPassword({email:f.email.trim(),password:f.pass}); setBusy(false); if(r.error) setErr(r.error.message); else setF({email:"",pass:""}); };
   const forgot=async()=>{ if(!f.email.trim()) return setErr(tr("اكتب بريدك الإلكتروني أولًا","Type your email first"));
@@ -317,7 +439,9 @@ function App(){
 
   return <>
     <header><div className="in">
-      <div className="brand">First Brand <small>{tr("منصة الشركة","Company platform")}</small></div>
+      <div className="brand" style={{display:"flex",alignItems:"center",gap:10}}>
+        {brand.logo_url && <img src={brand.logo_url} alt="" style={{height:30,maxWidth:120,objectFit:"contain"}}/>}
+        <span>First Brand <small>{tr("منصة الشركة","Company platform")}</small></span></div>
       <div className="sp"/>
       {name && <span className="small" style={{opacity:.9}}>{name}</span>}
       <button onClick={()=>setLang(lang==="ar"?"en":"ar")}>{lang==="ar"?"EN":"ع"}</button>
@@ -332,7 +456,7 @@ function App(){
         <Card href="./kpi.html" ic="KPI" title={tr("مؤشرات الأداء","KPI")} sub={tr("نتائج الفروع والصيادلة، الأهداف، وتقارير الزيارات","Branch and pharmacist scores, targets and visit reports")}/>
         <Card href="./hr.html" ic="HR" title={tr("الموارد البشرية","HR")} sub={tr("الإجازات، الطلبات الإدارية، والرواتب","Leave, service requests and salaries")}/>
         <Card ic="MK" title={tr("التسويق","Marketing")} sub={tr("العروض والحملات — قيد الإعداد","Offers and campaigns — in progress")} soon/>
-        {isSuper && <Card ic="⚙" title={tr("الإدارة","Admin")} sub={tr("الفروع والفريق، الحسابات والصلاحيات","Branches and team, accounts and permissions")} on={!!admin} onClick={()=>setAdmin(admin?"":"team")}/>}
+        {isSuper && <Card ic="⚙" title={tr("الإدارة","Admin")} sub={tr("الفروع والفريق، الحسابات والصلاحيات، المظهر والشعار","Branches and team, accounts and permissions, look and logo")} on={!!admin} onClick={()=>setAdmin(admin?"":"team")}/>}
       </div>
 
       {!session && <section className="card signin">
@@ -350,11 +474,15 @@ function App(){
         <div className="subtabs">
           <button className={admin==="team"?"on":""} onClick={()=>setAdmin("team")}>{tr("الفروع والفريق","Branches & team")}</button>
           <button className={admin==="accounts"?"on":""} onClick={()=>setAdmin("accounts")}>{tr("الحسابات","Accounts")}</button>
+          <button className={admin==="hr"?"on":""} onClick={()=>setAdmin("hr")}>{tr("صلاحيات الموارد البشرية","HR permissions")}</button>
+          <button className={admin==="look"?"on":""} onClick={()=>setAdmin("look")}>{tr("المظهر والشعار","Look & logo")}</button>
         </div>
-        {!D ? <div className="card empty">…</div> : <>
+        {admin==="hr" && <HrRoles tr={tr} toast={toast}/>}
+        {admin==="look" && <Appearance tr={tr} brand={brand} setBrand={setBrand} toast={toast}/>}
+        {(admin==="team"||admin==="accounts") && (!D ? <div className="card empty">…</div> : <>
           {admin==="team" && <Team tr={tr} D={D} reload={reload} toast={toast} lang={lang}/>}
           {admin==="accounts" && <Accounts tr={tr} me={me} D={D} toast={toast}/>}
-        </>}
+        </>)}
       </section>}
     </main>
 
