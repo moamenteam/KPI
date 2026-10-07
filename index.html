@@ -190,17 +190,21 @@ function Team({tr,D,reload,toast,lang}){
   const {branches,pharmacists}=D;
   const [nb,setNb]=useState(""); const [np,setNp]=useState({}); const [sel,setSel]=useState("all"); const [mv,setMv]=useState({});
   const titles=[["community pharmacist",tr("صيدلي","Community pharmacist")],["pharmacy manager",tr("مدير صيدلية","Pharmacy manager")],["supervisor",tr("مشرف","Supervisor")],["management",tr("إدارة","Management")]];
+  // next employee code, generated from the highest existing one
+  const codes=pharmacists.map(p=>String(p.emp_code||"").trim()).filter(c=>/^\d+$/.test(c));
+  const width=Math.max(3,...codes.map(c=>c.length));
+  const nextCode=String(codes.length?Math.max(...codes.map(Number))+1:1).padStart(width,"0");
   const run=async q=>{ const r=await q; toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); reload(); return r; };
   const addBranch=()=>{ if(!nb.trim()) return; run(sb.from("branches").insert({name:nb.trim()})); setNb(""); };
   const removeBranch=b=>{ if(pharmacists.some(p=>p.branch_id===b.id)) return toast(tr("انقل أو احذف صيادلة الفرع أولًا","Move or remove its pharmacists first"),true);
     if(confirm(tr("حذف ","Remove ")+b.name+"?")) run(sb.from("branches").delete().eq("id",b.id)); };
   const addPh=async bid=>{ const f=np[bid]||{}; if(!f.name||!f.name.trim()) return;
-    const r=await sb.from("pharmacists").insert({full_name:f.name.trim(),emp_code:f.code||null,title:f.title||"community pharmacist",branch_id:bid==="none"?null:bid}).select().single();
+    const r=await sb.from("pharmacists").insert({full_name:f.name.trim(),emp_code:nextCode,title:f.title||(bid==="none"?"management":"community pharmacist"),branch_id:bid==="none"?null:bid}).select().single();
     if(r.error) return toast(r.error.message,true);
-    if(bid!=="none") await sb.from("pharmacist_assignments").insert({pharmacist_id:r.data.id,branch_id:bid,from_date:f.from||thisMonth()});
-    toast(tr("تم الحفظ","Saved")); setNp({...np,[bid]:{}}); reload(); };
+    if(bid!=="none") await sb.from("pharmacist_assignments").insert({pharmacist_id:r.data.id,branch_id:bid,from_date:today()});
+    toast(tr("تمت الإضافة برقم وظيفي ","Added with employee code ")+nextCode); setNp({...np,[bid]:{}}); reload(); };
   const removePh=p=>{ if(confirm(tr("حذف؟ ستُحذف كل بياناته.","Remove? All their data will be deleted."))) run(sb.from("pharmacists").delete().eq("id",p.id)); };
-  const move=async p=>{ const m=mv[p.id]||{}; const to=m.branch; const from=m.from||today(); if(!to||to===p.branch_id) return;
+  const move=async p=>{ const m=mv[p.id]||{}; const to=m.branch; const from=today(); if(!to||to===p.branch_id) return;
     const prev=new Date(from+"T00:00:00Z"); prev.setUTCDate(prev.getUTCDate()-1);
     await sb.from("pharmacist_assignments").update({to_date:prev.toISOString().slice(0,10)}).eq("pharmacist_id",p.id).is("to_date",null);
     await run(sb.from("pharmacist_assignments").insert({pharmacist_id:p.id,branch_id:to,from_date:from})); setMv({...mv,[p.id]:{}}); };
@@ -216,22 +220,21 @@ function Team({tr,D,reload,toast,lang}){
       <div className="row"><input placeholder={tr("اسم فرع جديد","New branch name")} value={nb} onChange={e=>setNb(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addBranch()} style={{maxWidth:280}}/><button className="btn sec" onClick={addBranch}>{tr("إضافة","Add")}</button></div></div>
     {groups.map(g=><div key={g.id} className="card">
       <div className="row" style={{justifyContent:"space-between",marginBottom:8}}><h2 style={{margin:0}}>{g.name}</h2><span className="muted small">{g.list.length} {tr("صيدلي","pharmacists")}</span></div>
-      {g.list.length>0 && <div className="tw"><table><thead><tr><th>{tr("الاسم","Name")}</th><th>{tr("الرقم الوظيفي","Emp. code")}</th><th>{tr("المسمى","Title")}</th><th>{tr("نقل إلى","Move to")}</th><th>{tr("اعتبارًا من","Effective")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead><tbody>
+      {g.list.length>0 && <div className="tw"><table><thead><tr><th>{tr("الاسم","Name")}</th><th>{tr("الرقم الوظيفي","Emp. code")}</th><th>{tr("المسمى","Title")}</th><th>{tr("نقل إلى","Move to")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead><tbody>
         {g.list.map(p=><tr key={p.id} style={{opacity:p.active?1:.55}}>
           <td>{p.full_name}</td><td className="muted">{p.emp_code||"—"}</td>
           <td><select value={p.title||"community pharmacist"} onChange={e=>updPh(p.id,{title:e.target.value})}>{titles.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></td>
-          <td><select value={(mv[p.id]||{}).branch||""} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),branch:e.target.value}})}><option value="">—</option>{branches.filter(b=>b.id!==p.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></td>
-          <td className="row" style={{gap:6,flexWrap:"nowrap"}}><input type="date" value={(mv[p.id]||{}).from||today()} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),from:e.target.value}})} style={{width:150}}/>
+          <td className="row" style={{gap:6,flexWrap:"nowrap"}}>
+            <select value={(mv[p.id]||{}).branch||""} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),branch:e.target.value}})}><option value="">—</option>{branches.filter(b=>b.id!==p.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>
             <button className="btn sec" style={{padding:"5px 10px"}} disabled={!(mv[p.id]||{}).branch} onClick={()=>move(p)}>{tr("نقل","Move")}</button></td>
           <td><label className="check"><input type="checkbox" checked={p.active} onChange={e=>updPh(p.id,{active:e.target.checked})}/>{tr("فعّال","Active")}</label></td>
           <td><button className="btn warn" style={{padding:"5px 10px"}} onClick={()=>removePh(p)}>{tr("حذف","Remove")}</button></td></tr>)}
       </tbody></table></div>}
       <div className="row" style={{marginTop:10}}>
-        <input placeholder={tr("اسم الصيدلي","Pharmacist name")} value={(np[g.id]||{}).name||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),name:e.target.value}})} onKeyDown={e=>e.key==="Enter"&&addPh(g.id)} style={{maxWidth:240}}/>
-        <input placeholder={tr("الرقم الوظيفي","Emp. code")} value={(np[g.id]||{}).code||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),code:e.target.value}})} style={{maxWidth:130}}/>
-        <select value={(np[g.id]||{}).title||"community pharmacist"} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),title:e.target.value}})} style={{maxWidth:180}}>{titles.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
-        {g.id!=="none" && <input type="date" value={(np[g.id]||{}).from||thisMonth()} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),from:e.target.value}})} style={{maxWidth:160}}/>}
-        <button className="btn sec" onClick={()=>addPh(g.id)}>{tr("إضافة صيدلي","Add pharmacist")}</button></div>
+        <input placeholder={g.id==="none"?tr("اسم الموظف","Employee name"):tr("اسم الصيدلي","Pharmacist name")} value={(np[g.id]||{}).name||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),name:e.target.value}})} onKeyDown={e=>e.key==="Enter"&&addPh(g.id)} style={{maxWidth:240}}/>
+        <select value={(np[g.id]||{}).title||(g.id==="none"?"management":"community pharmacist")} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),title:e.target.value}})} style={{maxWidth:180}}>{titles.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
+        <span className="chip">{tr("الرقم الوظيفي ","Emp. code ")+nextCode}</span>
+        <button className="btn sec" onClick={()=>addPh(g.id)}>{g.id==="none"?tr("إضافة موظف","Add employee"):tr("إضافة صيدلي","Add pharmacist")}</button></div>
     </div>)}
   </div>;
 }
@@ -243,11 +246,15 @@ function Accounts({tr,me,D,toast}){
   useEffect(()=>{ load(); },[load]);
   const upd=async(id,patch)=>{ const r=await sb.from("profiles").update(patch).eq("id",id); toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); load(); };
   const takenBy=pid=>profiles.find(p=>p.pharmacist_id===pid);
-  const pages=[["dash",tr("لوحة المتابعة","Dashboard")],["visits",tr("الزيارات","Visits")],["data",tr("البيانات","Data")],["targets",tr("الأهداف","Targets")]];
+  const pages=[["dash",tr("لوحة المتابعة","Dashboard")],["visits",tr("نموذج الزيارة","Visit form")],["visitReports",tr("تقارير الزيارات","Visit reports")],["data",tr("البيانات","Data")],["targets",tr("الأهداف","Targets")]];
+  const del=async p=>{ if(p.id===me.id) return;
+    if(!confirm(tr("حذف حساب "+p.full_name+"؟ سيفقد الدخول نهائيًا.","Delete the account of "+p.full_name+"? They will lose access permanently."))) return;
+    const r=await sb.from("profiles").delete().eq("id",p.id);
+    toast(r.error?r.error.message:tr("تم حذف الحساب — احذفه أيضًا من Supabase ← Authentication","Account deleted — also delete it in Supabase → Authentication"), !!r.error); load(); };
   return <div className="grid">
     <div className="muted small">{tr("هنا يتم ربط حسابات الدخول بسجلات الصيادلة وتحديد تبويبات مؤشرات الأداء. صلاحيات الموارد البشرية تُضبط داخل صفحة الموارد البشرية.","Login accounts are linked to pharmacist records here, and KPI tabs are set here. HR permissions are set inside the HR page.")}</div>
     <div className="card tw">
-      <table><thead><tr><th>{tr("الاسم","Name")}</th><th>{tr("البريد","Email")}</th><th>{tr("الدور","Role")}</th><th>{tr("الصيدلي المرتبط","Linked pharmacist")}</th><th>{tr("تبويبات مؤشرات الأداء","KPI tabs")}</th><th>{tr("النطاق","Scope")}</th><th>{tr("مدير النظام","Super admin")}</th><th>{tr("الحالة","Status")}</th></tr></thead><tbody>
+      <table><thead><tr><th>{tr("الاسم","Name")}</th><th>{tr("البريد","Email")}</th><th>{tr("الدور","Role")}</th><th>{tr("الصيدلي المرتبط","Linked pharmacist")}</th><th>{tr("تبويبات مؤشرات الأداء","KPI tabs")}</th><th>{tr("النطاق","Scope")}</th><th>{tr("مدير النظام","Super admin")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead><tbody>
         {profiles.map(p=>{ const linked=pharmacists.find(x=>x.id===p.pharmacist_id); return <tr key={p.id}>
           <td>{p.full_name}{!p.pharmacist_id&&p.role==="pharmacist"&&<div><span className="chip bad">{tr("غير مرتبط","Unlinked")}</span></div>}</td>
           <td className="small" dir="ltr">{p.email||"—"}</td>
@@ -260,57 +267,9 @@ function Accounts({tr,me,D,toast}){
           <td><div className="row" style={{gap:8}}>{pages.map(([k,l])=><label key={k} className="check small"><input type="checkbox" checked={(p.pages||[]).includes(k)} disabled={p.is_super&&p.role==="admin"} onChange={e=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:e.target.checked?[...cur,k]:cur}); }}/>{l}</label>)}</div></td>
           <td>{p.role==="supervisor"? <select value={p.branch_id||""} onChange={e=>upd(p.id,{branch_id:e.target.value||null})}><option value="">{tr("كل الفروع","All branches")}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select> : <span className="muted">—</span>}</td>
           <td>{p.role==="admin"? <input type="checkbox" checked={!!p.is_super} disabled={p.id===me.id} onChange={e=>upd(p.id,{is_super:e.target.checked})}/> : <span className="muted">—</span>}</td>
-          <td><label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{tr("فعّال","Active")}</label></td></tr>; })}
+          <td><label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{tr("فعّال","Active")}</label></td>
+          <td>{p.id!==me.id && <button className="btn warn" style={{padding:"5px 10px"}} onClick={()=>del(p)}>{tr("حذف","Delete")}</button>}</td></tr>; })}
       </tbody></table></div>
-  </div>;
-}
-
-/* ================= KPI SETTINGS ================= */
-function KpiSettings({tr,D,reload,toast,lang}){
-  const q0=qOf(thisMonth()); const [year,setYear]=useState(q0.year); const [quarter,setQuarter]=useState(q0.quarter);
-  const [ed,setEd]=useState({}); const [ni,setNi]=useState({});
-  useEffect(()=>setEd({}),[year,quarter]);
-  const mk=`${year}-${String((quarter-1)*3+1).padStart(2,"0")}-01`; const kpis=kpisFor(D,mk);
-  const val=(k,f)=> (ed[k.code]&&ed[k.code][f]!==undefined) ? ed[k.code][f] : (k[f]==null?"":k[f]);
-  const saveK=async()=>{ const rows=kpis.map(k=>({kpi_code:k.code,year,quarter,weight:Number(val(k,"weight"))||0,cap:val(k,"cap")===""?null:Number(val(k,"cap")),threshold:k.threshold==null?null:Number(val(k,"threshold")),active:(ed[k.code]&&ed[k.code].active!==undefined)?ed[k.code].active:k.active}));
-    const r=await sb.from("kpi_periods").upsert(rows,{onConflict:"kpi_code,year,quarter"}); toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); if(!r.error){ setEd({}); reload(); } };
-  const addItem=async()=>{ if(!ni.en||!ni.en.trim()) return;
-    const r=await sb.from("visit_items").insert({text_en:ni.en.trim(),text_ar:(ni.ar||"").trim(),section_en:(ni.sen||"").trim()||null,section_ar:(ni.sar||"").trim()||null,points:Number(ni.pts)||1,sort:(Math.max(0,...D.visit_items.map(x=>x.sort))||0)+1});
-    toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); setNi({}); reload(); };
-  const updItem=async(id,patch)=>{ const r=await sb.from("visit_items").update(patch).eq("id",id); toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); reload(); };
-  const total=kpis.filter(k=>(ed[k.code]&&ed[k.code].active!==undefined)?ed[k.code].active:k.active).reduce((a,k)=>a+Number(val(k,"weight")||0),0);
-  return <div className="grid">
-    <div className="card">
-      <div className="row" style={{justifyContent:"space-between",marginBottom:10}}>
-        <div className="row"><h2 style={{margin:0}}>{tr("أوزان المؤشرات","KPI weights")}</h2>
-          <select value={year} onChange={e=>setYear(Number(e.target.value))} style={{width:"auto"}}>{[q0.year-1,q0.year,q0.year+1].map(y=><option key={y} value={y}>{y}</option>)}</select>
-          <select value={quarter} onChange={e=>setQuarter(Number(e.target.value))} style={{width:"auto"}}>{[1,2,3,4].map(q=><option key={q} value={q}>Q{q}</option>)}</select></div>
-        <span className={"chip "+(total===100?"":"bad")}>Σ {total}</span></div>
-      <div className="tw"><table><thead><tr><th>{tr("المؤشر","KPI")}</th><th>{tr("المستوى","Level")}</th><th className="num">{tr("الوزن","Weight")}</th><th className="num">{tr("الحد الأقصى","Cap")}</th><th className="num">%</th><th>{tr("فعّال","Active")}</th></tr></thead><tbody>
-        {kpis.map(k=><tr key={k.code}>
-          <td><strong>{kname(k,lang)}</strong><div className="muted small">{k.code} · {k.rule}</div></td>
-          <td>{k.level==="branch"?tr("الفرع","Branch"):tr("الصيدلي","Pharmacist")}</td>
-          <td><input type="number" className="num" value={val(k,"weight")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],weight:e.target.value}})}/></td>
-          <td>{k.rule==="all_or_none"? <span className="muted">—</span> : <input type="number" step="0.1" className="num" placeholder={tr("بدون حد","No cap")} value={val(k,"cap")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],cap:e.target.value}})}/>}</td>
-          <td>{k.threshold!=null? <input type="number" step="0.001" className="num" value={val(k,"threshold")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],threshold:e.target.value}})}/> : <span className="muted">—</span>}</td>
-          <td><input type="checkbox" checked={(ed[k.code]&&ed[k.code].active!==undefined)?ed[k.code].active:k.active} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],active:e.target.checked}})}/></td></tr>)}
-      </tbody></table></div>
-      <div style={{marginTop:12}}><button className="btn" onClick={saveK}>{tr("حفظ","Save")} Q{quarter} {year}</button></div>
-    </div>
-    <div className="card grid">
-      <h2>{tr("قائمة فحص الزيارة","Visit checklist")} <span className="muted small">Σ {D.visit_items.filter(i=>i.active).reduce((a,i)=>a+Number(i.points),0)}</span></h2>
-      <div className="tw"><table><thead><tr><th>{tr("القسم","Section")}</th><th>{tr("البند","Item")}</th><th className="num">{tr("الدرجة","Points")}</th><th>{tr("فعّال","Active")}</th></tr></thead><tbody>
-        {D.visit_items.map(i=><tr key={i.id} style={{opacity:i.active?1:.5}}>
-          <td className="small">{lang==="ar"&&i.section_ar?i.section_ar:i.section_en}</td>
-          <td>{lang==="ar"&&i.text_ar?i.text_ar:i.text_en}</td>
-          <td className="num">{i.points}</td>
-          <td><input type="checkbox" checked={i.active} onChange={e=>updItem(i.id,{active:e.target.checked})}/></td></tr>)}
-      </tbody></table></div>
-      <div className="row"><input placeholder={tr("القسم (إنجليزي)","Section (English)")} value={ni.sen||""} onChange={e=>setNi({...ni,sen:e.target.value})}/><input placeholder={tr("القسم (عربي)","Section (Arabic)")} dir="rtl" value={ni.sar||""} onChange={e=>setNi({...ni,sar:e.target.value})}/></div>
-      <div className="row"><input placeholder={tr("البند (إنجليزي)","Item (English)")} value={ni.en||""} onChange={e=>setNi({...ni,en:e.target.value})}/><input placeholder={tr("البند (عربي)","Item (Arabic)")} dir="rtl" value={ni.ar||""} onChange={e=>setNi({...ni,ar:e.target.value})}/>
-        <input type="number" placeholder={tr("الدرجة","Points")} value={ni.pts||""} onChange={e=>setNi({...ni,pts:e.target.value})} style={{maxWidth:100}}/>
-        <button className="btn sec" onClick={addItem}>{tr("إضافة","Add")}</button></div>
-    </div>
   </div>;
 }
 
@@ -334,14 +293,11 @@ function App(){
     (async()=>{ const r=await sb.from("profiles").select("*").eq("id",session.user.id).maybeSingle(); setMe(r.data||null); })(); },[session]);
 
   const reload=useCallback(async()=>{
-    const [b,p,a,k,vi,sc]=await Promise.all([
+    const [b,p,a]=await Promise.all([
       sb.from("branches").select("*").eq("active",true).order("name"),
       sb.from("pharmacists").select("*").order("full_name"),
-      sb.from("pharmacist_assignments").select("*"),
-      sb.from("kpis").select("*").order("sort"),
-      sb.from("visit_items").select("*").order("sort"),
-      sb.from("kpi_periods").select("*")]);
-    setD({branches:b.data||[],pharmacists:p.data||[],assignments:a.data||[],kpis:k.data||[],visit_items:vi.data||[],schemes:sc.data||[]});
+      sb.from("pharmacist_assignments").select("*")]);
+    setD({branches:b.data||[],pharmacists:p.data||[],assignments:a.data||[]});
   },[]);
   useEffect(()=>{ if(admin && !D) reload(); },[admin,D,reload]);
 
@@ -376,7 +332,7 @@ function App(){
         <Card href="./kpi.html" ic="KPI" title={tr("مؤشرات الأداء","KPI")} sub={tr("نتائج الفروع والصيادلة، الأهداف، وتقارير الزيارات","Branch and pharmacist scores, targets and visit reports")}/>
         <Card href="./hr.html" ic="HR" title={tr("الموارد البشرية","HR")} sub={tr("الإجازات، الطلبات الإدارية، والرواتب","Leave, service requests and salaries")}/>
         <Card ic="MK" title={tr("التسويق","Marketing")} sub={tr("العروض والحملات — قيد الإعداد","Offers and campaigns — in progress")} soon/>
-        {isSuper && <Card ic="⚙" title={tr("الإدارة","Admin")} sub={tr("الفروع والفريق، الحسابات والصلاحيات، أوزان المؤشرات","Branches and team, accounts and permissions, KPI weights")} on={!!admin} onClick={()=>setAdmin(admin?"":"team")}/>}
+        {isSuper && <Card ic="⚙" title={tr("الإدارة","Admin")} sub={tr("الفروع والفريق، الحسابات والصلاحيات","Branches and team, accounts and permissions")} on={!!admin} onClick={()=>setAdmin(admin?"":"team")}/>}
       </div>
 
       {!session && <section className="card signin">
@@ -394,12 +350,10 @@ function App(){
         <div className="subtabs">
           <button className={admin==="team"?"on":""} onClick={()=>setAdmin("team")}>{tr("الفروع والفريق","Branches & team")}</button>
           <button className={admin==="accounts"?"on":""} onClick={()=>setAdmin("accounts")}>{tr("الحسابات","Accounts")}</button>
-          <button className={admin==="kpi"?"on":""} onClick={()=>setAdmin("kpi")}>{tr("إعدادات المؤشرات","KPI settings")}</button>
         </div>
         {!D ? <div className="card empty">…</div> : <>
           {admin==="team" && <Team tr={tr} D={D} reload={reload} toast={toast} lang={lang}/>}
           {admin==="accounts" && <Accounts tr={tr} me={me} D={D} toast={toast}/>}
-          {admin==="kpi" && <KpiSettings tr={tr} D={D} reload={reload} toast={toast} lang={lang}/>}
         </>}
       </section>}
     </main>
