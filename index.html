@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>First Brand</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <style>
 :root{
   --teal:#0F6B63; --teal2:#E3F0EE; --ink:#14383A; --muted:#5E6E6B; --line:#D9E2DF;
@@ -14,315 +17,414 @@
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 *,*::before,*::after{box-sizing:inherit}
-html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;font-size:15px;line-height:1.6}
-button,input{font:inherit;color:inherit}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;font-size:15px;line-height:1.6}
+button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--teal)}
+h1{font-size:24px;margin:0 0 4px} h2{font-size:18px;margin:0 0 10px} h3{font-size:15px;margin:18px 0 6px}
+p{margin:0 0 10px}
+.muted{color:var(--muted)} .small{font-size:13px}
 header{background:var(--teal);color:#fff}
-header .in{max-width:1000px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header .in{max-width:1060px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .brand{font-weight:700;font-size:19px}
 .brand small{font-weight:400;opacity:.85;margin-inline-start:8px;font-size:13px}
 .sp{flex:1}
 header button{background:none;border:1px solid rgba(255,255,255,.35);color:#fff;cursor:pointer;padding:5px 12px;border-radius:8px;font-size:13px}
 header button:hover{background:rgba(255,255,255,.14)}
-main{max-width:1000px;margin:0 auto;padding:26px 18px 60px}
-h1{font-size:24px;margin:0 0 4px}
-h2{font-size:18px;margin:0 0 10px}
-h3{font-size:15px;margin:18px 0 6px}
-p{margin:0 0 10px}
-.muted{color:var(--muted)} .small{font-size:13px}
+main{max-width:1060px;margin:0 auto;padding:26px 18px 50px}
 .apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:18px 0 26px}
-.app{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;text-decoration:none;color:inherit;position:relative}
+.app{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;text-decoration:none;color:inherit;position:relative;cursor:pointer;text-align:start;width:100%}
 .app:hover{border-color:var(--teal);box-shadow:0 4px 14px rgba(15,107,99,.12)}
 .app .ic{width:46px;height:46px;border-radius:12px;background:var(--teal2);color:var(--teal);display:grid;place-items:center;font-size:17px;font-weight:700;margin-bottom:12px}
 .app b{font-size:17px;display:block;margin-bottom:4px}
 .app.off{opacity:.6;pointer-events:none}
+.app.on{border-color:var(--teal);background:var(--teal2)}
 .tag{position:absolute;inset-inline-end:14px;top:16px;background:var(--amber2);color:var(--amber);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
-.signin{max-width:420px;margin:0 0 26px;display:grid;gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.grid{display:grid;gap:14px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.signin{max-width:420px;display:grid;gap:12px;margin-bottom:26px}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted);flex:1;min-width:140px}
 label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
-input{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff;width:100%}
-input:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+input,select,textarea{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff;width:100%}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);flex:0}
+.check input{width:auto}
 .btn{background:var(--teal);color:#fff;border:0;border-radius:8px;padding:10px 18px;font-weight:600;cursor:pointer}
+.btn.sec{background:var(--teal2);color:var(--teal)}
+.btn.warn{background:var(--red2);color:var(--red)}
 .btn:disabled{opacity:.5;cursor:default}
 .lnkbtn{background:none;border:0;color:var(--teal);text-decoration:underline;cursor:pointer;font-size:13px;padding:0;justify-self:start}
 .err{background:var(--red2);color:var(--red);border-radius:8px;padding:9px 12px;font-size:13px}
 .ok{background:var(--teal2);color:var(--teal);border-radius:8px;padding:9px 12px;font-size:13px}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
-.tabs button{background:#fff;border:1px solid var(--line);border-radius:20px;padding:7px 16px;cursor:pointer;color:var(--muted)}
-.tabs button.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
-ul{margin:0 0 10px;padding-inline-start:20px}
-li{margin-bottom:5px}
-footer{max-width:1000px;margin:0 auto;padding:0 18px 40px;color:var(--muted);font-size:13px}
-.hide{display:none}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.subtabs button{background:#EDF1EF;border:0;border-radius:999px;padding:6px 14px;cursor:pointer;color:var(--muted)}
+.subtabs button.on{background:var(--teal);color:#fff;font-weight:600}
+.chip{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:500;background:var(--teal2);color:var(--teal)}
+.chip.bad{background:var(--red2);color:var(--red)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:start;font-weight:500;color:var(--muted);font-size:13px;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td input,td select{padding:6px 8px}
+.num{font-variant-numeric:tabular-nums;text-align:end}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));inset-inline-start:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;z-index:60;max-width:90vw}
+[dir=rtl] .toast{transform:translateX(50%)}
+footer{max-width:1060px;margin:0 auto;padding:0 18px 36px;color:var(--muted);font-size:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+footer button{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:12px;padding:0}
+footer button:hover{color:var(--teal)}
+.modal{position:fixed;inset:0;background:rgba(20,40,38,.5);display:grid;place-items:center;padding:16px;z-index:70}
+.modal .box{background:#fff;border-radius:14px;max-width:680px;width:100%;max-height:85vh;overflow:auto;padding:22px}
+.modal ul{margin:0 0 10px;padding-inline-start:20px} .modal li{margin-bottom:5px}
+.x{background:none;border:0;font-size:22px;cursor:pointer;color:var(--muted);line-height:1}
 </style>
 </head>
 <body>
-<header><div class="in">
-  <div class="brand">First Brand <small id="hdrSub"></small></div>
-  <div class="sp"></div>
-  <span id="who" class="small" style="opacity:.9"></span>
-  <button id="langBtn">EN</button>
-  <button id="outBtn" class="hide">خروج</button>
-</div></header>
+<div id="root" style="padding:40px;color:#5E6E6B">…</div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback } = React;
 
-<main>
-  <h1 id="hello"></h1>
-  <p class="muted" id="helloSub"></p>
+const SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
+const sb = supabase.createClient(SB_URL, SB_KEY);
 
-  <div class="apps">
-    <a class="app" href="./kpi.html"><div class="ic">KPI</div><b id="a1"></b><span class="small muted" id="a1s"></span></a>
-    <a class="app" href="./hr.html"><div class="ic">HR</div><b id="a2"></b><span class="small muted" id="a2s"></span></a>
-    <a class="app off" href="#"><span class="tag" id="soon"></span><div class="ic">MK</div><b id="a3"></b><span class="small muted" id="a3s"></span></a>
-  </div>
+/* ---------- helpers ---------- */
+const iso = d => d.toISOString().slice(0,10);
+const today = () => iso(new Date());
+const thisMonth = () => today().slice(0,7)+"-01";
+const qOf = mk => { const m=Number(mk.slice(5,7)); return {year:Number(mk.slice(0,4)), quarter:Math.floor((m-1)/3)+1, idx:(m-1)%3}; };
+const bname = (branches,id) => (branches.find(b=>b.id===id)||{}).name || "—";
+const kname = (k,lang) => lang==="ar"&&k.name_ar ? k.name_ar : k.name_en;
+const kpisFor = (D,mk) => { const q=qOf(mk); return (D.kpis||[]).map(k=>{ const o=(D.schemes||[]).find(x=>x.kpi_code===k.code&&x.year===q.year&&x.quarter===q.quarter); return o? {...k,weight:o.weight,cap:o.cap,threshold:o.threshold??k.threshold,active:o.active} : k; }).sort((a,b)=>a.sort-b.sort); };
 
-  <section id="signin" class="card signin hide">
-    <h2 id="siTitle"></h2>
-    <p class="muted small" id="siSub" style="margin:0"></p>
-    <label><span id="lbEmail"></span><input id="email" type="email" dir="ltr" autocomplete="username"></label>
-    <label><span id="lbPass"></span><input id="pass" type="password" dir="ltr" autocomplete="current-password"></label>
-    <div id="siErr" class="err hide"></div>
-    <div id="siOk" class="ok hide"></div>
-    <button class="btn" id="siBtn"></button>
-    <button class="lnkbtn" id="forgotBtn"></button>
-  </section>
-
-  <div class="tabs">
-    <button data-t="privacy" class="on" id="tb1"></button>
-    <button data-t="security" id="tb2"></button>
-    <button data-t="terms" id="tb3"></button>
-  </div>
-  <section class="card" id="docBox"></section>
-</main>
-<footer id="foot"></footer>
-
-<script>
-var SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
-var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
-var sb = null;
-try { sb = supabase.createClient(SB_URL, SB_KEY); } catch (e) { console.error(e); }
-
-var lang = localStorage.getItem("lang") || "ar";
-var tab = "privacy";
-function tr(ar,en){ return lang==="ar" ? ar : en; }
-function $(id){ return document.getElementById(id); }
-function set(id,txt){ var el=$(id); if(el) el.textContent = txt; }
-
-var DOCS = {
-  privacy: function(){ return tr(
+/* ---------- policy texts ---------- */
+const POLICY = {
+  privacy: tr => tr(
 `<h2>سياسة الخصوصية</h2>
-<p class="muted small">آخر تحديث: أكتوبر 2026 — تنطبق على جميع أنظمة فيرست براند (مؤشرات الأداء، الموارد البشرية، وما يُضاف لاحقًا).</p>
+<p class="muted small">آخر تحديث: أكتوبر 2026 — تنطبق على جميع أنظمة فيرست براند.</p>
 <h3>البيانات التي نحفظها</h3>
-<ul>
-<li>بيانات الحساب: الاسم، البريد الإلكتروني، رقم الجوال، الصورة الشخصية (اختيارية).</li>
+<ul><li>بيانات الحساب: الاسم، البريد الإلكتروني، رقم الجوال، الصورة الشخصية (اختيارية).</li>
 <li>بيانات وظيفية: الفرع، المسمى الوظيفي، الرقم الوظيفي، تاريخ النقل بين الفروع.</li>
 <li>بيانات الأداء: قراءات المبيعات والمؤشرات وتقارير الزيارات.</li>
-<li>بيانات الموارد البشرية: طلبات الإجازة ومرفقاتها، الطلبات الإدارية، مسيرات الرواتب، المستندات التي ترفعها بنفسك.</li>
-</ul>
-<h3>لماذا نحفظها</h3>
-<p>لتشغيل العمل فقط: احتساب المؤشرات، اعتماد الإجازات، إصدار الرواتب والخطابات، وحفظ السجل النظامي للمنشأة.</p>
+<li>بيانات الموارد البشرية: طلبات الإجازة ومرفقاتها، الطلبات الإدارية، مسيرات الرواتب، المستندات التي ترفعها بنفسك.</li></ul>
 <h3>من يراها</h3>
-<ul>
-<li>أنت ترى بياناتك كاملة.</li>
+<ul><li>أنت ترى بياناتك كاملة.</li>
 <li>طلب الإجازة يراه من يعتمده فقط: مدير الصيدلية ثم الموارد البشرية ثم المشرف ثم الرئيس التنفيذي.</li>
 <li>الراتب لا يراه إلا أنت ومن مُنح صلاحية «الرواتب».</li>
-<li>الطلبات الإدارية ومرفقاتها لا يراها إلا أنت والموارد البشرية.</li>
-<li>مدير النظام يحدد هذه الصلاحيات ويمكنه سحبها في أي وقت.</li>
-</ul>
+<li>الطلبات الإدارية ومرفقاتها لا يراها إلا أنت والموارد البشرية.</li></ul>
 <h3>أين تُحفظ</h3>
 <p>على خوادم Supabase السحابية، مشفّرة أثناء النقل (HTTPS) وأثناء التخزين. الملفات في مساحة خاصة لا تُفتح إلا عبر رابط مؤقت ينتهي خلال دقائق.</p>
 <h3>كلمات المرور</h3>
-<p>تُحفظ مشفّرة باتجاه واحد، ولا يستطيع أحد الاطلاع عليها — ولا الإدارة ولا مدير النظام. يمكنك تغييرها في أي وقت من صفحة الموارد البشرية.</p>
-<h3>المشاركة مع جهات خارجية</h3>
-<p>لا نبيع بياناتك ولا نشاركها مع أي جهة تجارية. تخرج البيانات فقط عند وجود التزام نظامي أو جهة حكومية مختصة.</p>
-<h3>مدة الحفظ</h3>
-<p>تُحفظ السجلات طوال فترة العمل وللمدة التي يتطلبها نظام العمل السعودي بعدها، ثم تُحذف أو تُؤرشف.</p>
-<h3>حقوقك</h3>
-<p>يمكنك طلب الاطلاع على بياناتك أو تصحيحها عبر تبويب «طلباتي» في الموارد البشرية أو بالتواصل مع الإدارة.</p>`,
+<p>تُحفظ مشفّرة باتجاه واحد، ولا يستطيع أحد الاطلاع عليها — ولا الإدارة ولا مدير النظام.</p>
+<h3>المشاركة والمدة</h3>
+<p>لا نبيع بياناتك ولا نشاركها مع أي جهة تجارية. تُحفظ السجلات طوال فترة العمل وللمدة التي يتطلبها نظام العمل السعودي بعدها.</p>`,
 `<h2>Privacy policy</h2>
-<p class="muted small">Last updated: October 2026 — applies to all First Brand systems (KPI, HR, and anything added later).</p>
+<p class="muted small">Last updated: October 2026 — applies to all First Brand systems.</p>
 <h3>What we store</h3>
-<ul>
-<li>Account data: name, email, mobile number, optional profile photo.</li>
+<ul><li>Account data: name, email, mobile number, optional profile photo.</li>
 <li>Employment data: branch, job title, employee code, transfer history.</li>
 <li>Performance data: sales and KPI readings, visit reports.</li>
-<li>HR data: leave requests and their attachments, service requests, payslips, documents you upload yourself.</li>
-</ul>
-<h3>Why we store it</h3>
-<p>To run the business only: calculating KPIs, approving leave, issuing salaries and letters, and keeping the company's legal records.</p>
+<li>HR data: leave requests and their attachments, service requests, payslips, documents you upload yourself.</li></ul>
 <h3>Who can see it</h3>
-<ul>
-<li>You see all of your own data.</li>
+<ul><li>You see all of your own data.</li>
 <li>A leave request is seen only by those who approve it: pharmacy manager, then HR, then supervisor, then CEO.</li>
 <li>Your salary is seen only by you and whoever holds the Payroll permission.</li>
-<li>Service requests and their files are seen only by you and HR.</li>
-<li>The super admin sets these permissions and can withdraw them at any time.</li>
-</ul>
+<li>Service requests and their files are seen only by you and HR.</li></ul>
 <h3>Where it is stored</h3>
 <p>On cloud-hosted Supabase servers, encrypted in transit (HTTPS) and at rest. Files sit in private storage and open only through a temporary link that expires within minutes.</p>
 <h3>Passwords</h3>
-<p>Stored one-way encrypted. Nobody can read them, not management and not the super admin. You can change yours at any time from the HR page.</p>
-<h3>Sharing with others</h3>
-<p>We don't sell your data or share it with any commercial party. It leaves the company only where the law or a competent government body requires it.</p>
-<h3>How long we keep it</h3>
-<p>Records are kept for the duration of employment and for the period Saudi labour law requires afterwards, then deleted or archived.</p>
-<h3>Your rights</h3>
-<p>You can ask to see or correct your data through the My requests tab in HR, or by contacting management.</p>`); },
-
-  security: function(){ return tr(
+<p>Stored one-way encrypted. Nobody can read them, not management and not the super admin.</p>
+<h3>Sharing and retention</h3>
+<p>We don't sell your data or share it with any commercial party. Records are kept for the duration of employment and for the period Saudi labour law requires afterwards.</p>`),
+  security: tr => tr(
 `<h2>الأمان وحماية البيانات</h2>
 <h3>كيف نحمي النظام</h3>
-<ul>
-<li>كل صلاحية مطبّقة داخل قاعدة البيانات نفسها (Row Level Security)، وليست مجرد إخفاء للتبويبات، فلا يمكن تجاوزها من المتصفح.</li>
+<ul><li>كل صلاحية مطبّقة داخل قاعدة البيانات نفسها (Row Level Security)، فلا يمكن تجاوزها من المتصفح.</li>
 <li>حساب واحد لكل موظف، ودخول موحّد لجميع الأنظمة.</li>
 <li>الاتصال مشفّر بالكامل عبر HTTPS.</li>
-<li>الملفات (التقارير المرضية، المستندات، مرفقات الطلبات) في مساحة تخزين خاصة، وتُفتح برابط موقّع ينتهي خلال 10 دقائق.</li>
-<li>سلسلة الموافقات تُسجّل من وافق ومتى وبأي ملاحظة، ولا يمكن تعديل السجل.</li>
-<li>الرواتب لا تظهر للموظف إلا بعد نشرها من الموارد البشرية.</li>
-</ul>
+<li>الملفات في مساحة تخزين خاصة، وتُفتح برابط موقّع ينتهي خلال 10 دقائق.</li>
+<li>سلسلة الموافقات تُسجّل من وافق ومتى وبأي ملاحظة.</li>
+<li>الرواتب لا تظهر للموظف إلا بعد نشرها من الموارد البشرية.</li></ul>
 <h3>مسؤوليتك كمستخدم</h3>
-<ul>
-<li>لا تشارك كلمة المرور مع أي شخص، ولا تكتبها في مكان ظاهر.</li>
+<ul><li>لا تشارك كلمة المرور مع أي شخص.</li>
 <li>استخدم كلمة مرور لا تقل عن 8 أحرف ولا تستخدمها في مواقع أخرى.</li>
 <li>سجّل الخروج عند استخدام جهاز مشترك داخل الفرع.</li>
-<li>فعّل قفل الشاشة على جوالك إذا كنت تفتح النظام منه.</li>
-<li>أبلغ الإدارة فورًا عند أي دخول مشبوه أو وصول غير مصرّح به.</li>
-</ul>
+<li>أبلغ الإدارة فورًا عند أي دخول مشبوه.</li></ul>
 <h3>عند انتهاء العمل</h3>
 <p>يُعطّل الحساب فور انتهاء العلاقة الوظيفية، مع بقاء السجلات النظامية للمنشأة.</p>`,
 `<h2>Security and data protection</h2>
 <h3>How the system is protected</h3>
-<ul>
-<li>Every permission is enforced inside the database itself (Row Level Security), not just by hiding tabs, so it can't be bypassed from the browser.</li>
+<ul><li>Every permission is enforced inside the database itself (Row Level Security), so it can't be bypassed from the browser.</li>
 <li>One account per employee, with a single sign-in for all systems.</li>
 <li>All traffic is encrypted over HTTPS.</li>
-<li>Files (sick reports, documents, request attachments) live in private storage and open through a signed link that expires in 10 minutes.</li>
-<li>The approval chain records who approved what, when, and with which comment, and the log can't be edited.</li>
-<li>A payslip only becomes visible to the employee once HR publishes it.</li>
-</ul>
+<li>Files live in private storage and open through a signed link that expires in 10 minutes.</li>
+<li>The approval chain records who approved what, when, and with which comment.</li>
+<li>A payslip only becomes visible to the employee once HR publishes it.</li></ul>
 <h3>Your responsibility as a user</h3>
-<ul>
-<li>Never share your password or write it somewhere visible.</li>
+<ul><li>Never share your password.</li>
 <li>Use at least 8 characters, and don't reuse the password on other sites.</li>
 <li>Sign out when using a shared device in the branch.</li>
-<li>Keep a screen lock on your phone if you open the system from it.</li>
-<li>Report any suspicious sign-in or unauthorised access to management immediately.</li>
-</ul>
+<li>Report any suspicious sign-in to management immediately.</li></ul>
 <h3>When employment ends</h3>
-<p>The account is disabled as soon as employment ends, while the company's legal records are retained.</p>`); },
-
-  terms: function(){ return tr(
+<p>The account is disabled as soon as employment ends, while the company's legal records are retained.</p>`),
+  terms: tr => tr(
 `<h2>شروط الاستخدام</h2>
-<ul>
-<li>النظام مخصص لموظفي فيرست براند لأغراض العمل فقط.</li>
+<ul><li>النظام مخصص لموظفي فيرست براند لأغراض العمل فقط.</li>
 <li>أنت مسؤول عن صحة ما تدخله: تواريخ الإجازة، التقارير المرضية، والمستندات المرفقة.</li>
 <li>تقديم مستند غير صحيح أو انتحال صفة مستخدم آخر مخالفة تستوجب الإجراء النظامي.</li>
 <li>بيانات الرواتب والأداء سرّية، ويمنع تصويرها أو مشاركتها خارج النظام.</li>
-<li>قد تتغير التبويبات والصلاحيات حسب حاجة العمل.</li>
-</ul>
-<p class="muted small">للاستفسار أو الإبلاغ عن مشكلة: تواصل مع إدارة العمليات أو الموارد البشرية.</p>`,
+<li>قد تتغير التبويبات والصلاحيات حسب حاجة العمل.</li></ul>
+<p class="muted small">للاستفسار: تواصل مع إدارة العمليات أو الموارد البشرية.</p>`,
 `<h2>Terms of use</h2>
-<ul>
-<li>The system is for First Brand employees and for work purposes only.</li>
+<ul><li>The system is for First Brand employees and for work purposes only.</li>
 <li>You are responsible for what you enter: leave dates, sick reports and attached documents.</li>
 <li>Submitting a false document or acting as another user is a violation and will be handled accordingly.</li>
 <li>Salary and performance data is confidential: don't photograph or share it outside the system.</li>
-<li>Tabs and permissions may change as the business needs change.</li>
-</ul>
-<p class="muted small">For questions or to report a problem, contact Operations or HR.</p>`); }
+<li>Tabs and permissions may change as the business needs change.</li></ul>
+<p class="muted small">For questions, contact Operations or HR.</p>`)
 };
 
-function paintText(name){
-  document.documentElement.lang = lang;
-  document.documentElement.dir = lang==="ar" ? "rtl" : "ltr";
-  set("langBtn", lang==="ar" ? "EN" : "ع");
-  set("hdrSub", tr("منصة الشركة","Company platform"));
-  set("outBtn", tr("خروج","Sign out"));
-  set("tb1", tr("الخصوصية","Privacy"));
-  set("tb2", tr("الأمان","Security"));
-  set("tb3", tr("شروط الاستخدام","Terms of use"));
-  set("foot", tr("فيرست براند © 2026","First Brand © 2026"));
-  set("hello", name ? tr("أهلًا، "+name, "Welcome, "+name) : tr("منصة فيرست براند","First Brand platform"));
-  set("helloSub", tr("اختر النظام الذي تريد فتحه","Choose the system you want to open"));
-  set("a1", tr("مؤشرات الأداء","KPI"));
-  set("a1s", tr("نتائج الفروع والصيادلة، الأهداف، وتقارير الزيارات","Branch and pharmacist scores, targets and visit reports"));
-  set("a2", tr("الموارد البشرية","HR"));
-  set("a2s", tr("الإجازات، الطلبات الإدارية، والرواتب","Leave, service requests and salaries"));
-  set("a3", tr("التسويق","Marketing"));
-  set("a3s", tr("العروض والحملات — قيد الإعداد","Offers and campaigns — in progress"));
-  set("soon", tr("قريبًا","Soon"));
-  set("siTitle", tr("تسجيل الدخول","Sign in"));
-  set("siSub", tr("حساب واحد لجميع أنظمة فيرست براند","One account for all First Brand systems"));
-  set("lbEmail", tr("البريد الإلكتروني","Email"));
-  set("lbPass", tr("كلمة المرور","Password"));
-  set("siBtn", tr("دخول","Sign in"));
-  set("forgotBtn", tr("نسيت كلمة المرور؟","Forgot password?"));
-  set("who", name || "");
-  $("docBox").innerHTML = DOCS[tab]();
+/* ================= TEAM ================= */
+function Team({tr,D,reload,toast,lang}){
+  const {branches,pharmacists}=D;
+  const [nb,setNb]=useState(""); const [np,setNp]=useState({}); const [sel,setSel]=useState("all"); const [mv,setMv]=useState({});
+  const titles=[["community pharmacist",tr("صيدلي","Community pharmacist")],["pharmacy manager",tr("مدير صيدلية","Pharmacy manager")],["supervisor",tr("مشرف","Supervisor")],["management",tr("إدارة","Management")]];
+  const run=async q=>{ const r=await q; toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); reload(); return r; };
+  const addBranch=()=>{ if(!nb.trim()) return; run(sb.from("branches").insert({name:nb.trim()})); setNb(""); };
+  const removeBranch=b=>{ if(pharmacists.some(p=>p.branch_id===b.id)) return toast(tr("انقل أو احذف صيادلة الفرع أولًا","Move or remove its pharmacists first"),true);
+    if(confirm(tr("حذف ","Remove ")+b.name+"?")) run(sb.from("branches").delete().eq("id",b.id)); };
+  const addPh=async bid=>{ const f=np[bid]||{}; if(!f.name||!f.name.trim()) return;
+    const r=await sb.from("pharmacists").insert({full_name:f.name.trim(),emp_code:f.code||null,title:f.title||"community pharmacist",branch_id:bid==="none"?null:bid}).select().single();
+    if(r.error) return toast(r.error.message,true);
+    if(bid!=="none") await sb.from("pharmacist_assignments").insert({pharmacist_id:r.data.id,branch_id:bid,from_date:f.from||thisMonth()});
+    toast(tr("تم الحفظ","Saved")); setNp({...np,[bid]:{}}); reload(); };
+  const removePh=p=>{ if(confirm(tr("حذف؟ ستُحذف كل بياناته.","Remove? All their data will be deleted."))) run(sb.from("pharmacists").delete().eq("id",p.id)); };
+  const move=async p=>{ const m=mv[p.id]||{}; const to=m.branch; const from=m.from||today(); if(!to||to===p.branch_id) return;
+    const prev=new Date(from+"T00:00:00Z"); prev.setUTCDate(prev.getUTCDate()-1);
+    await sb.from("pharmacist_assignments").update({to_date:prev.toISOString().slice(0,10)}).eq("pharmacist_id",p.id).is("to_date",null);
+    await run(sb.from("pharmacist_assignments").insert({pharmacist_id:p.id,branch_id:to,from_date:from})); setMv({...mv,[p.id]:{}}); };
+  const updPh=(id,patch)=>run(sb.from("pharmacists").update(patch).eq("id",id));
+  const shown = sel==="all"? branches : branches.filter(b=>b.id===sel);
+  const groups=[...shown.map(b=>({id:b.id,name:b.name,list:pharmacists.filter(p=>p.branch_id===b.id)})), ...(sel==="all"?[{id:"none",name:tr("بدون فرع","No branch"),list:pharmacists.filter(p=>!p.branch_id)}]:[])];
+  return <div className="grid">
+    <div className="card grid"><h2>{tr("الفروع","Branches")}</h2>
+      <div className="row">{branches.map(b=><span key={b.id} className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel===b.id?"var(--teal)":"",color:sel===b.id?"#fff":""}} onClick={()=>setSel(sel===b.id?"all":b.id)}>
+          {b.name} <span style={{opacity:.7}}>({pharmacists.filter(p=>p.branch_id===b.id).length})</span>
+          <button onClick={e=>{e.stopPropagation();removeBranch(b);}} style={{background:"transparent",border:0,cursor:"pointer",color:"inherit",marginInlineStart:6}}>×</button></span>)}
+        <span className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel==="all"?"var(--teal)":"#EDF1EF",color:sel==="all"?"#fff":"var(--muted)"}} onClick={()=>setSel("all")}>{tr("كل الفروع","All branches")}</span></div>
+      <div className="row"><input placeholder={tr("اسم فرع جديد","New branch name")} value={nb} onChange={e=>setNb(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addBranch()} style={{maxWidth:280}}/><button className="btn sec" onClick={addBranch}>{tr("إضافة","Add")}</button></div></div>
+    {groups.map(g=><div key={g.id} className="card">
+      <div className="row" style={{justifyContent:"space-between",marginBottom:8}}><h2 style={{margin:0}}>{g.name}</h2><span className="muted small">{g.list.length} {tr("صيدلي","pharmacists")}</span></div>
+      {g.list.length>0 && <div className="tw"><table><thead><tr><th>{tr("الاسم","Name")}</th><th>{tr("الرقم الوظيفي","Emp. code")}</th><th>{tr("المسمى","Title")}</th><th>{tr("نقل إلى","Move to")}</th><th>{tr("اعتبارًا من","Effective")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead><tbody>
+        {g.list.map(p=><tr key={p.id} style={{opacity:p.active?1:.55}}>
+          <td>{p.full_name}</td><td className="muted">{p.emp_code||"—"}</td>
+          <td><select value={p.title||"community pharmacist"} onChange={e=>updPh(p.id,{title:e.target.value})}>{titles.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></td>
+          <td><select value={(mv[p.id]||{}).branch||""} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),branch:e.target.value}})}><option value="">—</option>{branches.filter(b=>b.id!==p.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></td>
+          <td className="row" style={{gap:6,flexWrap:"nowrap"}}><input type="date" value={(mv[p.id]||{}).from||today()} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),from:e.target.value}})} style={{width:150}}/>
+            <button className="btn sec" style={{padding:"5px 10px"}} disabled={!(mv[p.id]||{}).branch} onClick={()=>move(p)}>{tr("نقل","Move")}</button></td>
+          <td><label className="check"><input type="checkbox" checked={p.active} onChange={e=>updPh(p.id,{active:e.target.checked})}/>{tr("فعّال","Active")}</label></td>
+          <td><button className="btn warn" style={{padding:"5px 10px"}} onClick={()=>removePh(p)}>{tr("حذف","Remove")}</button></td></tr>)}
+      </tbody></table></div>}
+      <div className="row" style={{marginTop:10}}>
+        <input placeholder={tr("اسم الصيدلي","Pharmacist name")} value={(np[g.id]||{}).name||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),name:e.target.value}})} onKeyDown={e=>e.key==="Enter"&&addPh(g.id)} style={{maxWidth:240}}/>
+        <input placeholder={tr("الرقم الوظيفي","Emp. code")} value={(np[g.id]||{}).code||""} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),code:e.target.value}})} style={{maxWidth:130}}/>
+        <select value={(np[g.id]||{}).title||"community pharmacist"} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),title:e.target.value}})} style={{maxWidth:180}}>{titles.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
+        {g.id!=="none" && <input type="date" value={(np[g.id]||{}).from||thisMonth()} onChange={e=>setNp({...np,[g.id]:{...(np[g.id]||{}),from:e.target.value}})} style={{maxWidth:160}}/>}
+        <button className="btn sec" onClick={()=>addPh(g.id)}>{tr("إضافة صيدلي","Add pharmacist")}</button></div>
+    </div>)}
+  </div>;
 }
 
-function showSession(on){
-  $("signin").classList.toggle("hide", on);
-  $("outBtn").classList.toggle("hide", !on);
+/* ================= ACCOUNTS ================= */
+function Accounts({tr,me,D,toast}){
+  const {branches,pharmacists}=D; const [profiles,setProfiles]=useState([]);
+  const load=useCallback(async()=>{ const r=await sb.from("profiles").select("*").order("created_at",{ascending:false}); setProfiles(r.data||[]); },[]);
+  useEffect(()=>{ load(); },[load]);
+  const upd=async(id,patch)=>{ const r=await sb.from("profiles").update(patch).eq("id",id); toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); load(); };
+  const takenBy=pid=>profiles.find(p=>p.pharmacist_id===pid);
+  const pages=[["dash",tr("لوحة المتابعة","Dashboard")],["visits",tr("الزيارات","Visits")],["data",tr("البيانات","Data")],["targets",tr("الأهداف","Targets")]];
+  return <div className="grid">
+    <div className="muted small">{tr("هنا يتم ربط حسابات الدخول بسجلات الصيادلة وتحديد تبويبات مؤشرات الأداء. صلاحيات الموارد البشرية تُضبط داخل صفحة الموارد البشرية.","Login accounts are linked to pharmacist records here, and KPI tabs are set here. HR permissions are set inside the HR page.")}</div>
+    <div className="card tw">
+      <table><thead><tr><th>{tr("الاسم","Name")}</th><th>{tr("البريد","Email")}</th><th>{tr("الدور","Role")}</th><th>{tr("الصيدلي المرتبط","Linked pharmacist")}</th><th>{tr("تبويبات مؤشرات الأداء","KPI tabs")}</th><th>{tr("النطاق","Scope")}</th><th>{tr("مدير النظام","Super admin")}</th><th>{tr("الحالة","Status")}</th></tr></thead><tbody>
+        {profiles.map(p=>{ const linked=pharmacists.find(x=>x.id===p.pharmacist_id); return <tr key={p.id}>
+          <td>{p.full_name}{!p.pharmacist_id&&p.role==="pharmacist"&&<div><span className="chip bad">{tr("غير مرتبط","Unlinked")}</span></div>}</td>
+          <td className="small" dir="ltr">{p.email||"—"}</td>
+          <td><select value={p.role} disabled={p.id===me.id} onChange={e=>upd(p.id,{role:e.target.value})}>
+            <option value="pharmacist">{tr("صيدلي","Pharmacist")}</option><option value="supervisor">{tr("مشرف","Supervisor")}</option><option value="admin">{tr("إدارة","Management")}</option></select></td>
+          <td><select value={p.pharmacist_id||""} onChange={e=>upd(p.id,{pharmacist_id:e.target.value||null})}>
+            <option value="">{tr("— غير مرتبط —","— not linked —")}</option>
+            {pharmacists.map(x=>{ const tb=takenBy(x.id); return <option key={x.id} value={x.id} disabled={tb&&tb.id!==p.id}>{x.full_name} — {bname(branches,x.branch_id)}</option>; })}</select>
+            {linked&&<div className="muted small">{bname(branches,linked.branch_id)}</div>}</td>
+          <td><div className="row" style={{gap:8}}>{pages.map(([k,l])=><label key={k} className="check small"><input type="checkbox" checked={(p.pages||[]).includes(k)} disabled={p.is_super&&p.role==="admin"} onChange={e=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:e.target.checked?[...cur,k]:cur}); }}/>{l}</label>)}</div></td>
+          <td>{p.role==="supervisor"? <select value={p.branch_id||""} onChange={e=>upd(p.id,{branch_id:e.target.value||null})}><option value="">{tr("كل الفروع","All branches")}</option>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select> : <span className="muted">—</span>}</td>
+          <td>{p.role==="admin"? <input type="checkbox" checked={!!p.is_super} disabled={p.id===me.id} onChange={e=>upd(p.id,{is_super:e.target.checked})}/> : <span className="muted">—</span>}</td>
+          <td><label className="check"><input type="checkbox" checked={p.active} disabled={p.id===me.id} onChange={e=>upd(p.id,{active:e.target.checked})}/>{tr("فعّال","Active")}</label></td></tr>; })}
+      </tbody></table></div>
+  </div>;
 }
 
-async function refresh(){
-  var name = "", on = false;
-  try {
-    if (sb){
-      var res = await sb.auth.getSession();
-      var session = res && res.data ? res.data.session : null;
-      if (session){
-        on = true;
-        name = session.user.email || "";
-        try {
-          var pr = await sb.from("profiles").select("full_name").eq("id", session.user.id).maybeSingle();
-          if (pr && pr.data && pr.data.full_name) name = pr.data.full_name;
-        } catch(e){ console.error(e); }
-      }
-    }
-  } catch(e){ console.error(e); }
-  paintText(name);
-  showSession(on);
+/* ================= KPI SETTINGS ================= */
+function KpiSettings({tr,D,reload,toast,lang}){
+  const q0=qOf(thisMonth()); const [year,setYear]=useState(q0.year); const [quarter,setQuarter]=useState(q0.quarter);
+  const [ed,setEd]=useState({}); const [ni,setNi]=useState({});
+  useEffect(()=>setEd({}),[year,quarter]);
+  const mk=`${year}-${String((quarter-1)*3+1).padStart(2,"0")}-01`; const kpis=kpisFor(D,mk);
+  const val=(k,f)=> (ed[k.code]&&ed[k.code][f]!==undefined) ? ed[k.code][f] : (k[f]==null?"":k[f]);
+  const saveK=async()=>{ const rows=kpis.map(k=>({kpi_code:k.code,year,quarter,weight:Number(val(k,"weight"))||0,cap:val(k,"cap")===""?null:Number(val(k,"cap")),threshold:k.threshold==null?null:Number(val(k,"threshold")),active:(ed[k.code]&&ed[k.code].active!==undefined)?ed[k.code].active:k.active}));
+    const r=await sb.from("kpi_periods").upsert(rows,{onConflict:"kpi_code,year,quarter"}); toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); if(!r.error){ setEd({}); reload(); } };
+  const addItem=async()=>{ if(!ni.en||!ni.en.trim()) return;
+    const r=await sb.from("visit_items").insert({text_en:ni.en.trim(),text_ar:(ni.ar||"").trim(),section_en:(ni.sen||"").trim()||null,section_ar:(ni.sar||"").trim()||null,points:Number(ni.pts)||1,sort:(Math.max(0,...D.visit_items.map(x=>x.sort))||0)+1});
+    toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); setNi({}); reload(); };
+  const updItem=async(id,patch)=>{ const r=await sb.from("visit_items").update(patch).eq("id",id); toast(r.error?r.error.message:tr("تم الحفظ","Saved"), !!r.error); reload(); };
+  const total=kpis.filter(k=>(ed[k.code]&&ed[k.code].active!==undefined)?ed[k.code].active:k.active).reduce((a,k)=>a+Number(val(k,"weight")||0),0);
+  return <div className="grid">
+    <div className="card">
+      <div className="row" style={{justifyContent:"space-between",marginBottom:10}}>
+        <div className="row"><h2 style={{margin:0}}>{tr("أوزان المؤشرات","KPI weights")}</h2>
+          <select value={year} onChange={e=>setYear(Number(e.target.value))} style={{width:"auto"}}>{[q0.year-1,q0.year,q0.year+1].map(y=><option key={y} value={y}>{y}</option>)}</select>
+          <select value={quarter} onChange={e=>setQuarter(Number(e.target.value))} style={{width:"auto"}}>{[1,2,3,4].map(q=><option key={q} value={q}>Q{q}</option>)}</select></div>
+        <span className={"chip "+(total===100?"":"bad")}>Σ {total}</span></div>
+      <div className="tw"><table><thead><tr><th>{tr("المؤشر","KPI")}</th><th>{tr("المستوى","Level")}</th><th className="num">{tr("الوزن","Weight")}</th><th className="num">{tr("الحد الأقصى","Cap")}</th><th className="num">%</th><th>{tr("فعّال","Active")}</th></tr></thead><tbody>
+        {kpis.map(k=><tr key={k.code}>
+          <td><strong>{kname(k,lang)}</strong><div className="muted small">{k.code} · {k.rule}</div></td>
+          <td>{k.level==="branch"?tr("الفرع","Branch"):tr("الصيدلي","Pharmacist")}</td>
+          <td><input type="number" className="num" value={val(k,"weight")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],weight:e.target.value}})}/></td>
+          <td>{k.rule==="all_or_none"? <span className="muted">—</span> : <input type="number" step="0.1" className="num" placeholder={tr("بدون حد","No cap")} value={val(k,"cap")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],cap:e.target.value}})}/>}</td>
+          <td>{k.threshold!=null? <input type="number" step="0.001" className="num" value={val(k,"threshold")} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],threshold:e.target.value}})}/> : <span className="muted">—</span>}</td>
+          <td><input type="checkbox" checked={(ed[k.code]&&ed[k.code].active!==undefined)?ed[k.code].active:k.active} onChange={e=>setEd({...ed,[k.code]:{...ed[k.code],active:e.target.checked}})}/></td></tr>)}
+      </tbody></table></div>
+      <div style={{marginTop:12}}><button className="btn" onClick={saveK}>{tr("حفظ","Save")} Q{quarter} {year}</button></div>
+    </div>
+    <div className="card grid">
+      <h2>{tr("قائمة فحص الزيارة","Visit checklist")} <span className="muted small">Σ {D.visit_items.filter(i=>i.active).reduce((a,i)=>a+Number(i.points),0)}</span></h2>
+      <div className="tw"><table><thead><tr><th>{tr("القسم","Section")}</th><th>{tr("البند","Item")}</th><th className="num">{tr("الدرجة","Points")}</th><th>{tr("فعّال","Active")}</th></tr></thead><tbody>
+        {D.visit_items.map(i=><tr key={i.id} style={{opacity:i.active?1:.5}}>
+          <td className="small">{lang==="ar"&&i.section_ar?i.section_ar:i.section_en}</td>
+          <td>{lang==="ar"&&i.text_ar?i.text_ar:i.text_en}</td>
+          <td className="num">{i.points}</td>
+          <td><input type="checkbox" checked={i.active} onChange={e=>updItem(i.id,{active:e.target.checked})}/></td></tr>)}
+      </tbody></table></div>
+      <div className="row"><input placeholder={tr("القسم (إنجليزي)","Section (English)")} value={ni.sen||""} onChange={e=>setNi({...ni,sen:e.target.value})}/><input placeholder={tr("القسم (عربي)","Section (Arabic)")} dir="rtl" value={ni.sar||""} onChange={e=>setNi({...ni,sar:e.target.value})}/></div>
+      <div className="row"><input placeholder={tr("البند (إنجليزي)","Item (English)")} value={ni.en||""} onChange={e=>setNi({...ni,en:e.target.value})}/><input placeholder={tr("البند (عربي)","Item (Arabic)")} dir="rtl" value={ni.ar||""} onChange={e=>setNi({...ni,ar:e.target.value})}/>
+        <input type="number" placeholder={tr("الدرجة","Points")} value={ni.pts||""} onChange={e=>setNi({...ni,pts:e.target.value})} style={{maxWidth:100}}/>
+        <button className="btn sec" onClick={addItem}>{tr("إضافة","Add")}</button></div>
+    </div>
+  </div>;
 }
 
-$("langBtn").onclick = function(){ lang = lang==="ar" ? "en" : "ar"; localStorage.setItem("lang", lang); refresh(); };
-$("outBtn").onclick = async function(){ if(sb) await sb.auth.signOut(); refresh(); };
+/* ================= APP ================= */
+function App(){
+  const [lang,setLang]=useState(()=>{ try{ return localStorage.getItem("lang")||"ar"; }catch(e){ return "ar"; } });
+  const tr=useCallback((ar,en)=>lang==="ar"?ar:en,[lang]);
+  const [session,setSession]=useState(undefined);
+  const [me,setMe]=useState(null);
+  const [D,setD]=useState(null);
+  const [admin,setAdmin]=useState("");      // "", team, accounts, kpi
+  const [doc,setDoc]=useState("");          // policy modal
+  const [msg,setMsg]=useState(null);
+  const [f,setF]=useState({email:"",pass:""}); const [err,setErr]=useState(""); const [ok,setOk]=useState(""); const [busy,setBusy]=useState(false);
+  const toast=useCallback((text,bad)=>{ setMsg({text,bad}); clearTimeout(window.__t); window.__t=setTimeout(()=>setMsg(null),3000); },[]);
 
-var tabBtns = document.querySelectorAll(".tabs button");
-for (var i=0;i<tabBtns.length;i++){
-  tabBtns[i].onclick = function(){
-    tab = this.dataset.t;
-    for (var j=0;j<tabBtns.length;j++) tabBtns[j].classList.toggle("on", tabBtns[j]===this);
-    $("docBox").innerHTML = DOCS[tab]();
+  useEffect(()=>{ document.documentElement.lang=lang; document.documentElement.dir=lang==="ar"?"rtl":"ltr"; try{ localStorage.setItem("lang",lang); }catch(e){} },[lang]);
+  useEffect(()=>{ sb.auth.getSession().then(({data})=>setSession(data.session||null));
+    const {data:sub}=sb.auth.onAuthStateChange((_e,s)=>setSession(s)); return ()=>sub.subscription.unsubscribe(); },[]);
+  useEffect(()=>{ if(!session){ setMe(null); setD(null); return; }
+    (async()=>{ const r=await sb.from("profiles").select("*").eq("id",session.user.id).maybeSingle(); setMe(r.data||null); })(); },[session]);
+
+  const reload=useCallback(async()=>{
+    const [b,p,a,k,vi,sc]=await Promise.all([
+      sb.from("branches").select("*").eq("active",true).order("name"),
+      sb.from("pharmacists").select("*").order("full_name"),
+      sb.from("pharmacist_assignments").select("*"),
+      sb.from("kpis").select("*").order("sort"),
+      sb.from("visit_items").select("*").order("sort"),
+      sb.from("kpi_periods").select("*")]);
+    setD({branches:b.data||[],pharmacists:p.data||[],assignments:a.data||[],kpis:k.data||[],visit_items:vi.data||[],schemes:sc.data||[]});
+  },[]);
+  useEffect(()=>{ if(admin && !D) reload(); },[admin,D,reload]);
+
+  const signIn=async()=>{ setBusy(true); setErr(""); const r=await sb.auth.signInWithPassword({email:f.email.trim(),password:f.pass}); setBusy(false); if(r.error) setErr(r.error.message); else setF({email:"",pass:""}); };
+  const forgot=async()=>{ if(!f.email.trim()) return setErr(tr("اكتب بريدك الإلكتروني أولًا","Type your email first"));
+    const base=location.href.split("?")[0].replace(/index\.html$/,"");
+    const r=await sb.auth.resetPasswordForEmail(f.email.trim(),{redirectTo:base+"hr.html"});
+    if(r.error) setErr(r.error.message); else { setErr(""); setOk(tr("أرسلنا رابط تعيين كلمة المرور إلى بريدك","We sent a password reset link to your email")); } };
+
+  const isSuper = !!(me && me.is_super);
+  const name = me ? me.full_name : (session ? session.user.email : "");
+  const Card=({href,ic,title,sub,onClick,soon,on})=> {
+    const inner=<><div className="ic">{ic}</div><b>{title}</b><span className="small muted">{sub}</span>{soon&&<span className="tag">{tr("قريبًا","Soon")}</span>}</>;
+    return onClick ? <button className={"app"+(on?" on":"")} onClick={onClick}>{inner}</button>
+      : href ? <a className="app" href={href}>{inner}</a> : <div className="app off">{inner}</div>;
   };
+
+  return <>
+    <header><div className="in">
+      <div className="brand">First Brand <small>{tr("منصة الشركة","Company platform")}</small></div>
+      <div className="sp"/>
+      {name && <span className="small" style={{opacity:.9}}>{name}</span>}
+      <button onClick={()=>setLang(lang==="ar"?"en":"ar")}>{lang==="ar"?"EN":"ع"}</button>
+      {session && <button onClick={()=>{ setAdmin(""); sb.auth.signOut(); }}>{tr("خروج","Sign out")}</button>}
+    </div></header>
+
+    <main>
+      <h1>{name ? tr("أهلًا، ","Welcome, ")+name : tr("منصة فيرست براند","First Brand platform")}</h1>
+      <p className="muted">{tr("اختر النظام الذي تريد فتحه","Choose the system you want to open")}</p>
+
+      <div className="apps">
+        <Card href="./kpi.html" ic="KPI" title={tr("مؤشرات الأداء","KPI")} sub={tr("نتائج الفروع والصيادلة، الأهداف، وتقارير الزيارات","Branch and pharmacist scores, targets and visit reports")}/>
+        <Card href="./hr.html" ic="HR" title={tr("الموارد البشرية","HR")} sub={tr("الإجازات، الطلبات الإدارية، والرواتب","Leave, service requests and salaries")}/>
+        <Card ic="MK" title={tr("التسويق","Marketing")} sub={tr("العروض والحملات — قيد الإعداد","Offers and campaigns — in progress")} soon/>
+        {isSuper && <Card ic="⚙" title={tr("الإدارة","Admin")} sub={tr("الفروع والفريق، الحسابات والصلاحيات، أوزان المؤشرات","Branches and team, accounts and permissions, KPI weights")} on={!!admin} onClick={()=>setAdmin(admin?"":"team")}/>}
+      </div>
+
+      {!session && <section className="card signin">
+        <h2 style={{margin:0}}>{tr("تسجيل الدخول","Sign in")}</h2>
+        <p className="muted small" style={{margin:0}}>{tr("حساب واحد لجميع أنظمة فيرست براند","One account for all First Brand systems")}</p>
+        <label>{tr("البريد الإلكتروني","Email")}<input type="email" dir="ltr" value={f.email} onChange={e=>setF({...f,email:e.target.value})}/></label>
+        <label>{tr("كلمة المرور","Password")}<input type="password" dir="ltr" value={f.pass} onChange={e=>setF({...f,pass:e.target.value})} onKeyDown={e=>e.key==="Enter"&&signIn()}/></label>
+        {err && <div className="err">{err}</div>}
+        {ok && <div className="ok">{ok}</div>}
+        <button className="btn" disabled={busy||!f.email||!f.pass} onClick={signIn}>{busy?"…":tr("دخول","Sign in")}</button>
+        <button className="lnkbtn" onClick={forgot}>{tr("نسيت كلمة المرور؟","Forgot password?")}</button>
+      </section>}
+
+      {isSuper && admin && <section>
+        <div className="subtabs">
+          <button className={admin==="team"?"on":""} onClick={()=>setAdmin("team")}>{tr("الفروع والفريق","Branches & team")}</button>
+          <button className={admin==="accounts"?"on":""} onClick={()=>setAdmin("accounts")}>{tr("الحسابات","Accounts")}</button>
+          <button className={admin==="kpi"?"on":""} onClick={()=>setAdmin("kpi")}>{tr("إعدادات المؤشرات","KPI settings")}</button>
+        </div>
+        {!D ? <div className="card empty">…</div> : <>
+          {admin==="team" && <Team tr={tr} D={D} reload={reload} toast={toast} lang={lang}/>}
+          {admin==="accounts" && <Accounts tr={tr} me={me} D={D} toast={toast}/>}
+          {admin==="kpi" && <KpiSettings tr={tr} D={D} reload={reload} toast={toast} lang={lang}/>}
+        </>}
+      </section>}
+    </main>
+
+    <footer>
+      <span>First Brand © 2026</span>
+      <button onClick={()=>setDoc("privacy")}>{tr("الخصوصية","Privacy")}</button>
+      <button onClick={()=>setDoc("security")}>{tr("الأمان","Security")}</button>
+      <button onClick={()=>setDoc("terms")}>{tr("شروط الاستخدام","Terms of use")}</button>
+    </footer>
+
+    {doc && <div className="modal" onClick={e=>e.target===e.currentTarget&&setDoc("")}>
+      <div className="box">
+        <div className="row" style={{justifyContent:"flex-end"}}><button className="x" onClick={()=>setDoc("")}>×</button></div>
+        <div dangerouslySetInnerHTML={{__html:POLICY[doc](tr)}}/>
+        <div className="row" style={{marginTop:14}}>
+          {["privacy","security","terms"].filter(k=>k!==doc).map(k=><button key={k} className="btn sec" onClick={()=>setDoc(k)}>
+            {k==="privacy"?tr("الخصوصية","Privacy"):k==="security"?tr("الأمان","Security"):tr("شروط الاستخدام","Terms of use")}</button>)}
+        </div>
+      </div></div>}
+
+    {msg && <div className={"toast"} style={msg.bad?{background:"var(--red)"}:null}>{msg.text}</div>}
+  </>;
 }
-
-function showErr(m){ $("siErr").textContent=m; $("siErr").classList.remove("hide"); $("siOk").classList.add("hide"); }
-function showOk(m){ $("siOk").textContent=m; $("siOk").classList.remove("hide"); $("siErr").classList.add("hide"); }
-
-$("siBtn").onclick = async function(){
-  var email = $("email").value.trim(), password = $("pass").value;
-  if (!email || !password) return showErr(tr("اكتب البريد وكلمة المرور","Enter your email and password"));
-  $("siBtn").disabled = true;
-  var r = await sb.auth.signInWithPassword({ email: email, password: password });
-  $("siBtn").disabled = false;
-  if (r.error) return showErr(r.error.message);
-  $("pass").value = ""; $("siErr").classList.add("hide"); refresh();
-};
-$("pass").addEventListener("keydown", function(e){ if (e.key==="Enter") $("siBtn").click(); });
-$("forgotBtn").onclick = async function(){
-  var email = $("email").value.trim();
-  if (!email) return showErr(tr("اكتب بريدك الإلكتروني أولًا","Type your email first"));
-  var base = location.href.split("?")[0].replace(/index\.html$/,"");
-  var r = await sb.auth.resetPasswordForEmail(email, { redirectTo: base + "hr.html" });
-  if (r.error) return showErr(r.error.message);
-  showOk(tr("أرسلنا رابط تعيين كلمة المرور إلى بريدك","We sent a password reset link to your email"));
-};
-
-paintText("");                 // draw everything before any network call
-showSession(false);
-if (sb) sb.auth.onAuthStateChange(function(){ refresh(); });
-refresh();
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
