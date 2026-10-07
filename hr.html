@@ -90,6 +90,9 @@ td.num,th.num{text-align:end;font-variant-numeric:tabular-nums}
 .toast.bad{background:var(--red)}
 .empty{text-align:center;color:var(--muted);padding:26px}
 .login{max-width:380px;margin:60px auto}
+.modal{position:fixed;inset:0;background:rgba(20,40,38,.45);display:grid;place-items:center;z-index:40;padding:16px}
+.modal .card{width:100%;max-width:400px;display:grid;gap:12px}
+.lnkbtn{background:none;border:0;color:var(--teal);cursor:pointer;padding:0;text-decoration:underline;font-size:13px}
 @media (max-width:600px){ .tabs{top:0;position:relative} .steps .st span:not(.dot){font-size:11px} }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -101,11 +104,11 @@ const {useState,useEffect,useMemo,useCallback,useContext,createContext} = React;
 
 /* ---------- config ---------- */
 const SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
-const SB_KEY = ""; // leave empty: the key is read from index.html in the same repo
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
 let sb = null;
 async function getKey(){
   if (SB_KEY) return SB_KEY;
-  const txt = await (await fetch("./index.html",{cache:"no-store"})).text();
+  const txt = await (await fetch("./kpi.html",{cache:"no-store"})).text();
   const m = txt.match(/["'`](sb_publishable_[\w-]+|eyJ[\w-]+\.eyJ[\w-]+\.[\w-]+)["'`]/);
   if (!m) throw new Error("no key");
   return m[1];
@@ -698,17 +701,64 @@ function SettingsTab({people,toast}){
   </div>;
 }
 
+/* ---------- change password ---------- */
+function PasswordModal({email,recovery,onClose,toast}){
+  const tr = useT();
+  const [cur,setCur] = useState(""); const [pw,setPw] = useState(""); const [pw2,setPw2] = useState("");
+  const [show,setShow] = useState(false); const [busy,setBusy] = useState(false); const [err,setErr] = useState("");
+  let hint = "";
+  if (pw && pw.length < 8) hint = tr("8 أحرف على الأقل","At least 8 characters");
+  else if (pw2 && pw !== pw2) hint = tr("كلمتا المرور غير متطابقتين","The two passwords don't match");
+  else if (!recovery && pw && cur && pw === cur) hint = tr("اختر كلمة مرور مختلفة عن الحالية","Choose a password different from the current one");
+  const ok = pw.length>=8 && pw===pw2 && (recovery || (cur && pw!==cur));
+  const save = async () => {
+    setBusy(true); setErr("");
+    if (!recovery){
+      const chk = await sb.auth.signInWithPassword({email, password:cur});
+      if (chk.error){ setBusy(false); setErr(tr("كلمة المرور الحالية غير صحيحة","Current password is wrong")); return; }
+    }
+    const {error} = await sb.auth.updateUser({password:pw});
+    setBusy(false);
+    if (error){ setErr(error.message); return; }
+    toast(tr("تم تغيير كلمة المرور","Password changed")); onClose();
+  };
+  const type = show ? "text" : "password";
+  return <div className="modal" role="dialog" aria-modal="true" onClick={e=>e.target===e.currentTarget&&!recovery&&onClose()}>
+    <div className="card">
+      <h2 style={{margin:0}}>{recovery ? tr("تعيين كلمة مرور جديدة","Set a new password") : tr("تغيير كلمة المرور","Change password")}</h2>
+      <p className="small muted" style={{margin:0}}>{tr("كلمة المرور خاصة بك — لا يراها أحد، ولا حتى الإدارة.","Your password is private — nobody can see it, not even management.")}</p>
+      {!recovery && <label className="f">{tr("كلمة المرور الحالية","Current password")}<input type={type} dir="ltr" autoComplete="current-password" value={cur} onChange={e=>setCur(e.target.value)}/></label>}
+      <label className="f">{tr("كلمة المرور الجديدة","New password")}<input type={type} dir="ltr" autoComplete="new-password" value={pw} onChange={e=>setPw(e.target.value)}/></label>
+      <label className="f">{tr("تأكيد كلمة المرور الجديدة","Confirm new password")}<input type={type} dir="ltr" autoComplete="new-password" value={pw2} onChange={e=>setPw2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ok&&save()}/></label>
+      <label className="small" style={{display:"flex",gap:6,alignItems:"center"}}><input type="checkbox" style={{width:16,height:16}} checked={show} onChange={e=>setShow(e.target.checked)}/>{tr("إظهار كلمات المرور","Show passwords")}</label>
+      {hint && <div className="warn">{hint}</div>}
+      {err && <div className="err">{err}</div>}
+      <div className="row">
+        <button className="btn" disabled={!ok||busy} onClick={save}>{busy?"…":tr("حفظ كلمة المرور","Save password")}</button>
+        {!recovery && <button className="btn sec" onClick={onClose}>{tr("إلغاء","Cancel")}</button>}
+      </div>
+    </div>
+  </div>;
+}
+
 /* ---------- login ---------- */
 function Login({toast}){
   const tr = useT();
   const [email,setEmail] = useState(""); const [pw,setPw] = useState(""); const [busy,setBusy] = useState(false);
   const go = async () => { setBusy(true); const {error} = await sb.auth.signInWithPassword({email:email.trim(),password:pw}); setBusy(false); if(error) toast(error.message,true); };
+  const forgot = async () => {
+    if (!email.trim()) return toast(tr("اكتب بريدك الإلكتروني أولًا","Type your email first"),true);
+    const {error} = await sb.auth.resetPasswordForEmail(email.trim(),{redirectTo: location.origin+location.pathname});
+    if (error) return toast(error.message,true);
+    toast(tr("أرسلنا رابط تعيين كلمة المرور إلى بريدك","We sent a password reset link to your email"));
+  };
   return <div className="card login grid" style={{gap:12}}>
     <h1>{tr("تسجيل الدخول","Sign in")}</h1>
     <p className="small muted" style={{margin:0}}>{tr("نفس حساب نظام مؤشرات الأداء","Same account as the KPI system")}</p>
     <label className="f">{tr("البريد الإلكتروني","Email")}<input type="email" dir="ltr" value={email} onChange={e=>setEmail(e.target.value)}/></label>
     <label className="f">{tr("كلمة المرور","Password")}<input type="password" dir="ltr" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()}/></label>
     <button className="btn" disabled={busy||!email||!pw} onClick={go}>{tr("دخول","Sign in")}</button>
+    <button className="lnkbtn" onClick={forgot}>{tr("نسيت كلمة المرور؟","Forgot password?")}</button>
   </div>;
 }
 
@@ -726,6 +776,8 @@ function App(){
   const [srs,setSrs] = useState([]);
   const [tab,setTab] = useState(()=>new URLSearchParams(location.search).get("tab")||"leave");
   const [msg,setMsg] = useState(null);
+  const [pwOpen,setPwOpen] = useState(false);
+  const [recovery,setRecovery] = useState(false);
   const toast = useCallback((text,bad)=>{ setMsg({text,bad}); clearTimeout(window.__t); window.__t=setTimeout(()=>setMsg(null),3500); },[]);
 
   useEffect(()=>{ document.documentElement.lang=lang; document.documentElement.dir=lang==="ar"?"rtl":"ltr"; try{ localStorage.setItem("lang",lang); }catch(e){} },[lang]);
@@ -733,7 +785,7 @@ function App(){
     try{
       sb = supabase.createClient(SB_URL, await getKey());
       const {data} = await sb.auth.getSession(); setSession(data.session);
-      sb.auth.onAuthStateChange((_e,s)=>setSession(s));
+      sb.auth.onAuthStateChange((e,s)=>{ setSession(s); if(e==="PASSWORD_RECOVERY") setRecovery(true); });
       setBoot("ok");
     }catch(e){ setBoot("nokey"); }
   })(); },[]);
@@ -771,8 +823,10 @@ function App(){
       <div className="brand">First Brand <small>{tr("الموارد البشرية","HR")}</small></div>
       <div className="sp"/>
       {me && <span className="small" style={{opacity:.9}}>{me.full_name}</span>}
-      <a href="./index.html">{tr("مؤشرات الأداء","KPI")}</a>
+      <a href="./index.html">{tr("الرئيسية","Home")}</a>
+      <a href="./kpi.html">{tr("مؤشرات الأداء","KPI")}</a>
       <button className="lnk" onClick={()=>setLang(lang==="ar"?"en":"ar")}>{lang==="ar"?"EN":"ع"}</button>
+      {session && <button className="lnk" onClick={()=>setPwOpen(true)}>{tr("كلمة المرور","Password")}</button>}
       {session && <button className="lnk" onClick={()=>sb.auth.signOut()}>{tr("خروج","Sign out")}</button>}
     </div></header>
     {me && <nav className="tabs"><div className="in">{tabs.map(([k,label,n])=>
@@ -794,6 +848,7 @@ function App(){
         {active==="settings" && <SettingsTab people={people} toast={toast}/>}
       </>}
     </main>
+    {session && (pwOpen||recovery) && <PasswordModal email={session.user.email} recovery={recovery} toast={toast} onClose={()=>{ setPwOpen(false); setRecovery(false); }}/>}
     {msg && <div className={"toast"+(msg.bad?" bad":"")} role="status">{msg.text}</div>}
   </LangCtx.Provider>;
 }
