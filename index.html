@@ -18,75 +18,72 @@ html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Ple
 button,input{font:inherit;color:inherit}
 a{color:var(--teal)}
 header{background:var(--teal);color:#fff}
-header .in{max-width:1000px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header .in{max-width:1000px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .brand{font-weight:700;font-size:19px}
 .brand small{font-weight:400;opacity:.85;margin-inline-start:8px;font-size:13px}
 .sp{flex:1}
-header button{background:none;border:0;color:#fff;opacity:.9;cursor:pointer;padding:5px 8px;border-radius:7px;font-size:14px}
-header button:hover{opacity:1;background:rgba(255,255,255,.14)}
-main{max-width:1000px;margin:0 auto;padding:26px 18px 70px}
+header button{background:none;border:1px solid rgba(255,255,255,.35);color:#fff;cursor:pointer;padding:5px 12px;border-radius:8px;font-size:13px}
+header button:hover{background:rgba(255,255,255,.14)}
+main{max-width:1000px;margin:0 auto;padding:26px 18px 60px}
 h1{font-size:24px;margin:0 0 4px}
 h2{font-size:18px;margin:0 0 10px}
 h3{font-size:15px;margin:18px 0 6px}
 p{margin:0 0 10px}
 .muted{color:var(--muted)} .small{font-size:13px}
-.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:22px 0}
+.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:18px 0 26px}
 .app{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;text-decoration:none;color:inherit;position:relative}
 .app:hover{border-color:var(--teal);box-shadow:0 4px 14px rgba(15,107,99,.12)}
-.app .ic{width:44px;height:44px;border-radius:12px;background:var(--teal2);color:var(--teal);display:grid;place-items:center;font-size:22px;font-weight:700;margin-bottom:12px}
+.app .ic{width:46px;height:46px;border-radius:12px;background:var(--teal2);color:var(--teal);display:grid;place-items:center;font-size:17px;font-weight:700;margin-bottom:12px}
 .app b{font-size:17px;display:block;margin-bottom:4px}
-.app.off{opacity:.65;pointer-events:none}
+.app.off{opacity:.6;pointer-events:none}
 .tag{position:absolute;inset-inline-end:14px;top:16px;background:var(--amber2);color:var(--amber);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
-.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:26px 0 14px}
-.tabs button{background:#fff;border:1px solid var(--line);border-radius:20px;padding:7px 16px;cursor:pointer;color:var(--muted)}
-.tabs button.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
-ul{margin:0 0 10px;padding-inline-start:20px}
-li{margin-bottom:5px}
-.login{max-width:380px;margin:40px auto;display:grid;gap:12px}
+.signin{max-width:420px;margin:0 0 26px;display:grid;gap:12px}
 label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
 input{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#fff;width:100%}
 input:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 .btn{background:var(--teal);color:#fff;border:0;border-radius:8px;padding:10px 18px;font-weight:600;cursor:pointer}
 .btn:disabled{opacity:.5;cursor:default}
-.lnkbtn{background:none;border:0;color:var(--teal);text-decoration:underline;cursor:pointer;font-size:13px;padding:0}
+.lnkbtn{background:none;border:0;color:var(--teal);text-decoration:underline;cursor:pointer;font-size:13px;padding:0;justify-self:start}
 .err{background:var(--red2);color:var(--red);border-radius:8px;padding:9px 12px;font-size:13px}
 .ok{background:var(--teal2);color:var(--teal);border-radius:8px;padding:9px 12px;font-size:13px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+.tabs button{background:#fff;border:1px solid var(--line);border-radius:20px;padding:7px 16px;cursor:pointer;color:var(--muted)}
+.tabs button.on{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
+ul{margin:0 0 10px;padding-inline-start:20px}
+li{margin-bottom:5px}
 footer{max-width:1000px;margin:0 auto;padding:0 18px 40px;color:var(--muted);font-size:13px}
 .hide{display:none}
 </style>
 </head>
 <body>
 <header><div class="in">
-  <div class="brand">First Brand <small id="hdrSub">منصة الشركة</small></div>
+  <div class="brand">First Brand <small id="hdrSub"></small></div>
   <div class="sp"></div>
   <span id="who" class="small" style="opacity:.9"></span>
   <button id="langBtn">EN</button>
-  <button id="outBtn" class="hide"></button>
+  <button id="outBtn" class="hide">خروج</button>
 </div></header>
 
 <main>
-  <!-- signed out -->
-  <section id="loginBox" class="card login hide">
-    <h1 id="loginTitle"></h1>
-    <p class="muted small" id="loginSub" style="margin:0"></p>
-    <label id="lblEmail"><input id="email" type="email" dir="ltr" autocomplete="username"></label>
-    <label id="lblPass"><input id="pass" type="password" dir="ltr" autocomplete="current-password"></label>
-    <div id="loginErr" class="err hide"></div>
-    <div id="loginOk" class="ok hide"></div>
-    <button class="btn" id="signinBtn"></button>
-    <button class="lnkbtn" id="forgotBtn"></button>
-  </section>
+  <h1 id="hello"></h1>
+  <p class="muted" id="helloSub"></p>
 
-  <!-- signed in -->
-  <section id="hub" class="hide">
-    <h1 id="hello"></h1>
-    <p class="muted" id="helloSub"></p>
-    <div class="apps">
-      <a class="app" href="./kpi.html"><div class="ic">KPI</div><b id="a1"></b><span class="small muted" id="a1s"></span></a>
-      <a class="app" href="./hr.html"><div class="ic">HR</div><b id="a2"></b><span class="small muted" id="a2s"></span></a>
-      <a class="app off" href="#"><span class="tag" id="soon"></span><div class="ic">MK</div><b id="a3"></b><span class="small muted" id="a3s"></span></a>
-    </div>
+  <div class="apps">
+    <a class="app" href="./kpi.html"><div class="ic">KPI</div><b id="a1"></b><span class="small muted" id="a1s"></span></a>
+    <a class="app" href="./hr.html"><div class="ic">HR</div><b id="a2"></b><span class="small muted" id="a2s"></span></a>
+    <a class="app off" href="#"><span class="tag" id="soon"></span><div class="ic">MK</div><b id="a3"></b><span class="small muted" id="a3s"></span></a>
+  </div>
+
+  <section id="signin" class="card signin hide">
+    <h2 id="siTitle"></h2>
+    <p class="muted small" id="siSub" style="margin:0"></p>
+    <label><span id="lbEmail"></span><input id="email" type="email" dir="ltr" autocomplete="username"></label>
+    <label><span id="lbPass"></span><input id="pass" type="password" dir="ltr" autocomplete="current-password"></label>
+    <div id="siErr" class="err hide"></div>
+    <div id="siOk" class="ok hide"></div>
+    <button class="btn" id="siBtn"></button>
+    <button class="lnkbtn" id="forgotBtn"></button>
   </section>
 
   <div class="tabs">
@@ -99,214 +96,232 @@ footer{max-width:1000px;margin:0 auto;padding:0 18px 40px;color:var(--muted);fon
 <footer id="foot"></footer>
 
 <script>
-const SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
-const sb = supabase.createClient(SB_URL, SB_KEY);
+var SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
+var sb = null;
+try { sb = supabase.createClient(SB_URL, SB_KEY); } catch (e) { console.error(e); }
 
-let lang = (localStorage.getItem("lang") || "ar");
-const tr = (ar,en) => lang==="ar" ? ar : en;
-const $ = id => document.getElementById(id);
-let tab = "privacy";
+var lang = localStorage.getItem("lang") || "ar";
+var tab = "privacy";
+function tr(ar,en){ return lang==="ar" ? ar : en; }
+function $(id){ return document.getElementById(id); }
+function set(id,txt){ var el=$(id); if(el) el.textContent = txt; }
 
-const DOCS = {
-  privacy: () => tr(`
-    <h2>سياسة الخصوصية</h2>
-    <p class="muted small">آخر تحديث: سبتمبر 2026 — تنطبق على جميع أنظمة فيرست براند (مؤشرات الأداء، الموارد البشرية، وما يُضاف لاحقًا).</p>
-    <h3>البيانات التي نحفظها</h3>
-    <ul>
-      <li>بيانات الحساب: الاسم، البريد الإلكتروني، رقم الجوال، الصورة الشخصية (اختيارية).</li>
-      <li>بيانات وظيفية: الفرع، المسمى الوظيفي، الرقم الوظيفي، تاريخ النقل بين الفروع.</li>
-      <li>بيانات الأداء: قراءات المبيعات والمؤشرات وتقارير الزيارات.</li>
-      <li>بيانات الموارد البشرية: طلبات الإجازة ومرفقاتها، الطلبات الإدارية، مسيرات الرواتب، المستندات التي ترفعها بنفسك.</li>
-    </ul>
-    <h3>لماذا نحفظها</h3>
-    <p>لتشغيل العمل فقط: احتساب المؤشرات، اعتماد الإجازات، إصدار الرواتب والخطابات، وحفظ السجل النظامي للمنشأة. لا تُستخدم بياناتك لأي غرض آخر.</p>
-    <h3>من يراها</h3>
-    <ul>
-      <li>أنت ترى بياناتك كاملة.</li>
-      <li>طلب الإجازة يراه من يعتمده فقط: مدير الصيدلية ثم الموارد البشرية ثم المشرف ثم الرئيس التنفيذي.</li>
-      <li>الراتب لا يراه إلا أنت ومن مُنح صلاحية «الرواتب».</li>
-      <li>الطلبات الإدارية ومرفقاتها لا يراها إلا أنت والموارد البشرية.</li>
-      <li>مدير النظام يحدد هذه الصلاحيات ويمكنه سحبها في أي وقت.</li>
-    </ul>
-    <h3>أين تُحفظ</h3>
-    <p>على خوادم Supabase المستضافة سحابيًا، مشفّرة أثناء النقل (HTTPS) وأثناء التخزين. الملفات في مساحة خاصة لا تُفتح إلا عبر رابط مؤقت ينتهي خلال دقائق.</p>
-    <h3>كلمات المرور</h3>
-    <p>تُحفظ مشفّرة باتجاه واحد، ولا يستطيع أحد الاطلاع عليها — ولا الإدارة ولا مدير النظام. يمكنك تغييرها في أي وقت من صفحة الموارد البشرية.</p>
-    <h3>المشاركة مع جهات خارجية</h3>
-    <p>لا نبيع بياناتك ولا نشاركها مع أي جهة تجارية. تخرج البيانات فقط عند وجود التزام نظامي أو جهة حكومية مختصة.</p>
-    <h3>مدة الحفظ</h3>
-    <p>تُحفظ السجلات طوال فترة العمل وللمدة التي يتطلبها نظام العمل السعودي بعدها، ثم تُحذف أو تُؤرشف.</p>
-    <h3>حقوقك</h3>
-    <p>يمكنك طلب الاطلاع على بياناتك أو تصحيحها عبر تبويب «طلباتي» في الموارد البشرية أو بالتواصل مع الإدارة مباشرة.</p>`,`
-    <h2>Privacy policy</h2>
-    <p class="muted small">Last updated: September 2026 — applies to all First Brand systems (KPI, HR, and anything added later).</p>
-    <h3>What we store</h3>
-    <ul>
-      <li>Account data: name, email, mobile number, optional profile photo.</li>
-      <li>Employment data: branch, job title, employee code, transfer history.</li>
-      <li>Performance data: sales and KPI readings, visit reports.</li>
-      <li>HR data: leave requests and their attachments, service requests, payslips, documents you upload yourself.</li>
-    </ul>
-    <h3>Why we store it</h3>
-    <p>To run the business only: calculating KPIs, approving leave, issuing salaries and letters, and keeping the company's legal records. Your data is not used for anything else.</p>
-    <h3>Who can see it</h3>
-    <ul>
-      <li>You see all of your own data.</li>
-      <li>A leave request is seen only by those who approve it: pharmacy manager, then HR, then supervisor, then CEO.</li>
-      <li>Your salary is seen only by you and whoever holds the Payroll permission.</li>
-      <li>Service requests and their files are seen only by you and HR.</li>
-      <li>The super admin sets these permissions and can withdraw them at any time.</li>
-    </ul>
-    <h3>Where it is stored</h3>
-    <p>On cloud-hosted Supabase servers, encrypted in transit (HTTPS) and at rest. Files sit in private storage and open only through a temporary link that expires within minutes.</p>
-    <h3>Passwords</h3>
-    <p>Stored one-way encrypted. Nobody can read them, not management and not the super admin. You can change yours at any time from the HR page.</p>
-    <h3>Sharing with others</h3>
-    <p>We don't sell your data or share it with any commercial party. It leaves the company only where the law or a competent government body requires it.</p>
-    <h3>How long we keep it</h3>
-    <p>Records are kept for the duration of employment and for the period Saudi labour law requires afterwards, then deleted or archived.</p>
-    <h3>Your rights</h3>
-    <p>You can ask to see or correct your data through the My requests tab in HR, or by contacting management directly.</p>`),
+var DOCS = {
+  privacy: function(){ return tr(
+`<h2>سياسة الخصوصية</h2>
+<p class="muted small">آخر تحديث: أكتوبر 2026 — تنطبق على جميع أنظمة فيرست براند (مؤشرات الأداء، الموارد البشرية، وما يُضاف لاحقًا).</p>
+<h3>البيانات التي نحفظها</h3>
+<ul>
+<li>بيانات الحساب: الاسم، البريد الإلكتروني، رقم الجوال، الصورة الشخصية (اختيارية).</li>
+<li>بيانات وظيفية: الفرع، المسمى الوظيفي، الرقم الوظيفي، تاريخ النقل بين الفروع.</li>
+<li>بيانات الأداء: قراءات المبيعات والمؤشرات وتقارير الزيارات.</li>
+<li>بيانات الموارد البشرية: طلبات الإجازة ومرفقاتها، الطلبات الإدارية، مسيرات الرواتب، المستندات التي ترفعها بنفسك.</li>
+</ul>
+<h3>لماذا نحفظها</h3>
+<p>لتشغيل العمل فقط: احتساب المؤشرات، اعتماد الإجازات، إصدار الرواتب والخطابات، وحفظ السجل النظامي للمنشأة.</p>
+<h3>من يراها</h3>
+<ul>
+<li>أنت ترى بياناتك كاملة.</li>
+<li>طلب الإجازة يراه من يعتمده فقط: مدير الصيدلية ثم الموارد البشرية ثم المشرف ثم الرئيس التنفيذي.</li>
+<li>الراتب لا يراه إلا أنت ومن مُنح صلاحية «الرواتب».</li>
+<li>الطلبات الإدارية ومرفقاتها لا يراها إلا أنت والموارد البشرية.</li>
+<li>مدير النظام يحدد هذه الصلاحيات ويمكنه سحبها في أي وقت.</li>
+</ul>
+<h3>أين تُحفظ</h3>
+<p>على خوادم Supabase السحابية، مشفّرة أثناء النقل (HTTPS) وأثناء التخزين. الملفات في مساحة خاصة لا تُفتح إلا عبر رابط مؤقت ينتهي خلال دقائق.</p>
+<h3>كلمات المرور</h3>
+<p>تُحفظ مشفّرة باتجاه واحد، ولا يستطيع أحد الاطلاع عليها — ولا الإدارة ولا مدير النظام. يمكنك تغييرها في أي وقت من صفحة الموارد البشرية.</p>
+<h3>المشاركة مع جهات خارجية</h3>
+<p>لا نبيع بياناتك ولا نشاركها مع أي جهة تجارية. تخرج البيانات فقط عند وجود التزام نظامي أو جهة حكومية مختصة.</p>
+<h3>مدة الحفظ</h3>
+<p>تُحفظ السجلات طوال فترة العمل وللمدة التي يتطلبها نظام العمل السعودي بعدها، ثم تُحذف أو تُؤرشف.</p>
+<h3>حقوقك</h3>
+<p>يمكنك طلب الاطلاع على بياناتك أو تصحيحها عبر تبويب «طلباتي» في الموارد البشرية أو بالتواصل مع الإدارة.</p>`,
+`<h2>Privacy policy</h2>
+<p class="muted small">Last updated: October 2026 — applies to all First Brand systems (KPI, HR, and anything added later).</p>
+<h3>What we store</h3>
+<ul>
+<li>Account data: name, email, mobile number, optional profile photo.</li>
+<li>Employment data: branch, job title, employee code, transfer history.</li>
+<li>Performance data: sales and KPI readings, visit reports.</li>
+<li>HR data: leave requests and their attachments, service requests, payslips, documents you upload yourself.</li>
+</ul>
+<h3>Why we store it</h3>
+<p>To run the business only: calculating KPIs, approving leave, issuing salaries and letters, and keeping the company's legal records.</p>
+<h3>Who can see it</h3>
+<ul>
+<li>You see all of your own data.</li>
+<li>A leave request is seen only by those who approve it: pharmacy manager, then HR, then supervisor, then CEO.</li>
+<li>Your salary is seen only by you and whoever holds the Payroll permission.</li>
+<li>Service requests and their files are seen only by you and HR.</li>
+<li>The super admin sets these permissions and can withdraw them at any time.</li>
+</ul>
+<h3>Where it is stored</h3>
+<p>On cloud-hosted Supabase servers, encrypted in transit (HTTPS) and at rest. Files sit in private storage and open only through a temporary link that expires within minutes.</p>
+<h3>Passwords</h3>
+<p>Stored one-way encrypted. Nobody can read them, not management and not the super admin. You can change yours at any time from the HR page.</p>
+<h3>Sharing with others</h3>
+<p>We don't sell your data or share it with any commercial party. It leaves the company only where the law or a competent government body requires it.</p>
+<h3>How long we keep it</h3>
+<p>Records are kept for the duration of employment and for the period Saudi labour law requires afterwards, then deleted or archived.</p>
+<h3>Your rights</h3>
+<p>You can ask to see or correct your data through the My requests tab in HR, or by contacting management.</p>`); },
 
-  security: () => tr(`
-    <h2>الأمان وحماية البيانات</h2>
-    <h3>كيف نحمي النظام</h3>
-    <ul>
-      <li>كل صلاحية مطبّقة داخل قاعدة البيانات نفسها (Row Level Security)، وليست مجرد إخفاء للتبويبات، فلا يمكن تجاوزها من المتصفح.</li>
-      <li>حساب واحد لكل موظف، ودخول موحّد لجميع الأنظمة.</li>
-      <li>الاتصال مشفّر بالكامل عبر HTTPS.</li>
-      <li>الملفات (التقارير المرضية، المستندات، مرفقات الطلبات) في مساحة تخزين خاصة، وتُفتح برابط موقّع ينتهي خلال 10 دقائق.</li>
-      <li>سلسلة الموافقات تُسجّل من وافق ومتى وبأي ملاحظة، ولا يمكن تعديل السجل.</li>
-      <li>الرواتب لا تظهر للموظف إلا بعد نشرها من الموارد البشرية.</li>
-    </ul>
-    <h3>مسؤوليتك كمستخدم</h3>
-    <ul>
-      <li>لا تشارك كلمة المرور مع أي شخص، ولا تكتبها في مكان ظاهر.</li>
-      <li>استخدم كلمة مرور لا تقل عن 8 أحرف ولا تستخدمها في مواقع أخرى.</li>
-      <li>سجّل الخروج عند استخدام جهاز مشترك داخل الفرع.</li>
-      <li>فعّل قفل الشاشة على جوالك إذا كنت تفتح النظام منه.</li>
-      <li>أبلغ الإدارة فورًا عند أي دخول مشبوه أو وصول غير مصرّح به.</li>
-    </ul>
-    <h3>عند انتهاء العمل</h3>
-    <p>يُعطّل الحساب فور انتهاء العلاقة الوظيفية، مع بقاء السجلات النظامية للمنشأة.</p>`,`
-    <h2>Security and data protection</h2>
-    <h3>How the system is protected</h3>
-    <ul>
-      <li>Every permission is enforced inside the database itself (Row Level Security), not just by hiding tabs, so it can't be bypassed from the browser.</li>
-      <li>One account per employee, with a single sign-in for all systems.</li>
-      <li>All traffic is encrypted over HTTPS.</li>
-      <li>Files (sick reports, documents, request attachments) live in private storage and open through a signed link that expires in 10 minutes.</li>
-      <li>The approval chain records who approved what, when, and with which comment, and the log can't be edited.</li>
-      <li>A payslip only becomes visible to the employee once HR publishes it.</li>
-    </ul>
-    <h3>Your responsibility as a user</h3>
-    <ul>
-      <li>Never share your password or write it somewhere visible.</li>
-      <li>Use at least 8 characters, and don't reuse the password on other sites.</li>
-      <li>Sign out when using a shared device in the branch.</li>
-      <li>Keep a screen lock on your phone if you open the system from it.</li>
-      <li>Report any suspicious sign-in or unauthorised access to management immediately.</li>
-    </ul>
-    <h3>When employment ends</h3>
-    <p>The account is disabled as soon as employment ends, while the company's legal records are retained.</p>`),
+  security: function(){ return tr(
+`<h2>الأمان وحماية البيانات</h2>
+<h3>كيف نحمي النظام</h3>
+<ul>
+<li>كل صلاحية مطبّقة داخل قاعدة البيانات نفسها (Row Level Security)، وليست مجرد إخفاء للتبويبات، فلا يمكن تجاوزها من المتصفح.</li>
+<li>حساب واحد لكل موظف، ودخول موحّد لجميع الأنظمة.</li>
+<li>الاتصال مشفّر بالكامل عبر HTTPS.</li>
+<li>الملفات (التقارير المرضية، المستندات، مرفقات الطلبات) في مساحة تخزين خاصة، وتُفتح برابط موقّع ينتهي خلال 10 دقائق.</li>
+<li>سلسلة الموافقات تُسجّل من وافق ومتى وبأي ملاحظة، ولا يمكن تعديل السجل.</li>
+<li>الرواتب لا تظهر للموظف إلا بعد نشرها من الموارد البشرية.</li>
+</ul>
+<h3>مسؤوليتك كمستخدم</h3>
+<ul>
+<li>لا تشارك كلمة المرور مع أي شخص، ولا تكتبها في مكان ظاهر.</li>
+<li>استخدم كلمة مرور لا تقل عن 8 أحرف ولا تستخدمها في مواقع أخرى.</li>
+<li>سجّل الخروج عند استخدام جهاز مشترك داخل الفرع.</li>
+<li>فعّل قفل الشاشة على جوالك إذا كنت تفتح النظام منه.</li>
+<li>أبلغ الإدارة فورًا عند أي دخول مشبوه أو وصول غير مصرّح به.</li>
+</ul>
+<h3>عند انتهاء العمل</h3>
+<p>يُعطّل الحساب فور انتهاء العلاقة الوظيفية، مع بقاء السجلات النظامية للمنشأة.</p>`,
+`<h2>Security and data protection</h2>
+<h3>How the system is protected</h3>
+<ul>
+<li>Every permission is enforced inside the database itself (Row Level Security), not just by hiding tabs, so it can't be bypassed from the browser.</li>
+<li>One account per employee, with a single sign-in for all systems.</li>
+<li>All traffic is encrypted over HTTPS.</li>
+<li>Files (sick reports, documents, request attachments) live in private storage and open through a signed link that expires in 10 minutes.</li>
+<li>The approval chain records who approved what, when, and with which comment, and the log can't be edited.</li>
+<li>A payslip only becomes visible to the employee once HR publishes it.</li>
+</ul>
+<h3>Your responsibility as a user</h3>
+<ul>
+<li>Never share your password or write it somewhere visible.</li>
+<li>Use at least 8 characters, and don't reuse the password on other sites.</li>
+<li>Sign out when using a shared device in the branch.</li>
+<li>Keep a screen lock on your phone if you open the system from it.</li>
+<li>Report any suspicious sign-in or unauthorised access to management immediately.</li>
+</ul>
+<h3>When employment ends</h3>
+<p>The account is disabled as soon as employment ends, while the company's legal records are retained.</p>`); },
 
-  terms: () => tr(`
-    <h2>شروط الاستخدام</h2>
-    <ul>
-      <li>النظام مخصص لموظفي فيرست براند لأغراض العمل فقط.</li>
-      <li>أنت مسؤول عن صحة ما تدخله: تواريخ الإجازة، التقارير المرضية، والمستندات المرفقة.</li>
-      <li>تقديم مستند غير صحيح أو انتحال صفة مستخدم آخر مخالفة تستوجب الإجراء النظامي.</li>
-      <li>بيانات الرواتب والأداء سرّية، ويمنع تصويرها أو مشاركتها خارج النظام.</li>
-      <li>قد تتغير التبويبات والصلاحيات حسب حاجة العمل.</li>
-    </ul>
-    <p class="muted small">للاستفسار أو الإبلاغ عن مشكلة: تواصل مع إدارة العمليات أو الموارد البشرية.</p>`,`
-    <h2>Terms of use</h2>
-    <ul>
-      <li>The system is for First Brand employees and for work purposes only.</li>
-      <li>You are responsible for what you enter: leave dates, sick reports and attached documents.</li>
-      <li>Submitting a false document or acting as another user is a violation and will be handled accordingly.</li>
-      <li>Salary and performance data is confidential: don't photograph or share it outside the system.</li>
-      <li>Tabs and permissions may change as the business needs change.</li>
-    </ul>
-    <p class="muted small">For questions or to report a problem, contact Operations or HR.</p>`)
+  terms: function(){ return tr(
+`<h2>شروط الاستخدام</h2>
+<ul>
+<li>النظام مخصص لموظفي فيرست براند لأغراض العمل فقط.</li>
+<li>أنت مسؤول عن صحة ما تدخله: تواريخ الإجازة، التقارير المرضية، والمستندات المرفقة.</li>
+<li>تقديم مستند غير صحيح أو انتحال صفة مستخدم آخر مخالفة تستوجب الإجراء النظامي.</li>
+<li>بيانات الرواتب والأداء سرّية، ويمنع تصويرها أو مشاركتها خارج النظام.</li>
+<li>قد تتغير التبويبات والصلاحيات حسب حاجة العمل.</li>
+</ul>
+<p class="muted small">للاستفسار أو الإبلاغ عن مشكلة: تواصل مع إدارة العمليات أو الموارد البشرية.</p>`,
+`<h2>Terms of use</h2>
+<ul>
+<li>The system is for First Brand employees and for work purposes only.</li>
+<li>You are responsible for what you enter: leave dates, sick reports and attached documents.</li>
+<li>Submitting a false document or acting as another user is a violation and will be handled accordingly.</li>
+<li>Salary and performance data is confidential: don't photograph or share it outside the system.</li>
+<li>Tabs and permissions may change as the business needs change.</li>
+</ul>
+<p class="muted small">For questions or to report a problem, contact Operations or HR.</p>`); }
 };
 
-function paint(session, name){
+function paintText(name){
   document.documentElement.lang = lang;
   document.documentElement.dir = lang==="ar" ? "rtl" : "ltr";
-  $("langBtn").textContent = lang==="ar" ? "EN" : "ع";
-  $("hdrSub").textContent = tr("منصة الشركة","Company platform");
-  $("outBtn").textContent = tr("خروج","Sign out");
-  $("tb1").textContent = tr("الخصوصية","Privacy");
-  $("tb2").textContent = tr("الأمان","Security");
-  $("tb3").textContent = tr("شروط الاستخدام","Terms of use");
-  $("foot").textContent = tr("فيرست براند — جميع الحقوق محفوظة © 2026","First Brand — all rights reserved © 2026");
+  set("langBtn", lang==="ar" ? "EN" : "ع");
+  set("hdrSub", tr("منصة الشركة","Company platform"));
+  set("outBtn", tr("خروج","Sign out"));
+  set("tb1", tr("الخصوصية","Privacy"));
+  set("tb2", tr("الأمان","Security"));
+  set("tb3", tr("شروط الاستخدام","Terms of use"));
+  set("foot", tr("فيرست براند © 2026","First Brand © 2026"));
+  set("hello", name ? tr("أهلًا، "+name, "Welcome, "+name) : tr("منصة فيرست براند","First Brand platform"));
+  set("helloSub", tr("اختر النظام الذي تريد فتحه","Choose the system you want to open"));
+  set("a1", tr("مؤشرات الأداء","KPI"));
+  set("a1s", tr("نتائج الفروع والصيادلة، الأهداف، وتقارير الزيارات","Branch and pharmacist scores, targets and visit reports"));
+  set("a2", tr("الموارد البشرية","HR"));
+  set("a2s", tr("الإجازات، الطلبات الإدارية، والرواتب","Leave, service requests and salaries"));
+  set("a3", tr("التسويق","Marketing"));
+  set("a3s", tr("العروض والحملات — قيد الإعداد","Offers and campaigns — in progress"));
+  set("soon", tr("قريبًا","Soon"));
+  set("siTitle", tr("تسجيل الدخول","Sign in"));
+  set("siSub", tr("حساب واحد لجميع أنظمة فيرست براند","One account for all First Brand systems"));
+  set("lbEmail", tr("البريد الإلكتروني","Email"));
+  set("lbPass", tr("كلمة المرور","Password"));
+  set("siBtn", tr("دخول","Sign in"));
+  set("forgotBtn", tr("نسيت كلمة المرور؟","Forgot password?"));
+  set("who", name || "");
   $("docBox").innerHTML = DOCS[tab]();
+}
 
-  $("loginTitle").textContent = tr("تسجيل الدخول","Sign in");
-  $("loginSub").textContent = tr("حساب واحد لجميع أنظمة فيرست براند","One account for all First Brand systems");
-  $("lblEmail").firstChild.textContent = tr("البريد الإلكتروني","Email");
-  $("lblPass").firstChild.textContent = tr("كلمة المرور","Password");
-  $("signinBtn").textContent = tr("دخول","Sign in");
-  $("forgotBtn").textContent = tr("نسيت كلمة المرور؟","Forgot password?");
-
-  $("a1").textContent = tr("مؤشرات الأداء","KPI");
-  $("a1s").textContent = tr("نتائج الفروع والصيادلة، الأهداف، وتقارير الزيارات","Branch and pharmacist scores, targets and visit reports");
-  $("a2").textContent = tr("الموارد البشرية","HR");
-  $("a2s").textContent = tr("الإجازات، الطلبات الإدارية، والرواتب","Leave, service requests and salaries");
-  $("a3").textContent = tr("التسويق","Marketing");
-  $("a3s").textContent = tr("العروض والحملات — قيد الإعداد","Offers and campaigns — in progress");
-  $("soon").textContent = tr("قريبًا","Soon");
-
-  const on = !!session;
-  $("hub").classList.toggle("hide", !on);
-  $("loginBox").classList.toggle("hide", on);
+function showSession(on){
+  $("signin").classList.toggle("hide", on);
   $("outBtn").classList.toggle("hide", !on);
-  $("who").textContent = on ? (name||"") : "";
-  if (on){
-    $("hello").textContent = name ? tr("أهلًا، "+name,"Welcome, "+name) : tr("أهلًا بك","Welcome");
-    $("helloSub").textContent = tr("اختر النظام الذي تريد فتحه","Choose the system you want to open");
-  }
 }
 
 async function refresh(){
-  const {data} = await sb.auth.getSession();
-  let name = "";
-  if (data.session){
-    const r = await sb.from("profiles").select("full_name").eq("id",data.session.user.id).maybeSingle();
-    name = r.data?.full_name || data.session.user.email || "";
-  }
-  paint(data.session, name);
+  var name = "", on = false;
+  try {
+    if (sb){
+      var res = await sb.auth.getSession();
+      var session = res && res.data ? res.data.session : null;
+      if (session){
+        on = true;
+        name = session.user.email || "";
+        try {
+          var pr = await sb.from("profiles").select("full_name").eq("id", session.user.id).maybeSingle();
+          if (pr && pr.data && pr.data.full_name) name = pr.data.full_name;
+        } catch(e){ console.error(e); }
+      }
+    }
+  } catch(e){ console.error(e); }
+  paintText(name);
+  showSession(on);
 }
 
-$("langBtn").onclick = () => { lang = lang==="ar" ? "en" : "ar"; localStorage.setItem("lang",lang); refresh(); };
-$("outBtn").onclick = async () => { await sb.auth.signOut(); refresh(); };
-document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
-  tab = b.dataset.t;
-  document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on", x===b));
-  $("docBox").innerHTML = DOCS[tab]();
-});
-const showErr = m => { $("loginErr").textContent = m; $("loginErr").classList.remove("hide"); $("loginOk").classList.add("hide"); };
-const showOk  = m => { $("loginOk").textContent = m; $("loginOk").classList.remove("hide"); $("loginErr").classList.add("hide"); };
-$("signinBtn").onclick = async () => {
-  const email = $("email").value.trim(), password = $("pass").value;
+$("langBtn").onclick = function(){ lang = lang==="ar" ? "en" : "ar"; localStorage.setItem("lang", lang); refresh(); };
+$("outBtn").onclick = async function(){ if(sb) await sb.auth.signOut(); refresh(); };
+
+var tabBtns = document.querySelectorAll(".tabs button");
+for (var i=0;i<tabBtns.length;i++){
+  tabBtns[i].onclick = function(){
+    tab = this.dataset.t;
+    for (var j=0;j<tabBtns.length;j++) tabBtns[j].classList.toggle("on", tabBtns[j]===this);
+    $("docBox").innerHTML = DOCS[tab]();
+  };
+}
+
+function showErr(m){ $("siErr").textContent=m; $("siErr").classList.remove("hide"); $("siOk").classList.add("hide"); }
+function showOk(m){ $("siOk").textContent=m; $("siOk").classList.remove("hide"); $("siErr").classList.add("hide"); }
+
+$("siBtn").onclick = async function(){
+  var email = $("email").value.trim(), password = $("pass").value;
   if (!email || !password) return showErr(tr("اكتب البريد وكلمة المرور","Enter your email and password"));
-  $("signinBtn").disabled = true;
-  const {error} = await sb.auth.signInWithPassword({email,password});
-  $("signinBtn").disabled = false;
-  if (error) return showErr(error.message);
-  $("pass").value = ""; $("loginErr").classList.add("hide"); refresh();
+  $("siBtn").disabled = true;
+  var r = await sb.auth.signInWithPassword({ email: email, password: password });
+  $("siBtn").disabled = false;
+  if (r.error) return showErr(r.error.message);
+  $("pass").value = ""; $("siErr").classList.add("hide"); refresh();
 };
-$("pass").addEventListener("keydown", e => { if (e.key==="Enter") $("signinBtn").click(); });
-$("forgotBtn").onclick = async () => {
-  const email = $("email").value.trim();
+$("pass").addEventListener("keydown", function(e){ if (e.key==="Enter") $("siBtn").click(); });
+$("forgotBtn").onclick = async function(){
+  var email = $("email").value.trim();
   if (!email) return showErr(tr("اكتب بريدك الإلكتروني أولًا","Type your email first"));
-  const {error} = await sb.auth.resetPasswordForEmail(email,{redirectTo: location.origin + location.pathname.replace(/index\.html$/,"") + "hr.html"});
-  if (error) return showErr(error.message);
+  var base = location.href.split("?")[0].replace(/index\.html$/,"");
+  var r = await sb.auth.resetPasswordForEmail(email, { redirectTo: base + "hr.html" });
+  if (r.error) return showErr(r.error.message);
   showOk(tr("أرسلنا رابط تعيين كلمة المرور إلى بريدك","We sent a password reset link to your email"));
 };
-sb.auth.onAuthStateChange(()=>refresh());
+
+paintText("");                 // draw everything before any network call
+showSession(false);
+if (sb) sb.auth.onAuthStateChange(function(){ refresh(); });
 refresh();
 </script>
 </body>
