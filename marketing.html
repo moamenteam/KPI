@@ -448,6 +448,139 @@ function Contacts({tr,toast}){
   );
 }
 
+/* ================= UPLOAD SALES (super admin) ================= */
+let xlsxReady=null;
+function loadXlsx(){
+  if(window.XLSX) return Promise.resolve();
+  if(!xlsxReady) xlsxReady=new Promise((ok,bad)=>{ const sc=document.createElement("script");
+    sc.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; sc.onload=ok; sc.onerror=()=>bad(new Error("Couldn't load the Excel reader. Check the internet connection and try again.")); document.head.appendChild(sc); });
+  return xlsxReady;
+}
+function normPhone(p){
+  if(p===null||p===undefined) return null;
+  let d=String(p).replace(/\D/g,"");
+  if(d.startsWith("00")) d=d.slice(2);
+  if(d.startsWith("9660")) d="966"+d.slice(4);
+  if(d.startsWith("966")) d=d.slice(3);
+  if(d.startsWith("0")) d=d.slice(1);
+  return (d.length===9 && d[0]==="5") ? "966"+d : null;
+}
+function channelOf(pm){
+  const s=String(pm||"");
+  if(/wasfaty/i.test(s)) return "wasfaty";
+  const parts=s.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
+  return parts.length && parts.every(x=>["cash","mada","visa"].includes(x)) ? "cash" : "other";
+}
+function toIso(v){
+  if(v instanceof Date) return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,19)+"+03:00";
+  if(typeof v==="number"){ const ms=Math.round((v-25569)*864e5); return new Date(ms).toISOString().slice(0,19)+"+03:00"; }
+  const s=String(v||"").trim(); const m=s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if(m) return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]||"00"}+03:00`;
+  const m2=s.match(/^(\d{2})-(\d{2})-(\d{4})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if(m2) return `${m2[3]}-${m2[2]}-${m2[1]}T${m2[4]}:${m2[5]}:${m2[6]||"00"}+03:00`;
+  return null;
+}
+const NEED=["Branch Name","Order Date Time","Receipt Reference","Customer","Product Ref","Product Name","Category","Category 2","Category 3","Sold Qty","Total Amount","Payment Method","Phone"];
+function parseJuleb(aoa){
+  let hi=-1;
+  for(let i=0;i<Math.min(aoa.length,60);i++){ const r=(aoa[i]||[]).map(x=>String(x==null?"":x).trim()); if(r.includes("Receipt Reference")&&r.includes("Phone")){ hi=i; break; } }
+  if(hi<0) throw new Error("This isn't a POS Sales Details export: the Receipt Reference and Phone columns weren't found.");
+  const head=aoa[hi].map(x=>String(x==null?"":x).trim()); const col={}; NEED.forEach(k=>col[k]=head.indexOf(k));
+  const miss=NEED.filter(k=>col[k]<0); if(miss.length) throw new Error("Missing columns in the file: "+miss.join(", "));
+  const g=(r,k)=>r[col[k]];
+  const lines=[], cust={}, seen={}, stats={rows:0,bills:new Set(),billsPhone:new Set(),from:null,to:null,ch:{cash:0,wasfaty:0,other:0},branch:{}};
+  for(let i=hi+1;i<aoa.length;i++){
+    const r=aoa[i]; if(!r) continue; const bill=g(r,"Receipt Reference"); if(!bill) continue;
+    const iso=toIso(g(r,"Order Date Time")); if(!iso) continue;
+    stats.rows++; stats.bills.add(bill);
+    const d=iso.slice(0,10); if(!stats.from||d<stats.from) stats.from=d; if(!stats.to||d>stats.to) stats.to=d;
+    const br=String(g(r,"Branch Name")||"—"); const B=stats.branch[br]=stats.branch[br]||{bills:new Set(),withPhone:new Set()}; B.bills.add(bill);
+    const ph=normPhone(g(r,"Phone")); if(!ph) continue;
+    stats.billsPhone.add(bill); B.withPhone.add(bill);
+    const ref=String(g(r,"Product Ref")||"").trim(); if(!ref) continue;
+    const key=bill+"|"+ref; seen[key]=(seen[key]||0)+1;
+    const ch=channelOf(g(r,"Payment Method")); stats.ch[ch]++;
+    lines.push({bill_no:String(bill), line_no:seen[key], bill_date:iso, branch:br, customer_code:ph,
+      product_ref:ref, product_name:g(r,"Product Name")||null, category:g(r,"Category")||null, category2:g(r,"Category 2")||null,
+      category3:g(r,"Category 3")||null, qty:Number(g(r,"Sold Qty"))||0, total_amount:Number(g(r,"Total Amount"))||0,
+      channel:ch, payment_method:g(r,"Payment Method")||null});
+    const nm=String(g(r,"Customer")||"").trim();
+    const real = nm && !/^wasfaty/i.test(nm) ? nm : null;
+    const cur = cust[ph];
+    if(!cur) cust[ph]={t:iso,name:real};
+    else if(real && (!cur.name || iso>=cur.t)) cust[ph]={t:iso,name:real};
+  }
+  const customers=Object.entries(cust).map(([k,v])=>({customer_code:k,phone:"0"+k.slice(3),customer_name:v.name,updated_at:new Date().toISOString()}));
+  return {lines,customers,stats};
+}
+
+function Upload({tr,toast,onDone}){
+  const [busy,setBusy]=useState("");
+  const [res,setRes]=useState(null);
+  const [prog,setProg]=useState(null);
+  const [err,setErr]=useState("");
+  const pick=async e=>{
+    const file=e.target.files[0]; e.target.value=""; if(!file) return;
+    setErr(""); setRes(null); setProg(null); setBusy(tr("جارٍ قراءة الملف…","Reading the file…"));
+    try{
+      await loadXlsx();
+      const wb=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:false});
+      const aoa=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null});
+      const out=parseJuleb(aoa); out.name=file.name; setRes(out);
+    }catch(x){ setErr(x.message||String(x)); }
+    setBusy("");
+  };
+  const send=async()=>{
+    const {lines,customers,stats}=res; setErr("");
+    const total=lines.length+customers.length; let done=0; setProg(0);
+    const put=async(table,rows,conflict,keep)=>{
+      for(let i=0;i<rows.length;i+=500){
+        const r=await sb.from(table).upsert(rows.slice(i,i+500),{onConflict:conflict,ignoreDuplicates:!!keep});
+        if(r.error) throw new Error(r.error.message);
+        done+=Math.min(500,rows.length-i); setProg(Math.round(done*100/total));
+      }
+    };
+    setBusy(tr("جارٍ الرفع…","Uploading…"));
+    try{
+      // named customers update the saved name; unnamed ones are only added if new, so a known name is never wiped
+      await put("mkt_customers",customers.filter(c=>c.customer_name),"customer_code");
+      await put("mkt_customers",customers.filter(c=>!c.customer_name),"customer_code",true);
+      await put("mkt_sales_lines",lines,"bill_no,line_no,product_ref");
+      const l=await sb.from("mkt_loads").insert({data_from:stats.from,data_to:stats.to,rows_loaded:lines.length});
+      if(l.error) throw new Error(l.error.message);
+      toast(tr("تم رفع "+lines.length+" سطر","Uploaded "+lines.length+" lines")); setRes(null); setProg(null); onDone(stats.to);
+    }catch(x){ setErr(x.message||String(x)); }
+    setBusy("");
+  };
+  const S=res&&res.stats; const pct=(a,b)=>b?Math.round(a*100/b)+"%":"—";
+  return h(React.Fragment,null,
+    h("div",{className:"card",style:{padding:16,marginBottom:12}},
+      h("b",null,tr("رفع مبيعات جُلَب","Upload Juleb sales")),
+      h("div",{className:"sub",style:{margin:"4px 0 12px"}},tr("من جُلَب صدّر تقرير POS Sales Details لكل الفروع، ثم اختر الملف هنا. يمكن رفع نفس الفترة أكثر من مرة دون تكرار.",
+        "In Juleb, export the POS Sales Details report for all branches, then choose the file here. Uploading the same period twice won't create duplicates.")),
+      h("label",{className:"btn pri",style:{cursor:"pointer"}},tr("اختيار ملف Excel","Choose Excel file"),
+        h("input",{type:"file",accept:".xlsx,.xls",onChange:pick,disabled:!!busy,style:{display:"none"}})),
+      busy && h("div",{className:"sub",style:{marginTop:10}},busy, prog!=null && " "+prog+"%"),
+      err && h("div",{className:"badge b-over",style:{display:"block",marginTop:10,padding:"8px 10px",whiteSpace:"normal"}},err)),
+    S && h(React.Fragment,null,
+      h("div",{className:"stats"},
+        h("div",{className:"stat"},h("b",{className:"num"},LTR(S.from+" → "+S.to)),h("span",null,res.name)),
+        h("div",{className:"stat"},h("b",{className:"num"},S.bills.size.toLocaleString("en-US")),h("span",null,tr("فاتورة","Bills"))),
+        h("div",{className:"stat"},h("b",{className:"num"},pct(S.billsPhone.size,S.bills.size)),h("span",null,tr("فواتير برقم جوال","Bills with a phone"))),
+        h("div",{className:"stat"},h("b",{className:"num"},res.customers.length.toLocaleString("en-US")),h("span",null,tr("عميل","Customers"))),
+        h("div",{className:"stat"},h("b",{className:"num"},res.lines.length.toLocaleString("en-US")),h("span",null,tr("سطر سيُرفع","Lines to upload")))),
+      h("div",{className:"sub",style:{marginBottom:8}},tr("يُرفع فقط ما يحتوي على رقم جوال صحيح، لأن العميل يُعرَّف برقمه. كاش ","Only lines with a valid mobile number are uploaded, since the customer is identified by it. Cash ")
+        +S.ch.cash.toLocaleString("en-US")+tr(" · وصفتي "," · Wasfaty ")+S.ch.wasfaty.toLocaleString("en-US")+tr(" · أخرى (آجل، يُسر، هنقرستيشن) "," · Other (on account, Yusur, Hungerstation) ")+S.ch.other.toLocaleString("en-US")),
+      h("div",{className:"card scroll",style:{marginBottom:12}},
+        h("table",{className:"tbl"},
+          h("thead",null,h("tr",null,h("th",null,tr("الفرع","Branch")),h("th",null,tr("الفواتير","Bills")),h("th",null,tr("برقم جوال","With phone")),h("th",null,tr("النسبة","Share")))),
+          h("tbody",null,Object.entries(S.branch).sort((a,b)=>b[1].withPhone.size/b[1].bills.size-a[1].withPhone.size/a[1].bills.size).map(([k,v])=>h("tr",{key:k},
+            h("td",null,k),h("td",{className:"num"},v.bills.size),h("td",{className:"num"},v.withPhone.size),
+            h("td",null,h("span",{className:"badge "+(v.withPhone.size/v.bills.size>=.5?"b-ok":"b-due")},pct(v.withPhone.size,v.bills.size)))))))),
+      h("button",{className:"btn pri",disabled:!!busy,onClick:send},busy?busy:tr("رفع "+res.lines.length.toLocaleString("en-US")+" سطر","Upload "+res.lines.length.toLocaleString("en-US")+" lines")))
+  );
+}
+
 /* ================= APP ================= */
 function App(){
   const {lang,setLang,tr}=useLang();
@@ -503,17 +636,18 @@ function App(){
     ["coupon",tr("كوبونات +"+COUPON_MIN,"Coupons "+COUPON_MIN+"+")],
     ["infant",tr("مستلزمات الأطفال","Infant bulk")],
     ["log",tr("سجل التواصل","Contact log")],
-  ];
+  ].concat(me && me.is_super ? [["upload",tr("رفع المبيعات","Upload sales")]] : []);
   return h(React.Fragment,null,header,
     h("div",{className:"wrap"},
       h("div",{className:"tabs",role:"tablist"},TABS.map(([k,label])=>h("button",{key:k,role:"tab","aria-selected":tab===k,className:tab===k?"on":"",onClick:()=>setTab(k)},
         label,
         k==="infant" && !infantOpen ? h("span",{className:"n"},tr("مغلق","Closed"))
-        : counts[k]!=null && k!=="log" ? h("span",{className:"n"},counts[k]) : null))),
+        : counts[k]!=null && k!=="log" && k!=="upload" ? h("span",{className:"n"},counts[k]) : null))),
       tab==="refill" && h(Refill,{tr,toast,onCount:setCount("refill")}),
       tab==="coupon" && h(Coupon,{tr,toast,onCount:setCount("coupon")}),
       tab==="infant" && h(Infant,{tr,toast,onCount:setCount("infant")}),
-      tab==="log" && h(Contacts,{tr,toast})),
+      tab==="log" && h(Contacts,{tr,toast}),
+      tab==="upload" && h(Upload,{tr,toast,onDone:d=>setAsof(d)})),
     msg && h("div",{className:"toast"+(msg.err?" err":""),role:"status"},msg.text));
 }
 
