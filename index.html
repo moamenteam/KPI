@@ -74,7 +74,9 @@ td input,td select{padding:6px 8px}
 footer{max-width:1060px;margin:0 auto;padding:0 18px 36px;color:var(--muted);font-size:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
 /* ---- surface styles ---- */
 html[data-ui="soft"] .card,html[data-ui="soft"] .app{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
-html[data-ui="3d"] body{min-height:100vh;background:radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb,var(--teal) 14%,#fff), var(--paper)) no-repeat fixed}
+html[data-ui="3d"]{background:var(--paper)}
+html[data-ui="3d"] body{background:transparent}
+html[data-ui="3d"] body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb,var(--teal) 14%,#fff), var(--paper))}
 html[data-ui="3d"] header{background:linear-gradient(135deg,var(--teal),color-mix(in srgb,var(--teal) 62%,#000));box-shadow:0 8px 22px -10px rgba(0,0,0,.45)}
 html[data-ui="3d"] .card,html[data-ui="3d"] .app{border:0;border-radius:18px;background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--teal) 4%,#fff));
   box-shadow:0 14px 28px -18px rgba(20,40,38,.55),0 2px 6px rgba(20,40,38,.08)}
