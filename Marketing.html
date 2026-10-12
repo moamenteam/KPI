@@ -5,20 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>First Brand — Marketing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <style>
 :root{
-  --pri:#0f766e; --pri-soft:#e6f4f2; --ink:#1f2937; --mute:#6b7280; --line:#e5e7eb;
-  --bg:#f6f7f9; --card:#fff; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; --radius:10px;
+  --pri:#0F6B63; --pri-soft:#E3F0EE; --ink:#14383A; --mute:#5E6E6B; --line:#D9E2DF;
+  --bg:#F4F7F6; --card:#fff; --ok:#0F6B63; --warn:#B7791F; --bad:#B03A32; --radius:14px;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+body{margin:0;font-family:"IBM Plex Sans Arabic","IBM Plex Sans",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
 button,input,select,textarea{font:inherit}
 a{color:var(--pri)}
-.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top{background:var(--pri);color:#fff;position:sticky;top:0;z-index:5}
+.top .asof{color:rgba(255,255,255,.85)}
+.top .btn{background:none;border-color:rgba(255,255,255,.35);color:#fff}
 .top .in{max-width:1180px;margin:auto;display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
 .top h1{font-size:18px;margin:0;font-weight:700}
 .top .sp{flex:1}
@@ -68,6 +70,11 @@ a{color:var(--pri)}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;min-width:120px}
 .stat b{display:block;font-size:20px}
 .stat span{font-size:12px;color:var(--mute)}
+html[data-ui="soft"] .card,html[data-ui="soft"] .stat{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
+html[data-ui="3d"] body{background:radial-gradient(1200px 600px at 50% -200px, color-mix(in srgb,var(--pri) 14%,#fff), var(--bg))}
+html[data-ui="3d"] .top{background:linear-gradient(135deg,var(--pri),color-mix(in srgb,var(--pri) 62%,#000))}
+html[data-ui="3d"] .card,html[data-ui="3d"] .stat{border:0;border-radius:18px;box-shadow:0 14px 28px -18px rgba(20,40,38,.55),0 2px 6px rgba(20,40,38,.08)}
+html[data-ui="3d"] .btn.pri{box-shadow:0 3px 0 color-mix(in srgb,var(--pri) 62%,#000)}
 @media (max-width:640px){ .tbl .hide-sm{display:none} .bar input,.bar select{min-width:0;width:100%} .bar label{flex:1 1 45%} }
 </style>
 </head>
@@ -76,7 +83,7 @@ a{color:var(--pri)}
 <script>
 /* ================= CONFIG ================= */
 const SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
-let SB_KEY = "";   // optional: paste the anon/publishable key here. If empty, it's read from index.html automatically.
+let SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
 const TZ = "Asia/Riyadh";
 const COUPON_MIN = 300;
 const INFANT_DAYS = [9, 26, 30];
@@ -140,21 +147,23 @@ const OUTCOMES = [
   ["wrong_number","رقم خاطئ","Wrong number"],
 ];
 
-/* ================= THEME (reads the shared app_settings if present) ================= */
+/* ================= THEME (same "brand" setting as the home page) ================= */
+const THEMES = {
+  teal:["#0F6B63","#E3F0EE","#14383A"], navy:["#1F3A68","#E5EAF4","#16243D"], olive:["#4F6B2A","#ECF1E1","#2C3A1A"],
+  plum:["#6B2F56","#F3E6EE","#351828"], charcoal:["#37474F","#E8EDEF","#1E2A30"], sand:["#9A6B2F","#F6EDE0","#3C2A14"]
+};
 async function applyTheme(){
   try{
-    const r = await sb.from("app_settings").select("*").limit(5);
-    const rows = r.data||[];
-    let color=null, logo=null;
-    const scan = o => { if(!o||typeof o!=="object") return;
-      for(const [k,v] of Object.entries(o)){
-        if(typeof v==="string" && /^#[0-9a-f]{6}$/i.test(v) && /color|primary|accent/i.test(k) && !color) color=v;
-        if(typeof v==="string" && /logo/i.test(k) && /^https?:|^data:/.test(v) && !logo) logo=v;
-        if(v && typeof v==="object") scan(v);
-      }};
-    rows.forEach(scan);
-    if (color){ document.documentElement.style.setProperty("--pri",color); document.documentElement.style.setProperty("--pri-soft",color+"1a"); }
-    return logo;
+    const {data}=await sb.from("app_settings").select("value").eq("key","brand").maybeSingle();
+    const b=(data&&data.value)||{};
+    const st=document.documentElement.style;
+    document.documentElement.dataset.ui=b.ui||"flat";
+    const preset=b.preset||"teal", c=THEMES[preset];
+    const primary=preset==="custom"?(b.primary||"#0F6B63"):c[0];
+    st.setProperty("--pri",primary);
+    st.setProperty("--pri-soft",c?c[1]:"color-mix(in srgb, "+primary+" 14%, #fff)");
+    st.setProperty("--ink",c?c[2]:"#14383A");
+    return b.logo_url||null;
   }catch(e){ return null; }
 }
 
