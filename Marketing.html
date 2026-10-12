@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First Brand — Marketing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<style>
+:root{
+  --pri:#0f766e; --pri-soft:#e6f4f2; --ink:#1f2937; --mute:#6b7280; --line:#e5e7eb;
+  --bg:#f6f7f9; --card:#fff; --ok:#15803d; --warn:#b45309; --bad:#b91c1c; --radius:10px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px}
+button,input,select,textarea{font:inherit}
+a{color:var(--pri)}
+.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.top .in{max-width:1180px;margin:auto;display:flex;align-items:center;gap:12px;padding:10px 16px;flex-wrap:wrap}
+.top h1{font-size:18px;margin:0;font-weight:700}
+.top .sp{flex:1}
+.logo{height:32px;width:auto;border-radius:6px}
+.asof{font-size:13px;color:var(--mute)}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer}
+.btn:hover{border-color:var(--pri)}
+.btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.wrap{max-width:1180px;margin:auto;padding:16px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:10px 14px;cursor:pointer;color:var(--mute);border-bottom:3px solid transparent;white-space:nowrap;font-weight:500}
+.tabs button.on{color:var(--pri);border-bottom-color:var(--pri)}
+.tabs .n{display:inline-block;min-width:22px;padding:0 6px;margin-inline-start:6px;border-radius:11px;background:var(--pri-soft);color:var(--pri);font-size:12px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.bar label{display:flex;flex-direction:column;font-size:12px;color:var(--mute);gap:3px}
+.bar input,.bar select{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--card);min-width:130px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--card);padding:7px 14px;cursor:pointer}
+.seg button.on{background:var(--pri);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:12px;color:var(--mute);font-weight:600;text-align:start;padding:9px 10px;border-bottom:1px solid var(--line);background:#fafbfc}
+.tbl td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+.sub{color:var(--mute);font-size:13px}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap}
+.b-due{background:#fef3c7;color:var(--warn)} .b-over{background:#fee2e2;color:var(--bad)}
+.b-later{background:#eef2f7;color:var(--mute)} .b-ok{background:#dcfce7;color:var(--ok)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.empty{padding:40px 16px;text-align:center;color:var(--mute)}
+.closed{padding:36px 20px;text-align:center}
+.closed .big{font-size:22px;font-weight:700;margin:6px 0}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.modal .box{background:var(--card);border-radius:12px;padding:18px;width:100%;max-width:420px}
+.modal h3{margin:0 0 4px}
+.modal label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+.modal select,.modal input,.modal textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px}
+.row-end{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.toast{position:fixed;bottom:18px;inset-inline-start:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:8px;z-index:30}
+[dir=rtl] .toast{transform:translateX(50%)}
+.toast.err{background:var(--bad)}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;min-width:120px}
+.stat b{display:block;font-size:20px}
+.stat span{font-size:12px;color:var(--mute)}
+@media (max-width:640px){ .tbl .hide-sm{display:none} .bar input,.bar select{min-width:0;width:100%} .bar label{flex:1 1 45%} }
+</style>
+</head>
+<body>
+<div id="app"><div class="empty">Loading…</div></div>
+<script>
+/* ================= CONFIG ================= */
+const SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
+let SB_KEY = "";   // optional: paste the anon/publishable key here. If empty, it's read from index.html automatically.
+const TZ = "Asia/Riyadh";
+const COUPON_MIN = 300;
+const INFANT_DAYS = [9, 26, 30];
+
+const { useState, useEffect, useCallback, useMemo } = React;
+const h = React.createElement;
+let sb = null;
+
+/* ================= HELPERS ================= */
+const todayStr = () => new Intl.DateTimeFormat("en-CA",{timeZone:TZ}).format(new Date()); // YYYY-MM-DD
+const addDays = (s,n) => { const d=new Date(s+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+const monthStr = () => todayStr().slice(0,7);
+const lastDayOf = (y,m) => new Date(Date.UTC(y,m,0)).getUTCDate(); // m = 1..12
+function isInfantDay(s){
+  const [y,m,d]=s.split("-").map(Number);
+  if (INFANT_DAYS.includes(d)) return true;
+  return m===2 && d===lastDayOf(y,2);   // February has no 30th
+}
+function nextInfantDay(s){
+  let cur=s;
+  for(let i=1;i<=40;i++){ cur=addDays(s,i); if(isInfantDay(cur)) return cur; }
+  return cur;
+}
+function waPhone(p){
+  if(!p) return "";
+  let d=String(p).replace(/\D/g,"");
+  if(d.startsWith("00")) d=d.slice(2);
+  if(d.startsWith("05") && d.length===10) d="966"+d.slice(1);
+  else if(d.startsWith("5") && d.length===9) d="966"+d;
+  return d;
+}
+const fmtMoney = n => (Number(n)||0).toLocaleString("en-US",{maximumFractionDigits:2});
+const fmtDate = s => s ? String(s).slice(0,10) : "—";
+
+async function findKey(){
+  if (SB_KEY) return SB_KEY;
+  try{
+    const t = await (await fetch("./index.html",{cache:"no-store"})).text();
+    const m = t.match(/sb_publishable_[A-Za-z0-9_\-]+/) || t.match(/eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/);
+    if (m) return m[0];
+  }catch(e){}
+  return "";
+}
+
+/* ================= TEXT ================= */
+function useLang(){
+  const [lang,setLang]=useState(()=>{ try{ return localStorage.getItem("lang")||"ar"; }catch(e){ return "ar"; } });
+  useEffect(()=>{
+    document.documentElement.lang=lang; document.documentElement.dir = lang==="ar"?"rtl":"ltr";
+    try{ localStorage.setItem("lang",lang); }catch(e){}
+  },[lang]);
+  const tr=(ar,en)=> lang==="ar"?ar:en;
+  return {lang,setLang,tr};
+}
+
+const OUTCOMES = [
+  ["converted","تم البيع","Converted"],
+  ["interested","مهتم","Interested"],
+  ["no_answer","لم يرد","No answer"],
+  ["not_interested","غير مهتم","Not interested"],
+  ["wrong_number","رقم خاطئ","Wrong number"],
+];
+
+/* ================= THEME (reads the shared app_settings if present) ================= */
+async function applyTheme(){
+  try{
+    const r = await sb.from("app_settings").select("*").limit(5);
+    const rows = r.data||[];
+    let color=null, logo=null;
+    const scan = o => { if(!o||typeof o!=="object") return;
+      for(const [k,v] of Object.entries(o)){
+        if(typeof v==="string" && /^#[0-9a-f]{6}$/i.test(v) && /color|primary|accent/i.test(k) && !color) color=v;
+        if(typeof v==="string" && /logo/i.test(k) && /^https?:|^data:/.test(v) && !logo) logo=v;
+        if(v && typeof v==="object") scan(v);
+      }};
+    rows.forEach(scan);
+    if (color){ document.documentElement.style.setProperty("--pri",color); document.documentElement.style.setProperty("--pri-soft",color+"1a"); }
+    return logo;
+  }catch(e){ return null; }
+}
+
+/* ================= SHARED UI ================= */
+function Phone({phone,tr}){
+  const w=waPhone(phone);
+  if(!w) return h("span",{className:"sub"},tr("لا يوجد رقم","No number"));
+  return h("div",{className:"acts"},
+    h("span",{className:"num",dir:"ltr"},phone),
+    h("a",{className:"btn sm",href:"https://wa.me/"+w,target:"_blank",rel:"noopener"},tr("واتساب","WhatsApp")),
+    h("a",{className:"btn sm",href:"tel:+"+w},tr("اتصال","Call"))
+  );
+}
+
+function LogModal({tr,item,onClose,onSaved,toast}){
+  const [outcome,setOutcome]=useState("converted");
+  const [coupon,setCoupon]=useState("");
+  const [notes,setNotes]=useState("");
+  const [busy,setBusy]=useState(false);
+  const save=async()=>{
+    setBusy(true);
+    const row={ module:item.module, customer_code:item.customer_code, ref_key:item.ref_key||null,
+                outcome, coupon_code: item.module==="coupon" ? (coupon.trim()||null) : null, notes: notes.trim()||null };
+    const r=await sb.from("mkt_contacts").insert(row);
+    setBusy(false);
+    if(r.error){ toast(r.error.message,true); return; }
+    toast(tr("تم تسجيل التواصل","Contact logged")); onSaved();
+  };
+  return h("div",{className:"modal",onClick:e=>{ if(e.target===e.currentTarget) onClose(); }},
+    h("div",{className:"box",role:"dialog","aria-modal":"true"},
+      h("h3",null,tr("تسجيل التواصل","Log contact")),
+      h("div",{className:"sub"},(item.customer_name||item.customer_code)+(item.label?" — "+item.label:"")),
+      h("label",null,tr("النتيجة","Outcome")),
+      h("select",{value:outcome,onChange:e=>setOutcome(e.target.value)},
+        OUTCOMES.map(o=>h("option",{key:o[0],value:o[0]},tr(o[1],o[2])))),
+      item.module==="coupon" && h(React.Fragment,null,
+        h("label",null,tr("كود الكوبون","Coupon code")),
+        h("input",{value:coupon,onChange:e=>setCoupon(e.target.value),dir:"ltr"})),
+      h("label",null,tr("ملاحظات","Notes")),
+      h("textarea",{rows:3,value:notes,onChange:e=>setNotes(e.target.value)}),
+      h("div",{className:"row-end"},
+        h("button",{className:"btn",onClick:onClose},tr("إلغاء","Cancel")),
+        h("button",{className:"btn pri",disabled:busy,onClick:save},busy?"…":tr("تسجيل التواصل","Log contact")))
+    ));
+}
+
+function BranchFilter({tr,branches,value,onChange}){
+  return h("label",null,tr("الفرع","Branch"),
+    h("select",{value,onChange:e=>onChange(e.target.value)},
+      h("option",{value:""},tr("كل الفروع","All branches")),
+      branches.map(b=>h("option",{key:b,value:b},b))));
+}
+function SearchBox({tr,value,onChange}){
+  return h("label",null,tr("بحث","Search"),
+    h("input",{value,placeholder:tr("اسم، رقم، صنف","Name, number, item"),onChange:e=>onChange(e.target.value)}));
+}
+const match=(q,...vals)=>{ if(!q) return true; q=q.toLowerCase(); return vals.some(v=>String(v||"").toLowerCase().includes(q)); };
+
+/* ================= MODULE 1: REFILL ================= */
+function Refill({tr,toast,onCount}){
+  const t=todayStr();
+  const [channel,setChannel]=useState("cash");
+  const [from,setFrom]=useState(t);
+  const [to,setTo]=useState(addDays(t,5));
+  const [branch,setBranch]=useState("");
+  const [q,setQ]=useState("");
+  const [rows,setRows]=useState(null);
+  const [log,setLog]=useState(null);
+
+  const load=useCallback(async()=>{
+    setRows(null);
+    const r=await sb.from("mkt_refill_due").select("*")
+      .eq("channel",channel).gte("due_date",from).lte("due_date",to)
+      .order("due_date",{ascending:true}).limit(2000);
+    if(r.error){ toast(r.error.message,true); setRows([]); return; }
+    setRows(r.data||[]);
+  },[channel,from,to]);
+  useEffect(()=>{ load(); },[load]);
+
+  const branches=useMemo(()=>[...new Set((rows||[]).map(r=>r.branch).filter(Boolean))].sort(),[rows]);
+  const list=(rows||[]).filter(r=>(!branch||r.branch===branch) && match(q,r.customer_name,r.customer_code,r.phone,r.product_name,r.product_ref));
+  useEffect(()=>{ if(rows) onCount(list.length); },[rows,branch,q]);
+
+  const badge=r=> r.days_left<0 ? h("span",{className:"badge b-over"},tr("متأخر "+Math.abs(r.days_left)+" يوم",Math.abs(r.days_left)+" days late"))
+                  : r.days_left<=5 ? h("span",{className:"badge b-due"},r.days_left===0?tr("اليوم","Today"):tr("بعد "+r.days_left+" يوم","In "+r.days_left+" days"))
+                  : h("span",{className:"badge b-later"},tr("بعد "+r.days_left+" يوم","In "+r.days_left+" days"));
+
+  return h(React.Fragment,null,
+    h("div",{className:"bar"},
+      h("div",{className:"seg"},
+        h("button",{className:channel==="cash"?"on":"",onClick:()=>setChannel("cash")},tr("كاش","Cash")),
+        h("button",{className:channel==="wasfaty"?"on":"",onClick:()=>setChannel("wasfaty")},tr("وصفتي","Wasfaty"))),
+      h("label",null,tr("الاستحقاق من","Due from"),h("input",{type:"date",value:from,onChange:e=>setFrom(e.target.value)})),
+      h("label",null,tr("إلى","To"),h("input",{type:"date",value:to,onChange:e=>setTo(e.target.value)})),
+      h("button",{className:"btn sm",onClick:()=>{setFrom(t);setTo(addDays(t,5));}},tr("الأيام الخمسة القادمة","Next 5 days")),
+      h("button",{className:"btn sm",onClick:()=>{setFrom(addDays(t,-30));setTo(addDays(t,-1));}},tr("المتأخرون","Overdue")),
+      h(BranchFilter,{tr,branches,value:branch,onChange:setBranch}),
+      h(SearchBox,{tr,value:q,onChange:setQ})),
+    h("div",{className:"card scroll"},
+      rows===null ? h("div",{className:"empty"},"…")
+      : !list.length ? h("div",{className:"empty"},tr("لا يوجد عملاء مستحقون في هذه الفترة. غيّر التاريخ لرؤية فترة أخرى.","No customers due in this range. Change the dates to see another period."))
+      : h("table",{className:"tbl"},
+          h("thead",null,h("tr",null,
+            h("th",null,tr("العميل","Customer")),h("th",null,tr("الجوال","Phone")),h("th",null,tr("الصنف","Item")),
+            h("th",{className:"hide-sm"},tr("آخر شراء","Last purchase")),h("th",null,tr("الاستحقاق","Due")),
+            h("th",{className:"hide-sm"},tr("الفرع","Branch")),h("th",null,""))),
+          h("tbody",null,list.map(r=>h("tr",{key:r.customer_code+r.product_ref},
+            h("td",null,h("div",null,r.customer_name||"—"),h("div",{className:"sub num"},r.customer_code)),
+            h("td",null,h(Phone,{phone:r.phone,tr})),
+            h("td",null,h("div",null,r.product_name||r.product_ref),h("div",{className:"sub"},tr("الكمية ","Qty ")+r.qty)),
+            h("td",{className:"hide-sm num"},fmtDate(r.last_purchase)),
+            h("td",null,h("div",{className:"num"},fmtDate(r.due_date)),badge(r)),
+            h("td",{className:"hide-sm"},r.branch),
+            h("td",null,h("button",{className:"btn sm pri",onClick:()=>setLog({module:"refill",customer_code:r.customer_code,customer_name:r.customer_name,ref_key:r.product_ref,label:r.product_name})},tr("تسجيل","Log"))))))
+        )),
+    log && h(LogModal,{tr,item:log,toast,onClose:()=>setLog(null),onSaved:()=>{setLog(null);load();}})
+  );
+}
+
+/* ================= MODULE 2: COUPON ================= */
+function Coupon({tr,toast,onCount}){
+  const [month,setMonth]=useState(monthStr());
+  const [branch,setBranch]=useState("");
+  const [q,setQ]=useState("");
+  const [rows,setRows]=useState(null);
+  const [log,setLog]=useState(null);
+
+  const load=useCallback(async()=>{
+    setRows(null);
+    const r=await sb.from("mkt_coupon_targets").select("*").eq("month",month+"-01")
+      .order("month_total",{ascending:false}).limit(2000);
+    if(r.error){ toast(r.error.message,true); setRows([]); return; }
+    setRows(r.data||[]);
+  },[month]);
+  useEffect(()=>{ load(); },[load]);
+
+  const branches=useMemo(()=>[...new Set((rows||[]).map(r=>r.branch).filter(Boolean))].sort(),[rows]);
+  const list=(rows||[]).filter(r=>(!branch||r.branch===branch) && match(q,r.customer_name,r.customer_code,r.phone));
+  useEffect(()=>{ if(rows) onCount(list.length); },[rows,branch,q]);
+
+  return h(React.Fragment,null,
+    h("div",{className:"bar"},
+      h("label",null,tr("الشهر","Month"),h("input",{type:"month",value:month,onChange:e=>setMonth(e.target.value)})),
+      h(BranchFilter,{tr,branches,value:branch,onChange:setBranch}),
+      h(SearchBox,{tr,value:q,onChange:setQ}),
+      h("span",{className:"sub"},tr("عملاء كاش تجاوزت مشترياتهم "+COUPON_MIN+" ريال في الشهر، ولم يتم التواصل معهم بعد",
+                                    "Cash customers above "+COUPON_MIN+" SAR in the month who haven't been contacted yet"))),
+    h("div",{className:"card scroll"},
+      rows===null ? h("div",{className:"empty"},"…")
+      : !list.length ? h("div",{className:"empty"},tr("لا يوجد عملاء لهذا الشهر. اختر شهرًا آخر أو انتظر تحميل بيانات جديدة.","No customers for this month. Pick another month or wait for the next data load."))
+      : h("table",{className:"tbl"},
+          h("thead",null,h("tr",null,
+            h("th",null,tr("العميل","Customer")),h("th",null,tr("الجوال","Phone")),h("th",null,tr("إجمالي الشهر","Month total")),
+            h("th",{className:"hide-sm"},tr("الفواتير","Bills")),h("th",{className:"hide-sm"},tr("آخر فاتورة","Last bill")),
+            h("th",{className:"hide-sm"},tr("الفرع","Branch")),h("th",null,""))),
+          h("tbody",null,list.map(r=>h("tr",{key:r.customer_code},
+            h("td",null,h("div",null,r.customer_name||"—"),h("div",{className:"sub num"},r.customer_code)),
+            h("td",null,h(Phone,{phone:r.phone,tr})),
+            h("td",{className:"num"},h("b",null,fmtMoney(r.month_total)),tr(" ر.س"," SAR")),
+            h("td",{className:"hide-sm num"},r.bills),
+            h("td",{className:"hide-sm num"},fmtDate(r.last_bill)),
+            h("td",{className:"hide-sm"},r.branch),
+            h("td",null,h("button",{className:"btn sm pri",onClick:()=>setLog({module:"coupon",customer_code:r.customer_code,customer_name:r.customer_name,ref_key:month,label:fmtMoney(r.month_total)+" SAR"})},tr("تسجيل","Log"))))))
+        )),
+    log && h(LogModal,{tr,item:log,toast,onClose:()=>setLog(null),onSaved:()=>{setLog(null);load();}})
+  );
+}
+
+/* ================= MODULE 3: INFANT ================= */
+function Infant({tr,toast,onCount}){
+  const t=todayStr();
+  const open=isInfantDay(t);
+  const [branch,setBranch]=useState("");
+  const [q,setQ]=useState("");
+  const [rows,setRows]=useState(null);
+  const [log,setLog]=useState(null);
+
+  const load=useCallback(async()=>{
+    if(!open){ setRows([]); return; }
+    setRows(null);
+    const r=await sb.from("mkt_infant_targets").select("*").order("spent_60d",{ascending:false}).limit(2000);
+    if(r.error){ toast(r.error.message,true); setRows([]); return; }
+    setRows(r.data||[]);
+  },[open]);
+  useEffect(()=>{ load(); },[load]);
+
+  const branches=useMemo(()=>[...new Set((rows||[]).map(r=>r.branch).filter(Boolean))].sort(),[rows]);
+  const list=(rows||[]).filter(r=>(!branch||r.branch===branch) && match(q,r.customer_name,r.customer_code,r.phone,r.items));
+  useEffect(()=>{ if(rows) onCount(open?list.length:0); },[rows,branch,q]);
+
+  if(!open){
+    const nx=nextInfantDay(t);
+    return h("div",{className:"card closed"},
+      h("div",{className:"sub"},tr("قائمة مستلزمات الأطفال متاحة أيام 9 و26 و30 من كل شهر فقط","The infant list opens on the 9th, 26th and 30th of each month only")),
+      h("div",{className:"big num"},nx),
+      h("div",{className:"sub"},tr("الموعد القادم — بعد ","Next campaign day — in ")+Math.round((new Date(nx)-new Date(t))/864e5)+tr(" يوم"," days")));
+  }
+
+  return h(React.Fragment,null,
+    h("div",{className:"bar"},
+      h(BranchFilter,{tr,branches,value:branch,onChange:setBranch}),
+      h(SearchBox,{tr,value:q,onChange:setQ}),
+      h("span",{className:"sub"},tr("عملاء اشتروا حليب أطفال أو حفاضات أو أدوية أطفال خلال آخر 60 يومًا — اعرض عليهم شراء كمية","Customers who bought infant milk, diapers or infant medicines in the last 60 days — offer a bulk purchase"))),
+    h("div",{className:"card scroll"},
+      rows===null ? h("div",{className:"empty"},"…")
+      : !list.length ? h("div",{className:"empty"},tr("تم التواصل مع كل العملاء اليوم، أو لا توجد مشتريات أطفال حديثة.","Every customer has been contacted today, or there are no recent infant purchases."))
+      : h("table",{className:"tbl"},
+          h("thead",null,h("tr",null,
+            h("th",null,tr("العميل","Customer")),h("th",null,tr("الجوال","Phone")),h("th",null,tr("الأصناف","Items")),
+            h("th",{className:"hide-sm"},tr("إنفاق 60 يوم","60-day spend")),h("th",{className:"hide-sm"},tr("آخر شراء","Last purchase")),
+            h("th",{className:"hide-sm"},tr("الفرع","Branch")),h("th",null,""))),
+          h("tbody",null,list.map(r=>h("tr",{key:r.customer_code},
+            h("td",null,h("div",null,r.customer_name||"—"),h("div",{className:"sub num"},r.customer_code)),
+            h("td",null,h(Phone,{phone:r.phone,tr})),
+            h("td",null,h("div",{className:"sub"},r.items)),
+            h("td",{className:"hide-sm num"},fmtMoney(r.spent_60d)),
+            h("td",{className:"hide-sm num"},fmtDate(r.last_purchase)),
+            h("td",{className:"hide-sm"},r.branch),
+            h("td",null,h("button",{className:"btn sm pri",onClick:()=>setLog({module:"infant",customer_code:r.customer_code,customer_name:r.customer_name,ref_key:t})},tr("تسجيل","Log"))))))
+        )),
+    log && h(LogModal,{tr,item:log,toast,onClose:()=>setLog(null),onSaved:()=>{setLog(null);load();}})
+  );
+}
+
+/* ================= CONTACT LOG ================= */
+function Contacts({tr,toast}){
+  const t=todayStr();
+  const [from,setFrom]=useState(t.slice(0,8)+"01");
+  const [to,setTo]=useState(t);
+  const [mod,setMod]=useState("");
+  const [rows,setRows]=useState(null);
+  const [names,setNames]=useState({});
+
+  const load=useCallback(async()=>{
+    setRows(null);
+    let qy=sb.from("mkt_contacts").select("*").gte("contacted_at",from+"T00:00:00+03:00").lte("contacted_at",to+"T23:59:59+03:00")
+      .order("contacted_at",{ascending:false}).limit(1000);
+    if(mod) qy=qy.eq("module",mod);
+    const r=await qy;
+    if(r.error){ toast(r.error.message,true); setRows([]); return; }
+    setRows(r.data||[]);
+    const ids=[...new Set((r.data||[]).map(x=>x.contacted_by).filter(Boolean))];
+    if(ids.length){ const p=await sb.from("profiles").select("id,full_name").in("id",ids); const m={}; (p.data||[]).forEach(x=>m[x.id]=x.full_name); setNames(m); }
+  },[from,to,mod]);
+  useEffect(()=>{ load(); },[load]);
+
+  const MOD={refill:tr("إعادة الصرف","Refill"),coupon:tr("كوبون","Coupon"),infant:tr("أطفال","Infant")};
+  const OUT=Object.fromEntries(OUTCOMES.map(o=>[o[0],tr(o[1],o[2])]));
+  const all=rows||[];
+  const conv=all.filter(r=>r.outcome==="converted").length;
+
+  return h(React.Fragment,null,
+    h("div",{className:"bar"},
+      h("label",null,tr("من","From"),h("input",{type:"date",value:from,onChange:e=>setFrom(e.target.value)})),
+      h("label",null,tr("إلى","To"),h("input",{type:"date",value:to,onChange:e=>setTo(e.target.value)})),
+      h("label",null,tr("القسم","Module"),h("select",{value:mod,onChange:e=>setMod(e.target.value)},
+        h("option",{value:""},tr("الكل","All")),Object.entries(MOD).map(([k,v])=>h("option",{key:k,value:k},v))))),
+    h("div",{className:"stats"},
+      h("div",{className:"stat"},h("b",{className:"num"},all.length),h("span",null,tr("تواصل","Contacts"))),
+      h("div",{className:"stat"},h("b",{className:"num"},conv),h("span",null,tr("تم البيع","Converted"))),
+      h("div",{className:"stat"},h("b",{className:"num"},all.length?Math.round(conv*100/all.length)+"%":"—"),h("span",null,tr("نسبة التحويل","Conversion rate")))),
+    h("div",{className:"card scroll"},
+      rows===null ? h("div",{className:"empty"},"…")
+      : !all.length ? h("div",{className:"empty"},tr("لا يوجد تواصل مسجل في هذه الفترة.","No contacts logged in this period."))
+      : h("table",{className:"tbl"},
+          h("thead",null,h("tr",null,h("th",null,tr("التاريخ","Date")),h("th",null,tr("القسم","Module")),h("th",null,tr("العميل","Customer")),
+            h("th",null,tr("النتيجة","Outcome")),h("th",{className:"hide-sm"},tr("كوبون","Coupon")),h("th",{className:"hide-sm"},tr("ملاحظات","Notes")),h("th",{className:"hide-sm"},tr("بواسطة","By")))),
+          h("tbody",null,all.map(r=>h("tr",{key:r.id},
+            h("td",{className:"num"},new Date(r.contacted_at).toLocaleString("en-GB",{timeZone:TZ,dateStyle:"short",timeStyle:"short"})),
+            h("td",null,MOD[r.module]||r.module),
+            h("td",{className:"num"},r.customer_code),
+            h("td",null,h("span",{className:"badge "+(r.outcome==="converted"?"b-ok":r.outcome==="interested"?"b-due":"b-later")},OUT[r.outcome]||"—")),
+            h("td",{className:"hide-sm num"},r.coupon_code||""),
+            h("td",{className:"hide-sm"},r.notes||""),
+            h("td",{className:"hide-sm"},names[r.contacted_by]||""))))
+        ))
+  );
+}
+
+/* ================= APP ================= */
+function App(){
+  const {lang,setLang,tr}=useLang();
+  const [state,setState]=useState("loading"); // loading | nokey | out | denied | ok
+  const [me,setMe]=useState(null);
+  const [logo,setLogo]=useState(null);
+  const [tab,setTab]=useState("refill");
+  const [counts,setCounts]=useState({});
+  const [asof,setAsof]=useState(null);
+  const [msg,setMsg]=useState(null);
+  const toast=(text,err)=>{ setMsg({text,err}); setTimeout(()=>setMsg(null),3500); };
+  const setCount=k=>n=>setCounts(c=>c[k]===n?c:{...c,[k]:n});
+
+  useEffect(()=>{ (async()=>{
+    const key=await findKey();
+    if(!key){ setState("nokey"); return; }
+    sb=supabase.createClient(SB_URL,key);
+    applyTheme().then(setLogo);
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ setState("out"); return; }
+    const p=await sb.from("profiles").select("*").eq("id",session.user.id).maybeSingle();
+    const prof=p.data||{};
+    const allowed = prof.is_super || (prof.pages||[]).includes("marketing");
+    setMe(prof);
+    if(!allowed){ setState("denied"); return; }
+    setState("ok");
+    const l=await sb.from("mkt_loads").select("data_to,loaded_at").order("data_to",{ascending:false}).limit(1).maybeSingle();
+    if(l.data) setAsof(l.data.data_to);
+  })(); },[]);
+
+  const header=h("div",{className:"top"},h("div",{className:"in"},
+    logo && h("img",{className:"logo",src:logo,alt:""}),
+    h("h1",null,tr("التسويق","Marketing")),
+    asof && h("span",{className:"asof"},tr("البيانات حتى ","Data up to ")+asof),
+    h("span",{className:"sp"}),
+    h("button",{className:"btn sm",onClick:()=>setLang(lang==="ar"?"en":"ar")},lang==="ar"?"English":"عربي"),
+    h("a",{className:"btn sm",href:"./index.html"},tr("الرئيسية","Home"))));
+
+  if(state!=="ok"){
+    const txt={
+      loading:"…",
+      nokey:tr("تعذر قراءة إعدادات الاتصال. ضع المفتاح في SB_KEY أعلى الملف.","Couldn't read the connection settings. Put the key in SB_KEY at the top of this file."),
+      out:tr("سجّل الدخول من الصفحة الرئيسية أولًا.","Sign in from the home page first."),
+      denied:tr("ليس لديك صلاحية التسويق. اطلبها من مدير النظام.","You don't have Marketing access. Ask the system admin to enable it."),
+    }[state];
+    return h(React.Fragment,null,header,h("div",{className:"wrap"},h("div",{className:"card empty"},txt,
+      state==="out" && h("div",{style:{marginTop:12}},h("a",{className:"btn pri",href:"./index.html"},tr("تسجيل الدخول","Sign in"))))));
+  }
+
+  const infantOpen=isInfantDay(todayStr());
+  const TABS=[
+    ["refill",tr("إعادة الصرف","Refill")],
+    ["coupon",tr("كوبونات +"+COUPON_MIN,"Coupons "+COUPON_MIN+"+")],
+    ["infant",tr("مستلزمات الأطفال","Infant bulk")],
+    ["log",tr("سجل التواصل","Contact log")],
+  ];
+  return h(React.Fragment,null,header,
+    h("div",{className:"wrap"},
+      h("div",{className:"tabs",role:"tablist"},TABS.map(([k,label])=>h("button",{key:k,role:"tab","aria-selected":tab===k,className:tab===k?"on":"",onClick:()=>setTab(k)},
+        label,
+        k==="infant" && !infantOpen ? h("span",{className:"n"},tr("مغلق","Closed"))
+        : counts[k]!=null && k!=="log" ? h("span",{className:"n"},counts[k]) : null))),
+      tab==="refill" && h(Refill,{tr,toast,onCount:setCount("refill")}),
+      tab==="coupon" && h(Coupon,{tr,toast,onCount:setCount("coupon")}),
+      tab==="infant" && h(Infant,{tr,toast,onCount:setCount("infant")}),
+      tab==="log" && h(Contacts,{tr,toast})),
+    msg && h("div",{className:"toast"+(msg.err?" err":""),role:"status"},msg.text));
+}
+
+ReactDOM.createRoot(document.getElementById("app")).render(h(App));
+</script>
+</body>
+</html>
