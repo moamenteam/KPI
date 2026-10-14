@@ -255,7 +255,10 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
   const addDaysIso=(s,n)=>{ const d=new Date(s+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
 
   function branchKpi(code,bid,mk){ const k=kpi(code,mk); const s=snap(code,mk,bid,null);
-    if(code==="expire"){ const sales=snap("sales",mk,bid,null); if(!s||!sales||!Number(sales.value)) return {ach:null};
+    if(code==="expire"){ const sales=snap("sales",mk,bid,null);
+      // no expiry reading for the month (once sales are loaded) = nothing expired → full points
+      if(!s&&sales&&Number(sales.value)) return {ach:1, actual:0, ratio:0, asOf:sales.as_of, noExpiry:true};
+      if(!s||!sales||!Number(sales.value)) return {ach:null};
       const ratio=Number(s.value)/Number(sales.value); return {ach: ratio<=Number(k.threshold)?1:0, actual:Number(s.value), ratio, asOf:s.as_of}; }
     const t=tgt(code,mk,bid,null);
     // lab: once the branch's sales for the month are loaded, no lab reading means 0 lab revenue (shown as 0, not "no data")
