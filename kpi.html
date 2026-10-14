@@ -125,6 +125,11 @@ window.addEventListener("unhandledrejection",e=>{document.getElementById("root")
   pre.csv{white-space:pre-wrap;font-size:12px;background:#EDF1EF;padding:10px;border-radius:9px}
   .vform td input,.vform td select{padding:5px 7px}
   .vform input[readonly]{background:#F4F7F5}
+  .stars{color:var(--amber);letter-spacing:1px;white-space:nowrap}
+  .stars i{font-style:normal;color:#D7E2DE}
+  .mo .stars i{color:rgba(255,255,255,.22)}
+  .pace{display:grid;gap:3px;font-size:13px}
+  .pace strong{color:var(--ink)}
   @media print{ .bar,.noprint,.btn{display:none!important} body{background:#fff} .wrap{max-width:none;padding:0} .card{break-inside:avoid;border-color:#999;margin-bottom:8px;padding:10px} input,select,textarea{border:0;border-bottom:1px solid #999;border-radius:0;padding:2px 4px} h1{font-size:18px} h2{font-size:14px} table{font-size:12px} }
 </style>
 <style>
@@ -184,7 +189,9 @@ const T = {
     moveTo:"Move to", effective:"Effective", move:"Move", confirmRemove:"Remove? All their data will be deleted.", deleteBranchBlocked:"Move or remove its pharmacists first.",
     scope:"Scope (supervisors)", linkedTo:"Linked pharmacist", notLinked:"— not linked —", unlinked:"Unlinked",
     linkHint:"Login accounts are linked here to confidential pharmacist records. Unlinked accounts cannot see any data.", notLinkedMsg:"Your account is not linked to a pharmacist record yet. Ask your supervisor.",
-    title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR" },
+    title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR",
+    revToDate:"Revenue to date", expectedBy:"Expected by", projected:"Projected month-end", hiChance:"High chance", atRisk:"At risk", lowChance:"Low chance", mySales:"My sales", stale:"Data not updated this week", finalM:"Final — full month target", ofTarget:"of month target",
+    qResults:"Quarter results", rankLbl:"Rank", of:"of", kpiCol:"KPI", actionCol:"Action" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
     haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج", home:"الرئيسية",
     dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", profile:"ملفي", phone:"الجوال", changePhoto:"تغيير الصورة", documents:"المستندات", upload:"رفع ملف", docHint:"PDF أو صورة، حتى 10 ميجابايت", docCv:"السيرة الذاتية", docCert:"شهادة", docId:"هوية / ترخيص", docOther:"أخرى", hr:"الموارد البشرية", hrSoon:"وحدة الموارد البشرية — قريبًا", hrHint:"نفس تسجيل الدخول، نفس سجلات الموظفين والفروع، ونفس صلاحيات الحسابات. الوحدات المخطط لها:", hrStaff:"ملف الموظف", hrAttendance:"الحضور والورديات", hrLeave:"طلبات الإجازة", hrDocs:"المستندات وانتهاء التراخيص", visitReports:"تقارير الزيارات", from:"من", to:"إلى", lastVisit:"آخر زيارة", lastScore:"آخر نتيجة", avgScore:"المتوسط", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
@@ -202,7 +209,9 @@ const T = {
     moveTo:"نقل إلى", effective:"اعتبارًا من", move:"نقل", confirmRemove:"حذف؟ ستُحذف كل بياناته.", deleteBranchBlocked:"انقل أو احذف صيادلة الفرع أولاً.",
     scope:"النطاق (للمشرفين)", linkedTo:"الصيدلي المرتبط", notLinked:"— غير مرتبط —", unlinked:"غير مرتبط",
     linkHint:"هنا يتم ربط حسابات الدخول بسجلات الصيادلة السرية. الحسابات غير المرتبطة لا ترى أي بيانات.", notLinkedMsg:"حسابك غير مرتبط بسجل صيدلي بعد. تواصل مع المشرف.",
-    title:"المسمى", tPh:"صيدلي", tPm:"مدير صيدلية", tSup:"مشرف", tMgmt:"إدارة", visitResults:"نتائج الزيارات", ranking:"الترتيب", stars:"مسابقة النجوم", starsHint:"متوسط الربع · الأول ١٥٠٠ · الثاني ١٠٠٠ ريال", expired:"المنتهي (بالتكلفة)", ofSales:"من المبيعات", rate:"نسبة", count:"عدد", sar:"ريال" }
+    title:"المسمى", tPh:"صيدلي", tPm:"مدير صيدلية", tSup:"مشرف", tMgmt:"إدارة", visitResults:"نتائج الزيارات", ranking:"الترتيب", stars:"مسابقة النجوم", starsHint:"متوسط الربع · الأول ١٥٠٠ · الثاني ١٠٠٠ ريال", expired:"المنتهي (بالتكلفة)", ofSales:"من المبيعات", rate:"نسبة", count:"عدد", sar:"ريال",
+    revToDate:"الإيراد حتى تاريخه", expectedBy:"المتوقع حتى", projected:"المتوقع نهاية الشهر", hiChance:"فرصة عالية", atRisk:"معرّض للخطر", lowChance:"فرصة منخفضة", mySales:"مبيعاتي", stale:"لم يتم تحديث البيانات هذا الأسبوع", finalM:"نهائي — على هدف الشهر كاملًا", ofTarget:"من هدف الشهر",
+    qResults:"نتائج الربع", rankLbl:"الترتيب", of:"من", kpiCol:"المؤشر", actionCol:"الإجراء" }
 };
 
 /* ---------- helpers ---------- */
@@ -213,15 +222,25 @@ const thisMonth = () => monthKey(today());
 const addMonths = (mk,n) => { const [y,m]=mk.split("-").map(Number); const d=new Date(Date.UTC(y,m-1+n,1)); return d.toISOString().slice(0,10); };
 const qOf = mk => { const m=Number(mk.slice(5,7)); return {year:Number(mk.slice(0,4)), quarter:Math.floor((m-1)/3)+1, idx:(m-1)%3}; };
 const daysInMonth = mk => { const [y,m]=mk.split("-").map(Number); return new Date(y,m,0).getDate(); };
+const lastDayIso = mk => { const [y,m]=mk.split("-").map(Number); return new Date(Date.UTC(y,m,0)).toISOString().slice(0,10); };
 const monthLabel = (mk,lang) => new Date(mk+"T00:00:00").toLocaleDateString(lang==="ar"?"ar-SA":"en-GB",{month:"long",year:"numeric"});
+const dayLabel = (d,lang) => d? new Date(d+"T00:00:00").toLocaleDateString(lang==="ar"?"ar-SA":"en-GB",{weekday:"short",day:"2-digit",month:"2-digit"}) : "";
 const fmt = (n,unit) => n==null? "—" : unit==="rate"? (n*100).toFixed(1)+"%" : Number(n).toLocaleString("en",{maximumFractionDigits:0});
 const kname = (k,lang) => lang==="ar"&&k.name_ar?k.name_ar:k.name_en;
 const bname = (branches,id) => branches.find(b=>b.id===id)?.name || "—";
 const tone = p => p==null?"":p>=1?"good": p>=0.7?"mid":"bad";
 const scored = p => p && p.active && !["management","supervisor"].includes(p.title||"");   // only these staff have KPIs
+const starsOf = s => s==null? null : s>=95?4 : s>=85?3 : s>=70?2 : 1;                    // Q4 star scale
+function Stars({n}){ if(n==null) return null; return <span className="stars" title={n+" ★"}>{"★".repeat(n)}<i>{"★".repeat(4-n)}</i></span>; }
+const signal = (ach,t) => ach>=1? ["", "🟢 "+t.hiChance] : ach>=0.85? ["amber","🟡 "+t.atRisk] : ["bad","🔴 "+t.lowChance];
 
 /* ---------- scoring engine ---------- */
-function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, targets, snaps, visits}
+function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, targets, snaps, visits, pace}
+  const paceMap={}; (D.pace||[]).forEach(r=>{ paceMap[r.day]=Number(r.weight); });
+  // share of the month's sales expected by date asOf (weighted by the pace calendar; 1 per day if missing)
+  const paceShare=(mk,asOf)=>{ const n=daysInMonth(mk); let tot=0, done=0;
+    for(let d=1; d<=n; d++){ const ds=mk.slice(0,8)+String(d).padStart(2,"0"); const w=paceMap[ds]!=null?paceMap[ds]:1; tot+=w; if(ds<=asOf) done+=w; }
+    return tot? done/tot : 0; };
   const tgt=(code,mk,bid,pid)=>{ const q=qOf(mk); const r=D.targets.find(x=>x.kpi_code===code&&x.year===q.year&&x.quarter===q.quarter&&(bid?x.branch_id===bid:x.pharmacist_id===pid)); return r? Number(r["m"+(q.idx+1)]) : null; };
   const snap=(code,mk,bid,pid)=>D.snaps.find(s=>s.kpi_code===code&&s.month===mk&&(bid?s.branch_id===bid:s.pharmacist_id===pid))||null;
   const kpisFor=mk=>{ const q=qOf(mk); return D.kpis.map(k=>{ const o=(D.schemes||[]).find(x=>x.kpi_code===k.code&&x.year===q.year&&x.quarter===q.quarter); return o? {...k,weight:o.weight,cap:o.cap,threshold:o.threshold??k.threshold,active:o.active} : k; }).sort((a,b)=>a.sort-b.sort); };
@@ -238,30 +257,44 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
     if(code==="expire"){ const sales=snap("sales",mk,bid,null); if(!s||!sales||!Number(sales.value)) return {ach:null};
       const ratio=Number(s.value)/Number(sales.value); return {ach: ratio<=Number(k.threshold)?1:0, actual:Number(s.value), ratio, asOf:s.as_of}; }
     const t=tgt(code,mk,bid,null); if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
+    if(code==="sales"){ const actual=Number(s.value);
+      if(s.as_of>=lastDayIso(mk)) return {ach:actual/t, actual, target:t, asOf:s.as_of, final:true};
+      const share=paceShare(mk,s.as_of); if(!share) return {ach:actual/t, actual, target:t, asOf:s.as_of};
+      const expected=t*share;
+      return {ach:actual/expected, actual, target:t, expected, share, proj:actual/share, paced:true, asOf:s.as_of,
+              stale:(new Date(today())-new Date(s.as_of))/864e5>8}; }
     return {ach:Number(s.value)/t, actual:Number(s.value), target:t, asOf:s.as_of}; }
 
   function phKpi(code,pid,mk){ const k=kpi(code,mk);
-    if(k.level==="branch"){ const sh=shares(pid,mk); if(!sh.length) return {ach:null};
+    if(k.level==="branch"){ const sh=shares(pid,mk); const ms=code==="sales"? snap("sales",mk,null,pid) : null; const mine=ms? Number(ms.value) : null;
+      if(!sh.length) return {ach:null, mine};
       let ach=0, any=false, detail=[]; sh.forEach(x=>{ const r=branchKpi(code,x.branch_id,mk); if(r.ach!=null){ ach+=r.ach*x.share; any=true; } detail.push({...r,...x}); });
-      const d0=detail[0]; return any? {ach, actual:d0.actual, target:d0.target, ratio:d0.ratio, asOf:d0.asOf, mixed:sh.length>1} : {ach:null}; }
+      const d0=detail[0]; return any? {ach, actual:d0.actual, target:d0.target, ratio:d0.ratio, asOf:d0.asOf, mixed:sh.length>1,
+        expected:d0.expected, share:d0.share, proj:d0.proj, paced:d0.paced, stale:d0.stale, final:d0.final, mine} : {ach:null, mine}; }
     if(k.rule==="visit"){ const vs=D.visits.filter(v=>v.pharmacist_id===pid&&monthKey(v.visit_date)===mk); if(!vs.length) return {ach:null};
-      const avg=vs.reduce((a,v)=>a+Number(v.score),0)/vs.length; return {ach:avg, actual:avg, target:1, unit:"rate", n:vs.length}; }
+      const avg=vs.reduce((a,v)=>a+Number(v.score),0)/vs.length; const vt=Number(k.threshold)||1;   // Q4: threshold 0.90 → 90% = full points
+      return {ach:avg/vt, actual:avg, target:vt, unit:"rate", n:vs.length}; }
     const s=snap(code,mk,null,pid);
     if(k.rule==="rate"){ const t=tgt(code,mk,null,pid)||Number(k.threshold); if(!s||!Number(s.denominator)) return {ach:null,target:t,unit:"rate"};
       const rate=Number(s.numerator)/Number(s.denominator); return {ach:rate/t, actual:rate, target:t, unit:"rate", asOf:s.as_of}; }
     const t=tgt(code,mk,null,pid); if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
     return {ach:Number(s.value)/t, actual:Number(s.value), target:t, asOf:s.as_of}; }
 
-  const pts=(k,ach)=> ach==null? null : Number(k.weight)*Math.min(ach, k.cap==null?Infinity:Number(k.cap));
-  function pharmacistScore(pid,mk){ const rows=kpisFor(mk).filter(k=>k.active).map(k=>{ const r=phKpi(k.code,pid,mk); return {k,...r,pts:pts(k,r.ach)}; });
-    const has=rows.filter(r=>r.pts!=null); return {rows, total: has.length? has.reduce((a,r)=>a+r.pts,0):null, covered: has.reduce((a,r)=>a+Number(r.k.weight),0)}; }
+  // paced (mid-month) sales points are capped at full weight
+  const pts=(k,ach,paced)=> ach==null? null : Number(k.weight)*Math.min(ach, paced?1:(k.cap==null?Infinity:Number(k.cap)));
+  function pharmacistScore(pid,mk){ const rows=kpisFor(mk).filter(k=>k.active).map(k=>{ const r=phKpi(k.code,pid,mk); return {k,...r,pts:pts(k,r.ach,r.paced)}; });
+    const has=rows.filter(r=>r.pts!=null); const sr=rows.find(r=>r.k.code==="sales");
+    return {rows, total: has.length? has.reduce((a,r)=>a+r.pts,0):null, covered: has.reduce((a,r)=>a+Number(r.k.weight),0), salesAch:sr?sr.ach:null}; }
   function branchScore(bid,mk){ const phs=D.pharmacists.filter(p=>scored(p)&&shares(p.id,mk).some(s=>s.branch_id===bid));
-    const rows=kpisFor(mk).filter(k=>k.active).map(k=>{ if(k.level==="branch"){ const r=branchKpi(k.code,bid,mk); return {k,...r,pts:pts(k,r.ach)}; }
-      const vals=phs.map(p=>{ const r=phKpi(k.code,p.id,mk); return pts(k,r.ach); }).filter(v=>v!=null); return {k, ach:null, pts: vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : null, n:vals.length}; });
-    const has=rows.filter(r=>r.pts!=null); return {rows, total: has.length? has.reduce((a,r)=>a+r.pts,0):null, phs}; }
+    const rows=kpisFor(mk).filter(k=>k.active).map(k=>{ if(k.level==="branch"){ const r=branchKpi(k.code,bid,mk); return {k,...r,pts:pts(k,r.ach,r.paced)}; }
+      const vals=phs.map(p=>{ const r=phKpi(k.code,p.id,mk); return pts(k,r.ach,r.paced); }).filter(v=>v!=null); return {k, ach:null, pts: vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : null, n:vals.length}; });
+    const has=rows.filter(r=>r.pts!=null); const sr=rows.find(r=>r.k.code==="sales");
+    return {rows, total: has.length? has.reduce((a,r)=>a+r.pts,0):null, phs, salesAch:sr?sr.ach:null}; }
   function quarterAvg(fn,id,mk){ const q=qOf(mk); const ms=[0,1,2].map(i=>addMonths(mk,i-q.idx)).map(m=>fn(id,m).total).filter(x=>x!=null); return ms.length? ms.reduce((a,b)=>a+b,0)/ms.length : null; }
   return {shares, pharmacistScore, branchScore, quarterAvg, kpisFor};
 }
+// rank by score, then by sales achievement to date (breaks ties while sales points are capped mid-month)
+const byScore = (a,b) => ((b.total??-1)-(a.total??-1)) || ((b.salesAch??-1)-(a.salesAch??-1));
 
 /* ---------- small components ---------- */
 function Spark({points}){ const w=300,h=44; const vals=points.map(p=>p??0); const max=Math.max(1,...vals);
@@ -275,17 +308,50 @@ function MonthPicker({mk,set,lang}){ return <div className="row" style={{gap:6}}
   <button className="btn sec" style={{padding:"6px 10px"}} onClick={()=>set(addMonths(mk,-1))}>‹</button>
   <strong style={{minWidth:150,textAlign:"center"}}>{monthLabel(mk,lang)}</strong>
   <button className="btn sec" style={{padding:"6px 10px"}} onClick={()=>set(addMonths(mk,1))} disabled={mk>=thisMonth()}>›</button></div>; }
-function ScoreRows({rows,t,lang}){ return <div>{rows.map(r=>{ const cap=r.k.cap==null?null:Number(r.k.cap); const maxPts=Number(r.k.weight)*(cap??1.5);
+function SalesDetail({r,t,lang}){ const [cls,lab]=r.paced? signal(r.ach,t) : ["",""];
+  return <div className="pace">
+    <div>{t.revToDate} <strong>{fmt(r.actual)}</strong> {t.sar}{r.asOf&&<span> · {t.asOf} {dayLabel(r.asOf,lang)}</span>}</div>
+    {r.paced && <div>{t.expectedBy} {dayLabel(r.asOf,lang)}: <strong>{fmt(r.expected)}</strong> <span className="muted">({(r.share*100).toFixed(1)}% {t.ofTarget})</span></div>}
+    {r.paced && <div>{t.projected} ≈ <strong>{fmt(r.proj)}</strong> / {fmt(r.target)} <span className={"chip "+cls}>{lab}</span></div>}
+    {!r.paced && <div>{t.target} {fmt(r.target)}{r.final&&<> <span className="chip grey">{t.finalM}</span></>}</div>}
+    {r.mine!=null && <div>{t.mySales}: <strong>{fmt(r.mine)}</strong> {t.sar}</div>}
+    {r.stale && <div><span className="chip grey">{t.stale}</span></div>}
+  </div>; }
+function ScoreRows({rows,t,lang}){ return <div>{rows.map(r=>{ const cap=r.k.cap==null?null:Number(r.k.cap); const maxPts=Number(r.k.weight)*(r.paced?1:(cap??1.5));
   return <div key={r.k.code} className="score-row">
     <div><strong>{kname(r.k,lang)}</strong><div className="muted small">{r.k.level==="branch"?t.branch:t.pharmacist} · {t.weight} {r.k.weight}{r.mixed&&" · ⇄"}</div></div>
-    <div className="sub small muted">{r.ach==null? <span className="na">{t.noData}</span> :
+    <div className="sub small muted">{r.k.code==="sales"&&r.actual!=null&&r.ach!=null? <SalesDetail r={r} t={t} lang={lang}/> :
+      r.ach==null? <><span className="na">{t.noData}</span>{r.mine!=null&&<div>{t.mySales}: <strong>{fmt(r.mine)}</strong> {t.sar}</div>}</> :
       r.k.code==="expire"? <>{fmt(r.actual)} {t.sar} · {(r.ratio*100).toFixed(2)}% {t.ofSales}</> :
-      r.k.rule==="visit"? <>{r.n} {t.visits.toLowerCase()} · {fmt(r.actual,"rate")}</> :
+      r.k.rule==="visit"? <>{r.n} {t.visits.toLowerCase()} · {fmt(r.actual,"rate")}{r.target<1&&<> / {fmt(r.target,"rate")}</>}</> :
       r.ach!=null&&r.actual!=null? <>{fmt(r.actual,r.unit)} / {fmt(r.target,r.unit)}{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}</> : null}</div>
     <div className={"pct "+tone(r.ach)} style={{fontSize:18}}>{r.ach==null?"—":Math.round(r.ach*100)+"%"}</div>
     <div className="pts">{r.pts==null?"—":r.pts.toFixed(1)}<small> / {r.k.weight}</small>
       <div className="bar-track" style={{margin:"4px 0 0"}}><div className={"bar-fill "+tone(r.ach)} style={{width:(r.pts==null?0:Math.min(100,r.pts/maxPts*100))+"%"}}/></div></div>
   </div>; })}</div>; }
+
+/* ---------- final quarter results (view only, from quarter_summary / quarter_results) ---------- */
+const QKPI_EN={sales:"Sales",basket:"Basket size",registration:"Customer registration",expire:"Expiry",lab:"Lab tests",video:"Video consultation",visit:"Visit report",online:"Website orders",private:"Private label",lab_branch:"Lab tests"};
+function QuarterResults({t,D,lang,pids,detail}){
+  if(!D.qsum.length||!pids.length) return null;
+  const key=Math.max(...D.qsum.map(x=>x.year*10+x.quarter)); const y=Math.floor(key/10), q=key%10;
+  const all=D.qsum.filter(x=>x.year===y&&x.quarter===q); const rows=all.filter(x=>pids.includes(x.pharmacist_id)).sort((a,b)=>a.rank-b.rank);
+  if(!rows.length) return null;
+  const nm=id=>D.pharmacists.find(p=>p.id===id)?.full_name||"—";
+  if(detail){ const s=rows[0]; const ks=D.qres.filter(x=>x.year===y&&x.quarter===q&&x.pharmacist_id===s.pharmacist_id).sort((a,b)=>a.sort-b.sort);
+    const show=(r,v)=> v==null? "—" : r.kpi_code==="registration"? (Number(v)*100).toFixed(1)+"%" : Number(v).toLocaleString("en",{maximumFractionDigits:2});
+    return <div className="card">
+      <div className="row" style={{justifyContent:"space-between"}}><h3>{t.qResults} · Q{q} {y}</h3>
+        <div className="row" style={{gap:12}}><Stars n={s.stars}/><span className="muted small">{t.rankLbl} {s.rank} {t.of} {all.length}</span><strong className={"pct "+tone(Number(s.total)/100)} style={{fontSize:22}}>{Number(s.total).toFixed(1)}<span className="muted small"> / 100</span></strong></div></div>
+      {s.action_ar && <div dir="rtl" className="chip amber" style={{margin:"10px 0 4px",fontSize:13}}>{s.action_ar}</div>}
+      <table style={{marginTop:6}}><thead><tr><th>{t.kpiCol}</th><th className="num">{t.weight}</th><th className="num">{t.target}</th><th className="num">{t.actual}</th><th className="num">{t.ach}</th><th className="num">{t.pts}</th><th>{t.actionCol}</th></tr></thead><tbody>
+        {ks.map(r=><tr key={r.kpi_code}><td>{lang==="ar"?r.kpi_label:(QKPI_EN[r.kpi_code]||r.kpi_label)}</td><td className="num">{r.weight}</td><td className="num">{show(r,r.target)}</td><td className="num">{show(r,r.actual)}</td>
+          <td className="num"><span className={"pct "+tone(r.achievement==null?null:Number(r.achievement))} style={{fontSize:15}}>{r.achievement==null?"—":Math.round(Number(r.achievement)*100)+"%"}</span></td>
+          <td className="num">{r.points==null?"—":Number(r.points).toFixed(1)}</td><td className="small" dir="rtl">{r.action_ar||""}</td></tr>)}</tbody></table>
+    </div>; }
+  return <div className="card"><h3 style={{marginBottom:8}}>{t.qResults} · Q{q} {y}</h3>
+    <table className="rank"><tbody>{rows.map(s=><tr key={s.pharmacist_id}><td>{s.rank}</td><td>{nm(s.pharmacist_id)}</td><td><Stars n={s.stars}/></td><td className="num"><strong>{Number(s.total).toFixed(1)}</strong></td><td className="small muted" dir="rtl">{s.action_ar}</td></tr>)}</tbody></table></div>;
+}
 
 /* ================= LOGIN ================= */
 function Login({t,lang,setLang}){
@@ -307,34 +373,47 @@ function Login({t,lang,setLang}){
 }
 
 /* ================= DASHBOARD ================= */
+// Branch scoping: admin sees the company and every branch; everyone else is locked to their own branch.
+// Pharmacists see their branch and their own pharmacist page only.
 function Dashboard({t,me,D,E,lang}){
-  const isMgr=me.role!=="pharmacist"; const [mk,setMk]=useState(thisMonth());
-  const [view,setView]=useState(isMgr?"branch":"pharmacist");
-  const [bid,setBid]=useState(me.role==="supervisor"?(me.branch_id||D.branches[0]?.id):D.branches[0]?.id||"");
-  const phPool = isMgr? D.pharmacists.filter(p=>scored(p)&&(view!=="pharmacist"||!bid||E.shares(p.id,mk).some(s=>s.branch_id===bid))) : D.pharmacists.filter(p=>p.id===me.pharmacist_id);
-  const [pid,setPid]=useState(isMgr?"":me.pharmacist_id);
+  const isAdmin=me.role==="admin", isPh=me.role==="pharmacist"; const [mk,setMk]=useState(thisMonth());
+  const myRec=D.pharmacists.find(p=>p.id===me.pharmacist_id);
+  const lockedBranch = isAdmin? null : isPh? ((me.pharmacist_id&&E.shares(me.pharmacist_id,mk)[0]?.branch_id)||myRec?.branch_id||null) : (me.branch_id||null);
+  const [view,setView]=useState(isPh?"pharmacist":"branch");
+  const [bid,setBid]=useState(lockedBranch||D.branches[0]?.id||"");
+  useEffect(()=>{ if(lockedBranch&&bid!==lockedBranch) setBid(lockedBranch); },[lockedBranch]);
+  const phPool = isPh? D.pharmacists.filter(p=>p.id===me.pharmacist_id) : D.pharmacists.filter(p=>scored(p)&&(view!=="pharmacist"||!bid||E.shares(p.id,mk).some(s=>s.branch_id===bid)));
+  const [pid,setPid]=useState(isPh?me.pharmacist_id:"");
   useEffect(()=>{ if(!phPool.find(p=>p.id===pid)) setPid(phPool[0]?.id||""); },[bid,mk,view]);
+  const canOpen=p=>!isPh||p.id===me.pharmacist_id;
   const months6=[5,4,3,2,1,0].map(i=>addMonths(mk,-i));
 
-  let hero=null, rows=[], sparks=[], extra=null;
+  let hero=null, rows=[], sparks=[], extra=null, qr=null;
   if(view==="pharmacist"&&pid){ const s=E.pharmacistScore(pid,mk); const prev=E.pharmacistScore(pid,addMonths(mk,-1)).total; rows=s.rows;
     hero={title:D.pharmacists.find(p=>p.id===pid)?.full_name, sub:E.shares(pid,mk).map(x=>bname(D.branches,x.branch_id)).join(" ⇄ ")||"—", total:s.total, prev, q:E.quarterAvg(E.pharmacistScore,pid,mk), covered:s.covered};
-    sparks=months6.map(m=>E.pharmacistScore(pid,m).total); }
+    sparks=months6.map(m=>E.pharmacistScore(pid,m).total);
+    qr=<QuarterResults t={t} D={D} lang={lang} pids={[pid]} detail/>; }
   if(view==="branch"&&bid){ const s=E.branchScore(bid,mk); const prev=E.branchScore(bid,addMonths(mk,-1)).total; rows=s.rows;
     hero={title:bname(D.branches,bid), sub:`${s.phs.length} ${t.pharmacists}`, total:s.total, prev, q:E.quarterAvg(E.branchScore,bid,mk)};
     sparks=months6.map(m=>E.branchScore(bid,m).total);
-    const rank=s.phs.map(p=>({p,total:E.pharmacistScore(p.id,mk).total})).sort((a,b)=>(b.total??-1)-(a.total??-1));
-    extra=<div className="card"><h3 style={{marginBottom:8}}>{t.ranking} · {t.pharmacists}</h3><table className="rank"><tbody>{rank.map((r,i)=><tr key={r.p.id}><td>{i+1}</td><td><a href="#" onClick={e=>{e.preventDefault();setView("pharmacist");setPid(r.p.id);}}>{r.p.full_name}</a></td><td className="num"><strong>{r.total==null?"—":r.total.toFixed(1)}</strong></td></tr>)}</tbody></table></div>; }
-  if(view==="company"){ const rank=D.branches.map(b=>({b,s:E.branchScore(b.id,mk),prev:E.branchScore(b.id,addMonths(mk,-1)).total})).sort((a,b)=>(b.s.total??-1)-(a.s.total??-1));
+    const rank=s.phs.map(p=>({p,...E.pharmacistScore(p.id,mk)})).sort(byScore);
+    extra=<div className="card"><h3 style={{marginBottom:8}}>{t.ranking} · {t.pharmacists}</h3><table className="rank"><tbody>{rank.map((r,i)=><tr key={r.p.id}><td>{i+1}</td>
+      <td>{canOpen(r.p)? <a href="#" onClick={e=>{e.preventDefault();setView("pharmacist");setPid(r.p.id);}}>{r.p.full_name}</a> : r.p.full_name}</td>
+      <td><Stars n={starsOf(r.total)}/></td><td className="num"><strong>{r.total==null?"—":r.total.toFixed(1)}</strong></td></tr>)}</tbody></table></div>;
+    if(!isPh) qr=<QuarterResults t={t} D={D} lang={lang} pids={s.phs.map(p=>p.id)}/>; }
+  if(view==="company"&&isAdmin){ const rank=D.branches.map(b=>{ const s=E.branchScore(b.id,mk); return {b,s,total:s.total,salesAch:s.salesAch,prev:E.branchScore(b.id,addMonths(mk,-1)).total}; }).sort(byScore);
     const has=rank.filter(r=>r.s.total!=null); const total=has.length?has.reduce((a,r)=>a+r.s.total,0)/has.length:null;
     const hasP=rank.filter(r=>r.prev!=null); const prev=hasP.length?hasP.reduce((a,r)=>a+r.prev,0)/hasP.length:null;
     hero={title:t.company, sub:`${D.branches.length} ${t.branches}`, total, prev, q:null};
     sparks=months6.map(m=>{ const v=D.branches.map(b=>E.branchScore(b.id,m).total).filter(x=>x!=null); return v.length? v.reduce((a,b)=>a+b,0)/v.length : null; });
     const stars=D.pharmacists.filter(scored).map(p=>({p,q:E.quarterAvg(E.pharmacistScore,p.id,mk)})).filter(x=>x.q!=null).sort((a,b)=>b.q-a.q);
     const curQ=qOf(thisMonth()), selQ=qOf(mk); const starCard=(selQ.year!==curQ.year||selQ.quarter!==curQ.quarter)? null : <div className="card"><div className="row" style={{justifyContent:"space-between"}}><h3>{t.stars} · Q{qOf(mk).quarter} {qOf(mk).year}</h3><span className="muted small">{t.starsHint}</span></div>
-      <table className="rank"><tbody>{stars.slice(0,10).map((x,i)=><tr key={x.p.id}><td>{i+1}</td><td>{x.p.full_name}<div className="muted small">{bname(D.branches,x.p.branch_id)}</div></td><td className="num"><strong>{x.q.toFixed(1)}</strong></td><td className="num">{i===0?<span className="chip amber">★ 1,500</span>:i===1?<span className="chip amber">★ 1,000</span>:null}</td></tr>)}</tbody></table></div>;
-    extra=<><div className="card"><h3 style={{marginBottom:8}}>{t.ranking} · {t.branches}</h3><table className="rank"><thead><tr><th></th><th>{t.branch}</th>{E.kpisFor(mk).filter(k=>k.active).map(k=><th key={k.code} className="num">{kname(k,lang)}</th>)}<th className="num">{t.score}</th></tr></thead><tbody>
-      {rank.map((r,i)=><tr key={r.b.id}><td>{i+1}</td><td><a href="#" onClick={e=>{e.preventDefault();setView("branch");setBid(r.b.id);}}>{r.b.name}</a></td>{r.s.rows.map(x=><td key={x.k.code} className="num">{x.pts==null?"—":x.pts.toFixed(1)}</td>)}<td className="num"><strong>{r.s.total==null?"—":r.s.total.toFixed(1)}</strong></td></tr>)}</tbody></table></div>{starCard}</>; }
+      <table className="rank"><tbody>{stars.slice(0,10).map((x,i)=><tr key={x.p.id}><td>{i+1}</td><td>{x.p.full_name}<div className="muted small">{bname(D.branches,x.p.branch_id)}</div></td><td><Stars n={starsOf(x.q)}/></td><td className="num"><strong>{x.q.toFixed(1)}</strong></td><td className="num">{i===0?<span className="chip amber">★ 1,500</span>:i===1?<span className="chip amber">★ 1,000</span>:null}</td></tr>)}</tbody></table></div>;
+    extra=<><div className="card" style={{overflowX:"auto"}}><h3 style={{marginBottom:8}}>{t.ranking} · {t.branches}</h3><table className="rank"><thead><tr><th></th><th>{t.branch}</th>{E.kpisFor(mk).filter(k=>k.active).map(k=><th key={k.code} className="num">{kname(k,lang)}</th>)}<th className="num">{t.score}</th><th></th></tr></thead><tbody>
+      {rank.map((r,i)=><tr key={r.b.id}><td>{i+1}</td><td><a href="#" onClick={e=>{e.preventDefault();setView("branch");setBid(r.b.id);}}>{r.b.name}</a></td>
+        {r.s.rows.map(x=><td key={x.k.code} className="num">{x.pts==null?"—":x.pts.toFixed(1)}{x.paced&&<div className={"small "+(x.ach>=1?"":"")} style={{color:x.ach>=1?"var(--good)":x.ach>=0.85?"var(--amber)":"var(--bad)"}}>{Math.round(x.ach*100)}%</div>}</td>)}
+        <td className="num"><strong>{r.s.total==null?"—":r.s.total.toFixed(1)}</strong></td><td><Stars n={starsOf(r.s.total)}/></td></tr>)}</tbody></table></div>{starCard}</>;
+    qr=<QuarterResults t={t} D={D} lang={lang} pids={D.pharmacists.map(p=>p.id)}/>; }
 
   const vBranch = view==="pharmacist"&&pid ? (E.shares(pid,mk)[0]||{}).branch_id : view==="branch"? bid : null;
   const vList = vBranch? D.visits.filter(x=>x.branch_id===vBranch&&monthKey(x.visit_date)===mk) : [];
@@ -344,15 +423,15 @@ function Dashboard({t,me,D,E,lang}){
   const delta = hero&&hero.total!=null&&hero.prev!=null? hero.total-hero.prev : null;
   return <div className="grid">
     <div className="row" style={{justifyContent:"space-between"}}><h1>{t.dash}</h1><MonthPicker mk={mk} set={setMk} lang={lang}/></div>
-    {isMgr && <div className="row">
-      <div className="subtabs">{me.role==="admin"&&<button className={view==="company"?"on":""} onClick={()=>setView("company")}>{t.company}</button>}<button className={view==="branch"?"on":""} onClick={()=>setView("branch")}>{t.branch}</button><button className={view==="pharmacist"?"on":""} onClick={()=>setView("pharmacist")}>{t.pharmacist}</button></div>
-      {view!=="company" && (me.role==="admin"||!me.branch_id) && <select value={bid} onChange={e=>setBid(e.target.value)} style={{width:"auto"}}>{view==="pharmacist"&&<option value="">{t.allBranches}</option>}{D.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>}
-      {view==="pharmacist" && <select value={pid} onChange={e=>setPid(e.target.value)} style={{width:"auto"}}>{phPool.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>}
-    </div>}
+    <div className="row">
+      <div className="subtabs">{isAdmin&&<button className={view==="company"?"on":""} onClick={()=>setView("company")}>{t.company}</button>}<button className={view==="branch"?"on":""} onClick={()=>setView("branch")}>{t.branch}</button><button className={view==="pharmacist"?"on":""} onClick={()=>setView("pharmacist")}>{t.pharmacist}</button></div>
+      {view!=="company" && !lockedBranch && <select value={bid} onChange={e=>setBid(e.target.value)} style={{width:"auto"}}>{view==="pharmacist"&&<option value="">{t.allBranches}</option>}{D.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>}
+      {view==="pharmacist" && !isPh && <select value={pid} onChange={e=>setPid(e.target.value)} style={{width:"auto"}}>{phPool.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>}
+    </div>
     {!hero ? <div className="card empty">{t.noData}</div> : <>
     <div className="hero">
       <div className="mo">
-        <div><div className="small" style={{color:"#CFE0DC"}}>{hero.sub}</div><div style={{fontWeight:600,marginTop:6}}>{hero.title}</div></div>
+        <div><div className="small" style={{color:"#CFE0DC"}}>{hero.sub}</div><div style={{fontWeight:600,marginTop:6}}>{hero.title} <Stars n={starsOf(hero.total)}/></div></div>
         <div><div className="big">{hero.total==null?"—":hero.total.toFixed(0)}<small> / 100</small></div>
           <div className={"delta "+(delta==null?"flat":delta>0?"up":delta<0?"down":"flat")}>{delta==null?"■ —":(delta>0?"▲ ":delta<0?"▼ ":"■ ")+Math.abs(delta).toFixed(1)} <span style={{fontWeight:400,color:"#CFE0DC"}}>{t.vsPrev}</span>{hero.q!=null&&<span style={{fontWeight:400,color:"#CFE0DC"}}> · {t.qAvg} {hero.q.toFixed(1)}</span>}</div></div>
       </div>
@@ -361,6 +440,7 @@ function Dashboard({t,me,D,E,lang}){
     {view!=="company" && <div className="card"><ScoreRows rows={rows} t={t} lang={lang}/></div>}
     {visitCard}
     {extra}
+    {qr}
     </>}
   </div>;
 }
@@ -448,7 +528,11 @@ function VisitPrint({visit,D,lang,me}){
   </div>;
 }
 function VisitReports({t,me,D,lang,toast}){
-  const v=VT[lang]; const [bid,setBid]=useState(""); const [from,setFrom]=useState(addMonths(thisMonth(),-2)); const [to,setTo]=useState(today()); const [exp,setExp]=useState(null);
+  const v=VT[lang];
+  // branch-scoped: only admin can see every branch
+  const myB = me.role==="admin"? null : me.role==="pharmacist"? (D.pharmacists.find(p=>p.id===me.pharmacist_id)?.branch_id||null) : (me.branch_id||null);
+  const brs = myB? D.branches.filter(b=>b.id===myB) : D.branches;
+  const [bid,setBid]=useState(myB||""); const [from,setFrom]=useState(addMonths(thisMonth(),-2)); const [to,setTo]=useState(today()); const [exp,setExp]=useState(null);
   const list=D.visits.filter(x=>(!bid||x.branch_id===bid)&&x.visit_date>=from&&x.visit_date<=to);
   const score=x=>x.total_points!=null?Number(x.total_points):Math.round(Number(x.score)*100);
   const byPh={}; list.forEach(x=>{ (byPh[x.pharmacist_id]=byPh[x.pharmacist_id]||[]).push(x); });
@@ -460,7 +544,7 @@ function VisitReports({t,me,D,lang,toast}){
   return <div className="grid">
     <div className="row" style={{justifyContent:"space-between"}}><h1>{t.visitReports}</h1><span className="muted small">{list.length} {t.visits.toLowerCase()}</span></div>
     <div className="card row">
-      <label className="f">{t.branch}<select value={bid} onChange={e=>setBid(e.target.value)}><option value="">{t.allBranches}</option>{D.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
+      <label className="f">{t.branch}<select value={bid} onChange={e=>setBid(e.target.value)} disabled={!!myB}>{!myB&&<option value="">{t.allBranches}</option>}{brs.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
       <label className="f">{t.from}<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label>
       <label className="f">{t.to}<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label>
     </div>
@@ -666,7 +750,11 @@ function App(){
       sb.from("pharmacist_assignments").select("*"), sb.from("kpis").select("*").order("sort"), sb.from("targets").select("*"),
       sb.from("v_latest_snapshots").select("*"), sb.from("visit_items").select("*").order("sort"), sb.from("visits").select("*").order("visit_date",{ascending:false}).limit(2000), sb.from("kpi_periods").select("*")]);
     const err=[b,p,a,k,tg,sn,vi,vs,sc].find(r=>r.error); if(err) toast(err.error.message);
-    setD({branches:b.data||[],pharmacists:p.data||[],assignments:a.data||[],kpis:k.data||[],targets:tg.data||[],snaps:sn.data||[],visit_items:vi.data||[],visits:vs.data||[],schemes:sc.data||[]});
+    // optional tables — the page still works if they don't exist yet
+    const [pc,qs,qr]=await Promise.all([
+      sb.from("pace_calendar").select("day,weight"), sb.from("quarter_summary").select("*"), sb.from("quarter_results").select("*")]);
+    setD({branches:b.data||[],pharmacists:p.data||[],assignments:a.data||[],kpis:k.data||[],targets:tg.data||[],snaps:sn.data||[],visit_items:vi.data||[],visits:vs.data||[],schemes:sc.data||[],
+          pace:pc.error?[]:(pc.data||[]), qsum:qs.error?[]:(qs.data||[]), qres:qr.error?[]:(qr.data||[])});
   },[]);
   useEffect(()=>{ if(!session){setMe(null);setD(null);return;} (async()=>{ const r=await sb.from("profiles").select("*").eq("id",session.user.id).single(); setMe(r.data||null); await reload(); })(); },[session]);
   const E=useMemo(()=>D?makeEngine(D):null,[D]);
