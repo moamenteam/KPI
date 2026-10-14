@@ -232,6 +232,7 @@ const tone = p => p==null?"":p>=1?"good": p>=0.7?"mid":"bad";
 const scored = p => p && p.active && !["management","supervisor"].includes(p.title||"");   // only these staff have KPIs
 const starsOf = s => s==null? null : s>=95?4 : s>=85?3 : s>=70?2 : 1;                    // Q4 star scale
 function Stars({n}){ if(n==null) return null; return <span className="stars" title={n+" ★"}>{"★".repeat(n)}<i>{"★".repeat(4-n)}</i></span>; }
+const ZERO_IF_MISSING = ["lab","lab_branch"];   // KPIs shown as 0 (not "no data") when nothing was sold
 const signal = (ach,t) => ach>=1? ["", "🟢 "+t.hiChance] : ach>=0.85? ["amber","🟡 "+t.atRisk] : ["bad","🔴 "+t.lowChance];
 
 /* ---------- scoring engine ---------- */
@@ -256,7 +257,10 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
   function branchKpi(code,bid,mk){ const k=kpi(code,mk); const s=snap(code,mk,bid,null);
     if(code==="expire"){ const sales=snap("sales",mk,bid,null); if(!s||!sales||!Number(sales.value)) return {ach:null};
       const ratio=Number(s.value)/Number(sales.value); return {ach: ratio<=Number(k.threshold)?1:0, actual:Number(s.value), ratio, asOf:s.as_of}; }
-    const t=tgt(code,mk,bid,null); if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
+    const t=tgt(code,mk,bid,null);
+    // lab: once the branch's sales for the month are loaded, no lab reading means 0 lab revenue (shown as 0, not "no data")
+    if(!s&&t&&ZERO_IF_MISSING.includes(code)){ const ss=snap("sales",mk,bid,null); if(ss) return {ach:0, actual:0, target:t, asOf:ss.as_of, zero:true}; }
+    if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
     if(code==="sales"){ const actual=Number(s.value);
       if(s.as_of>=lastDayIso(mk)) return {ach:actual/t, actual, target:t, asOf:s.as_of, final:true};
       const share=paceShare(mk,s.as_of); if(!share) return {ach:actual/t, actual, target:t, asOf:s.as_of};
