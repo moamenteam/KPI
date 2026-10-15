@@ -690,80 +690,113 @@ function Visits({t,me,D,reload,toast,lang}){
 const E_shares=(D,pid,mk)=>makeEngine(D).shares(pid,mk);
 
 /* ================= JULEB IMPORT (super admin) =================
-   Report: Juleb → POS Sales Details · all branches · Start = 1st of month · End = last full day · Excel.
-   Rules: sales = Σ Total Amount per branch (net of returns) · my sales = Σ per cashier
-          registration = bills with a customer phone (≥9 digits) ÷ all bills (returns excluded), cash + card + Wasfaty
-          private label = Σ Total Amount of items in private_label_items · lab = Σ Total Amount where category is lab */
+   Report: Juleb → POS Sales Details · all branches · any date range · Excel.
+   1) every sale line is stored in sales_lines (same line never stored twice — overlapping uploads are safe)
+   2) kpi_refresh() recalculates month-to-date KPIs from all stored lines of that month (as of the last stored day):
+      sales per branch · my sales · registration (phone ≥9 digits ÷ all bills, returns excluded) · lab · private label
+   The same lines feed the Marketing page. */
 const JULEB_REQ=["Branch Code","Branch Name","Cashier","Receipt Reference","Total Amount","Phone","Order Date Time"];
 const isoLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const tsLocal=d=>`${isoLocal(d)}T${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
 function toIsoDate(v){ if(v==null||v==="") return null; if(v instanceof Date) return isoLocal(v);
   const s=String(v).trim(); let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return `${m[1]}-${m[2]}-${m[3]}`;
   m=s.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/); if(m) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`; return null; }
+const toTs=v=> v instanceof Date? tsLocal(v) : (String(v??"").trim().replace(" ","T")||null);
 function parseJuleb(buf,D){
   const wb=XLSX.read(buf,{type:"array",cellDates:true}); const ws=wb.Sheets[wb.SheetNames[0]];
   const A=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
   const h=A.findIndex(r=>r&&String(r[0]??"").trim()==="Branch Code"); if(h<0) throw new Error("Not a POS Sales Details export (no 'Branch Code' header row).");
   const H=A[h].map(x=>String(x??"").trim()); const miss=JULEB_REQ.filter(c=>!H.includes(c)); if(miss.length) throw new Error("Missing columns: "+miss.join(", "));
-  const c=n=>H.indexOf(n); const cat=["Category","Category 2","Category 3"].map(c).filter(i=>i>=0);
+  const c=n=>H.indexOf(n); const g=(r,n)=>{ const i=c(n); return i<0? null : r[i]; }; const str=v=> v==null||v===""? null : String(v).trim();
   let endDate=null, startDate=null;
-  // header block: a row of labels ("Start Date", "End Date", …) with their values in the row below, same column
   for(let i=0;i<h;i++){ (A[i]||[]).forEach((x,j)=>{ const lab=String(x??"").toLowerCase().trim(); const below=(A[i+1]||[])[j];
     if(lab==="end date") endDate=toIsoDate(below)||endDate; if(lab==="start date") startDate=toIsoDate(below)||startDate; }); }
   const rows=A.slice(h+1).filter(r=>r&&String(r[c("Branch Code")]??"").startsWith("PH"));
   if(!rows.length) throw new Error("No sales rows found.");
-  let minD="9999", maxD="0000"; rows.forEach(r=>{ const d=toIsoDate(r[c("Order Date Time")]); if(d){ if(d<minD) minD=d; if(d>maxD) maxD=d; } });
-  const asOf=endDate||maxD; const month=monthKey(asOf); const warn=[];
-  if(minD<month) warn.push(`Report has rows before ${month} — export one month at a time (Start = 1st of the month).`);
-  if((startDate||minD).slice(0,10)>month.slice(0,8)+"03") warn.push(`Report starts ${startDate||minD}, not on the 1st — month-to-date totals will be short.`);
-  const num=v=>Number(v)||0; const pl=new Set((D.plItems||[]).map(x=>String(x.product_ref).trim()));
-  const sales={}, mine={}, lab={}, priv={}, bills={};
-  rows.forEach(r=>{ const br=String(r[c("Branch Name")]??"").trim(), ca=String(r[c("Cashier")]??"").trim(), amt=num(r[c("Total Amount")]);
-    sales[br]=(sales[br]||0)+amt; mine[ca]=(mine[ca]||0)+amt;
-    if(cat.some(i=>/\blab\b|تحليل|مختبر/i.test(String(r[i]??"")))) lab[br]=(lab[br]||0)+amt;
-    if(pl.size&&c("Product Ref")>=0&&pl.has(String(r[c("Product Ref")]??"").trim())) priv[br]=(priv[br]||0)+amt;
-    const k=br+"|"+r[c("Receipt Reference")]; const ph=String(r[c("Phone")]??"").replace(/\D/g,"");
-    const b=bills[k]||(bills[k]={ca,tot:0,ph:false}); b.tot+=amt; if(ph.length>=9) b.ph=true; });
+  const lineNo={}, lines=[], sales={}, bills={};
+  rows.forEach(r=>{ const br=str(g(r,"Branch Name")), rc=str(g(r,"Receipt Reference")); const key=br+"|"+rc; lineNo[key]=(lineNo[key]||0)+1;
+    const d=toIsoDate(g(r,"Order Date Time")); const pm=str(g(r,"Payment Method"))||""; const total=Number(g(r,"Total Amount"))||0;
+    const ph=String(g(r,"Phone")??"").replace(/\D/g,"")||null; const pref=g(r,"Product Ref"); const ca=str(g(r,"Cashier"));
+    lines.push({branch_name:br,receipt_ref:rc,line_no:lineNo[key],order_at:toTs(g(r,"Order Date Time")),order_date:d,cashier:ca,customer:str(g(r,"Customer")),phone:ph,
+      product_ref:pref==null||pref===""?null:String(typeof pref==="number"?Math.round(pref):pref).trim(),product_name:str(g(r,"Product Name")),product_name_ar:str(g(r,"Product Name Arabic")),
+      category:str(g(r,"Category")),category2:str(g(r,"Category 2")),category3:str(g(r,"Category 3")),qty:Number(g(r,"Sold Qty"))||0,total,payment_method:pm||null,is_wasfaty:/wasfaty/i.test(pm)});
+    sales[br]=(sales[br]||0)+total; const b=bills[key]||(bills[key]={ca,tot:0,ph:false}); b.tot+=total; if(ph&&ph.length>=9) b.ph=true; });
+  const dates=lines.map(l=>l.order_date).filter(Boolean).sort(); const minD=dates[0], maxD=dates[dates.length-1];
+  const months=[...new Set(dates.map(monthKey))];
   const reg={}; Object.values(bills).filter(b=>b.tot>0).forEach(b=>{ const x=reg[b.ca]||(reg[b.ca]={n:0,r:0}); x.n++; if(b.ph) x.r++; });
-  const bByJ=n=>D.branches.find(b=>(b.juleb_name||"").trim()===n), pByJ=n=>D.pharmacists.find(p=>(p.juleb_name||"").trim()===n);
-  const out=[], unB=[], unP=[]; const base={month,as_of:asOf,source:"juleb"};
-  Object.entries(sales).forEach(([n,v])=>{ const b=bByJ(n); if(!b){ unB.push(n); return; }
-    out.push({...base,kpi_code:"sales",branch_id:b.id,value:+v.toFixed(2)});
-    if(lab[n]!=null) out.push({...base,kpi_code:"lab_branch",branch_id:b.id,value:+lab[n].toFixed(2)});
-    if(pl.size) out.push({...base,kpi_code:"private",branch_id:b.id,value:+(priv[n]||0).toFixed(2)}); });
-  Object.entries(mine).forEach(([n,v])=>{ const p=pByJ(n); if(!p){ unP.push(n); return; }
-    out.push({...base,kpi_code:"sales",pharmacist_id:p.id,value:+v.toFixed(2)});
-    const g=reg[n]; if(g&&g.n) out.push({...base,kpi_code:"registration",pharmacist_id:p.id,value:+(g.r/g.n).toFixed(4),numerator:g.r,denominator:g.n}); });
-  return {asOf,month,startDate:startDate||minD,rowsN:rows.length,billsN:Object.keys(bills).length,out,unB,unP,warn,sales,mine,reg,lab,priv,plN:pl.size};
+  const unB=Object.keys(sales).filter(n=>!D.branches.some(b=>(b.juleb_name||"").trim()===n));
+  const unP=Object.keys(reg).filter(n=>!D.pharmacists.some(p=>(p.juleb_name||"").trim()===n));
+  return {lines,months,startDate:startDate||minD,endDate:endDate||maxD,rowsN:rows.length,billsN:Object.keys(bills).length,sales,reg,unB,unP};
+}
+// Juleb → Internal Transfer Summary (done transfers). Expired = transfers TO the expiry warehouse, at Total Avg Cost.
+function parseTransfers(A,D){
+  const h=A.findIndex(r=>r&&String(r[0]??"").trim()==="Transfer From (Source Branch)");
+  const H=A[h].map(x=>String(x??"").trim()); const need=["Transfer From (Source Branch)","Transfer To (Destination Branch)","Transfer Name","Transfer Date","Total Avg Cost"];
+  const miss=need.filter(c=>!H.includes(c)); if(miss.length) throw new Error("Missing columns: "+miss.join(", "));
+  const g=(r,n)=>{ const i=H.indexOf(n); return i<0?null:r[i]; };
+  let endDate=null, startDate=null;
+  for(let i=0;i<h;i++){ (A[i]||[]).forEach((x,j)=>{ const lab=String(x??"").toLowerCase().trim(); const below=(A[i+1]||[])[j];
+    if(lab==="end date") endDate=toIsoDate(below)||endDate; if(lab==="start date") startDate=toIsoDate(below)||startDate; }); }
+  const all=A.slice(h+1).filter(r=>r&&g(r,"Transfer Name")!=null&&String(g(r,"Transfer Name")).trim()!=="");   // drops the totals row
+  const exp=all.filter(r=>/expir/i.test(String(g(r,"Transfer To (Destination Branch)")??""))&&String(g(r,"Status")??"done").toLowerCase()==="done")
+    .map(r=>({transfer_name:String(g(r,"Transfer Name")).trim(),source_branch:String(g(r,"Transfer From (Source Branch)")??"").trim(),
+      dest_branch:String(g(r,"Transfer To (Destination Branch)")??"").trim(),transfer_date:toIsoDate(g(r,"Transfer Date")),
+      qty:Number(g(r,"Total QTY"))||0,cost:Number(g(r,"Total Avg Cost"))||0,status:String(g(r,"Status")??"done").trim()}));
+  const by={}; exp.forEach(x=>{ by[x.source_branch]=(by[x.source_branch]||0)+x.cost; });
+  const dates=[startDate,endDate,...exp.map(x=>x.transfer_date)].filter(Boolean).sort();
+  let months=[]; for(let m=monthKey(dates[0]); m<=monthKey(dates[dates.length-1]); m=addMonths(m,1)) months.push(m);
+  const unB=Object.keys(by).filter(n=>!D.branches.some(b=>(b.juleb_name||"").trim()===n));
+  return {kind:"expiry",exp,allN:all.length,by,months,startDate:startDate||dates[0],endDate:endDate||dates[dates.length-1],unB};
+}
+function parseAny(buf,D){
+  const wb=XLSX.read(buf,{type:"array",cellDates:true}); const A=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null});
+  if(A.some(r=>r&&String(r[0]??"").trim()==="Transfer From (Source Branch)")) return parseTransfers(A,D);
+  return {kind:"sales",...parseJuleb(buf,D)};
 }
 function JulebImport({t,D,reload,toast}){
-  const [res,setRes]=useState(null); const [err,setErr]=useState(""); const [busy,setBusy]=useState(false);
-  const onFile=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; setErr(""); setRes(null);
-    try{ setRes(parseJuleb(await f.arrayBuffer(),D)); }catch(x){ setErr(String(x.message||x)); } };
-  const save=async()=>{ setBusy(true);
-    const codes=[...new Set(res.out.map(r=>r.kpi_code))];
-    const d=await sb.from("snapshots").delete().eq("month",res.month).eq("as_of",res.asOf).in("source",["juleb","juleb-auto"]).in("kpi_code",codes);
-    if(d.error){ toast(d.error.message); setBusy(false); return; }
-    const r=await sb.from("snapshots").insert(res.out); toast(r.error?r.error.message:`${t.saved} · ${res.out.length} rows`);
-    if(!r.error){ setRes(null); reload(); } setBusy(false); };
-  const bn=id=>bname(D.branches,id), pn=id=>D.pharmacists.find(p=>p.id===id)?.full_name||"—";
+  const [res,setRes]=useState(null); const [err,setErr]=useState(""); const [busy,setBusy]=useState(""); const [done,setDone]=useState(null);
+  const onFile=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; setErr(""); setRes(null); setDone(null);
+    try{ setRes(parseAny(await f.arrayBuffer(),D)); }catch(x){ setErr(String(x.message||x)); } };
+  const refresh=async months=>{ const out=[]; for(const m of months){ setBusy(`Recalculating ${m.slice(0,7)}…`);
+      const r=await sb.rpc("kpi_refresh",{p_month:m}); if(r.error) throw new Error(r.error.message); out.push(r.data); } return out; };
+  const save=async()=>{ try{
+      if(res.kind==="expiry"){ if(res.exp.length){ setBusy("Saving expiry transfers…");
+          const r=await sb.from("expiry_transfers").upsert(res.exp,{onConflict:"transfer_name"}); if(r.error) throw new Error(r.error.message); }
+        const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload(); setBusy(""); return; }
+      const L=res.lines; for(let i=0;i<L.length;i+=1000){ setBusy(`Saving lines ${Math.min(i+1000,L.length).toLocaleString()} / ${L.length.toLocaleString()}…`);
+        const r=await sb.from("sales_lines").upsert(L.slice(i,i+1000),{onConflict:"branch_name,receipt_ref,line_no"}); if(r.error) throw new Error(r.error.message); }
+      const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload();
+    }catch(x){ toast(String(x.message||x)); } setBusy(""); };
+  const refreshOnly=async()=>{ try{ setDone(await refresh([thisMonth()])); toast(t.saved); reload(); }catch(x){ toast(String(x.message||x)); } setBusy(""); };
+  const bByJ=n=>D.branches.find(b=>(b.juleb_name||"").trim()===n);
   return <div className="card grid">
     <div className="row" style={{justifyContent:"space-between"}}><h2>Import Juleb report</h2>
-      <label className="btn" style={{cursor:"pointer"}}>Choose .xlsx<input type="file" accept=".xlsx,.xls" onChange={onFile} style={{display:"none"}}/></label></div>
-    <div className="muted small">Juleb → <b>POS Sales Details</b> · all branches · Start = 1st of the month · End = last full day · export Excel. Loads sales, my sales, registration (phone rule){(D.plItems||[]).length?", private label":""}, and lab if present. Re-uploading the same dates replaces them.</div>
+      <div className="row" style={{gap:8}}><button className="btn sec" disabled={!!busy} onClick={refreshOnly} title="Recalculate this month from stored lines">↻ Recalculate this month</button>
+        <label className="btn" style={{cursor:"pointer"}}>Choose .xlsx<input type="file" accept=".xlsx,.xls" onChange={onFile} style={{display:"none"}} disabled={!!busy}/></label></div></div>
+    <div className="muted small">Juleb → <b>POS Sales Details</b> or <b>Internal Transfer Summary</b> (done transfers, all branches incl. Expiry WH) · all branches · <b>any dates</b> · export Excel. The file type is detected automatically. Every line is stored once — overlapping uploads are safe — and the month-to-date KPIs are recalculated from all stored lines. The same lines feed Marketing.</div>
     {err && <div className="err">{err}</div>}
-    {res && <>
-      <div className="row small"><span className="chip">{res.startDate} → {res.asOf}</span><span className="chip grey">{res.rowsN.toLocaleString()} lines · {res.billsN.toLocaleString()} bills</span><span className="chip grey">{res.out.length} readings</span></div>
-      {res.warn.map((w,i)=><div key={i} className="err">{w}</div>)}
-      {(res.unB.length>0||res.unP.length>0) && <div className="err">Not matched — set their Juleb name in Team, then re-upload: {[...res.unB,...res.unP].join(" · ")}</div>}
-      <div className="grid g2">
-        <div><h3 style={{marginBottom:6}}>{t.branches}</h3><table><thead><tr><th>{t.branch}</th><th className="num">Sales</th><th className="num">Lab</th>{res.plN>0&&<th className="num">Private</th>}</tr></thead><tbody>
-          {res.out.filter(r=>r.kpi_code==="sales"&&r.branch_id).map(r=>{ const j=D.branches.find(b=>b.id===r.branch_id)?.juleb_name; return <tr key={r.branch_id}><td>{bn(r.branch_id)}</td><td className="num">{fmt(r.value)}</td><td className="num">{res.lab[j]!=null?fmt(res.lab[j]):"0"}</td>{res.plN>0&&<td className="num">{fmt(res.priv[j]||0)}</td>}</tr>; })}</tbody></table></div>
-        <div><h3 style={{marginBottom:6}}>{t.pharmacists}</h3><table><thead><tr><th>{t.pharmacist}</th><th className="num">My sales</th><th className="num">Reg.</th></tr></thead><tbody>
-          {res.out.filter(r=>r.kpi_code==="registration").sort((a,b)=>b.value-a.value).map(r=>{ const s=res.out.find(x=>x.kpi_code==="sales"&&x.pharmacist_id===r.pharmacist_id);
-            return <tr key={r.pharmacist_id}><td>{pn(r.pharmacist_id)}</td><td className="num">{s?fmt(s.value):"—"}</td><td className="num"><span className={"pct "+tone(r.value/0.7)} style={{fontSize:14}}>{(r.value*100).toFixed(1)}%</span> <span className="muted small">{r.numerator}/{r.denominator}</span></td></tr>; })}</tbody></table></div>
-      </div>
-      <div className="row"><button className="btn" disabled={busy||!res.out.length} onClick={save}>Save {res.out.length} readings · as of {res.asOf}</button><button className="btn sec" onClick={()=>setRes(null)}>{t.cancel}</button></div>
+    {busy && <div className="chip amber">{busy}</div>}
+    {res && res.kind==="expiry" && <>
+      <div className="row small"><span className="chip">Internal Transfer Summary · {res.startDate} → {res.endDate}</span><span className="chip grey">{res.allN} transfers · {res.exp.length} to expiry warehouse</span></div>
+      {res.unB.length>0 && <div className="err">Not matched — set their Juleb name in Team: {res.unB.join(" · ")}</div>}
+      {res.exp.length===0? <div className="chip">No transfers to the expiry warehouse in this period — every branch keeps full expiry points.</div> :
+        <table><thead><tr><th>{t.branch}</th><th className="num">Expired (cost)</th><th className="num">Transfers</th></tr></thead><tbody>
+          {Object.entries(res.by).sort((a,b)=>b[1]-a[1]).map(([n,v])=><tr key={n}><td>{bByJ(n)?.name||<span className="chip bad">{n}</span>}</td><td className="num">{v.toLocaleString("en",{maximumFractionDigits:2})}</td><td className="num">{res.exp.filter(x=>x.source_branch===n).length}</td></tr>)}</tbody></table>}
+      <div className="row"><button className="btn" disabled={!!busy} onClick={save}>Save expiry & update KPIs</button><button className="btn sec" disabled={!!busy} onClick={()=>setRes(null)}>{t.cancel}</button></div>
     </>}
+    {res && res.kind==="sales" && <>
+      <div className="row small"><span className="chip">{res.startDate} → {res.endDate}</span><span className="chip grey">{res.rowsN.toLocaleString()} lines · {res.billsN.toLocaleString()} bills</span>{res.months.length>1&&<span className="chip amber">{res.months.length} months</span>}</div>
+      {(res.unB.length>0||res.unP.length>0) && <div className="err">Not matched — lines are stored, but these are left out of the KPIs until you set their Juleb name in Team and press ↻ Recalculate: {[...res.unB,...res.unP].join(" · ")}</div>}
+      <div className="grid g2">
+        <div><h3 style={{marginBottom:6}}>In this file · {t.branches}</h3><table><tbody>
+          {Object.entries(res.sales).sort((a,b)=>b[1]-a[1]).map(([n,v])=><tr key={n}><td>{bByJ(n)?.name||<span className="chip bad">{n}</span>}</td><td className="num">{fmt(v)}</td></tr>)}</tbody></table></div>
+        <div><h3 style={{marginBottom:6}}>In this file · registration</h3><table><tbody>
+          {Object.entries(res.reg).sort((a,b)=>b[1].r/b[1].n-a[1].r/a[1].n).map(([n,x])=><tr key={n}><td>{n}</td><td className="num"><span className={"pct "+tone(x.r/x.n/0.7)} style={{fontSize:14}}>{(x.r/x.n*100).toFixed(1)}%</span> <span className="muted small">{x.r}/{x.n}</span></td></tr>)}</tbody></table></div>
+      </div>
+      <div className="row"><button className="btn" disabled={!!busy} onClick={save}>Save {res.rowsN.toLocaleString()} lines & update KPIs</button><button className="btn sec" disabled={!!busy} onClick={()=>setRes(null)}>{t.cancel}</button></div>
+    </>}
+    {done && <div className="grid" style={{gap:6}}>{done.map(d=><div key={d.month} className="row small"><span className="chip">✓ {String(d.month).slice(0,7)} · month-to-date as of {d.as_of}</span><span className="chip grey">{d.rows} KPI readings</span>
+      {(d.unmatched||[]).length>0&&<span className="chip bad">Not matched: {d.unmatched.join(" · ")}</span>}</div>)}</div>}
   </div>;
 }
 /* ================= DATA (admin): snapshots ================= */
