@@ -11,7 +11,7 @@ html[data-ui="rustic"] body{background-color:#5E4F3C;
 html[data-ui="rustic"] h1, html[data-ui="rustic"] h2, html[data-ui="rustic"] h3{font-family:"Cinzel","IBM Plex Sans Arabic",Georgia,serif;font-weight:700;color:#6F6550;letter-spacing:.04em}
 html[data-ui="rustic"] .wrap > .grid > .row:first-child h1{color:#F3E9C6;text-shadow:0 2px 0 rgba(0,0,0,.4)}
 /* top bar: charcoal with dark stripe, orange ribbon brand */
-html[data-ui="rustic"] .bar{background:#252525;border-bottom:6px solid #1F1B16;height:60px;box-shadow:0 3px 0 #2E2E2E}
+html[data-ui="rustic"] .bar:has(> .brand){background:#252525;border-bottom:6px solid #1F1B16;height:60px;box-shadow:0 3px 0 #2E2E2E}
 html[data-ui="rustic"] .brand{background:linear-gradient(#E88841,#D06A2B);color:#fff;font-family:"Cinzel",Georgia,serif;letter-spacing:.06em;padding:14px 22px 22px;margin-top:-2px;align-self:flex-start;
   clip-path:polygon(0 0,100% 0,100% 100%,50% 80%,0 100%);box-shadow:0 4px 10px rgba(0,0,0,.5)}
 html[data-ui="rustic"] .brand span{color:#FFE7C7}
@@ -61,7 +61,7 @@ html[data-ui="glass3d"] h1, html[data-ui="glass3d"] h2, html[data-ui="glass3d"] 
 html[data-ui="glass3d"] h1{font-size:30px}
 html[data-ui="glass3d"] [dir=rtl] h1, html[dir=rtl][data-ui="glass3d"] h1, html[dir=rtl][data-ui="glass3d"] h2, html[dir=rtl][data-ui="glass3d"] h3{letter-spacing:0}
 /* top bar */
-html[data-ui="glass3d"] .bar{background:rgba(30,36,58,.45);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.12);height:64px}
+html[data-ui="glass3d"] .bar:has(> .brand){background:rgba(30,36,58,.45);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.12);height:64px}
 html[data-ui="glass3d"] .brand{display:flex;align-items:center;gap:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;font-size:14px}
 html[data-ui="glass3d"] .brand::before{content:"";width:26px;height:26px;border:2.5px solid #fff;box-shadow:inset 6px 6px 0 -3.5px transparent;
   background:linear-gradient(#fff,#fff) 7px 9px/10px 2.5px no-repeat, linear-gradient(#fff,#fff) 7px 9px/2.5px 13px no-repeat, linear-gradient(#fff,#fff) 15px 9px/2.5px 13px no-repeat}
@@ -117,3 +117,73 @@ html[data-ui="glass3d"] .tab{background:transparent;border:0;padding:8px 12px;cu
 html[data-ui="glass3d"] .tab.on{background:rgba(255,255,255,.16)}
 html[data-ui="glass3d"] input, html[data-ui="glass3d"] select, html[data-ui="glass3d"] textarea{padding:9px 11px}
 html[data-ui="glass3d"] input::placeholder, html[data-ui="glass3d"] textarea::placeholder{color:rgba(255,255,255,.55)}
+
+/* ================= 3D Glass — every page (Home, HR, Marketing, KPI) ================= */
+html[data-ui="glass3d"]{color-scheme:dark;
+  /* the variable names each page uses */
+  --teal2:rgba(233,180,200,.18);--muted:#BCC2DA;--mute:#BCC2DA;--pri:#E9B4C8;--pri-soft:rgba(233,180,200,.18);--bg:#3E4766;
+  --red:#FFA3A3;--red2:rgba(255,120,120,.16);--amber2:rgba(242,211,168,.18);--green:#A8E6C8;--green2:rgba(168,230,200,.16);
+  --ok:#A8E6C8;--warn:#F2D3A8;--radius:4px}
+html[data-ui="glass3d"] .muted, html[data-ui="glass3d"] .sub, html[data-ui="glass3d"] .asof{color:#BCC2DA}
+/* top bars: Home <header>, HR / Marketing .top */
+html[data-ui="glass3d"] header, html[data-ui="glass3d"] .top{background:rgba(30,36,58,.45)!important;color:#fff;border-bottom:1px solid rgba(255,255,255,.12);box-shadow:none}
+html[data-ui="glass3d"] header .brand, html[data-ui="glass3d"] .top .brand{display:flex;align-items:center;gap:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;font-size:15px}
+html[data-ui="glass3d"] header .brand small, html[data-ui="glass3d"] .top .brand small{letter-spacing:.08em;text-transform:none;color:#E9B4C8;opacity:1}
+html[data-ui="glass3d"] .top h1{font-size:16px;font-weight:700;letter-spacing:.18em;display:flex;align-items:center;gap:10px}
+html[data-ui="glass3d"] .top h1::before, html[data-ui="glass3d"] header .brand::before, html[data-ui="glass3d"] .top .brand::before{content:"";flex:none;width:24px;height:24px;border:2.5px solid #fff;
+  background:linear-gradient(#fff,#fff) 6px 8px/9px 2.5px no-repeat, linear-gradient(#fff,#fff) 6px 8px/2.5px 12px no-repeat, linear-gradient(#fff,#fff) 13px 8px/2.5px 12px no-repeat}
+html[data-ui="glass3d"] header button, html[data-ui="glass3d"] .top .btn, html[data-ui="glass3d"] .top button.lnk, html[data-ui="glass3d"] .top a{background:transparent!important;color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:2px;box-shadow:none;text-transform:uppercase;letter-spacing:.1em;font-size:11px}
+/* Home */
+html[data-ui="glass3d"] .hero3d{padding:34px 30px;min-height:230px;margin-bottom:6px;display:flex;align-items:center}
+html[data-ui="glass3d"] .hero3d .kicker{text-transform:uppercase;letter-spacing:.3em;font-size:12px;color:#E9B4C8;margin-bottom:10px}
+html[data-ui="glass3d"] .hero3d h1{font-size:clamp(26px,4.4vw,44px);font-weight:300;letter-spacing:.32em;line-height:1.25;margin:0 0 12px}
+html[dir=rtl][data-ui="glass3d"] .hero3d h1{letter-spacing:0;font-weight:400}
+html[data-ui="glass3d"] .hero3d .iso-art{width:min(300px,42%);bottom:-14px}
+html[data-ui="glass3d"] .app{background:rgba(255,255,255,.07);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.14);border-radius:4px;color:#F1F2FA;
+  box-shadow:0 30px 60px -30px rgba(10,14,30,.7);transition:transform .15s ease,border-color .15s ease}
+html[data-ui="glass3d"] .app:hover{transform:translateY(-3px);border-color:rgba(233,180,200,.6);box-shadow:0 34px 60px -28px rgba(10,14,30,.8)}
+html[data-ui="glass3d"] .app.on{background:rgba(255,255,255,.15);border-color:#E9B4C8}
+html[data-ui="glass3d"] .app b{text-transform:uppercase;letter-spacing:.14em;font-weight:700;font-size:15px}
+html[data-ui="glass3d"] .app .ic{background:linear-gradient(135deg,#EDB9CC,#A8B3DE);color:#26304E;border-radius:4px;box-shadow:0 10px 20px -10px rgba(233,180,200,.9)}
+html[data-ui="glass3d"] .tag{background:rgba(242,211,168,.2);color:#F2D3A8}
+html[data-ui="glass3d"] .ok{background:rgba(168,230,200,.16);color:#CFF3E1}
+html[data-ui="glass3d"] .lnkbtn{color:#F2C6D6}
+html[data-ui="glass3d"] footer, html[data-ui="glass3d"] footer button{color:#BCC2DA}
+html[data-ui="glass3d"] .modal{background:rgba(14,18,32,.6)}
+html[data-ui="glass3d"] .modal .box{background:#3E4766;border:1px solid rgba(255,255,255,.16);border-radius:4px;color:#F1F2FA}
+html[data-ui="glass3d"] .modal .card{background:#3E4766}
+/* HR */
+html[data-ui="glass3d"] .tabs:not(:has(.tab.on)), html[data-ui="glass3d"] .tabs{background:transparent;border-bottom:1px solid rgba(255,255,255,.12)}
+html[data-ui="glass3d"] .top + .tabs, html[data-ui="glass3d"] div.tabs:has(> .in){background:rgba(30,36,58,.35);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+html[data-ui="glass3d"] .tabs .tab{background:transparent;border-bottom:3px solid transparent;border-radius:0;color:#C9CEE3}
+html[data-ui="glass3d"] .tabs .tab.on{background:transparent;color:#fff;border-bottom-color:#E9B4C8}
+html[data-ui="glass3d"] .lv{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:4px}
+html[data-ui="glass3d"] .st .dot{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25)}
+html[data-ui="glass3d"] .st.done .dot{background:#A8E6C8;border-color:#A8E6C8;color:#26304E}
+html[data-ui="glass3d"] .st.rej .dot{background:#FFA3A3;border-color:#FFA3A3;color:#26304E}
+html[data-ui="glass3d"] .st::before{background:rgba(255,255,255,.18)}
+html[data-ui="glass3d"] th, html[data-ui="glass3d"] .tbl th{background:transparent}
+html[data-ui="glass3d"] .warn{background:rgba(242,211,168,.18);color:#F7E2C2}
+html[data-ui="glass3d"] .p-off{background:rgba(255,255,255,.1)}
+html[data-ui="glass3d"] .seg{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.18)}
+html[data-ui="glass3d"] .seg button{background:transparent;color:#DDE1F2}
+html[data-ui="glass3d"] .seg button.on{background:linear-gradient(135deg,#EDB9CC,#A8B3DE);color:#26304E}
+html[data-ui="glass3d"] .slip .ln{border-bottom-color:rgba(255,255,255,.18)} html[data-ui="glass3d"] .slip .ln.tot{border-top-color:#fff}
+html[data-ui="glass3d"] .btn.red{background:rgba(255,120,120,.25);color:#FFD0D0}
+html[data-ui="glass3d"] .badge{color:#26304E}
+/* Marketing */
+html[data-page="marketing"][data-ui="glass3d"] .btn{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.22);box-shadow:none;text-transform:none;letter-spacing:.02em;font-size:13px}
+html[data-page="marketing"][data-ui="glass3d"] .btn.pri{background:linear-gradient(135deg,#EDB9CC,#A8B3DE);color:#26304E;border:0}
+html[data-ui="glass3d"] .tabs button:not(.tab){color:#C9CEE3;background:transparent}
+html[data-ui="glass3d"] .tabs button.on:not(.tab){color:#fff;border-bottom-color:#E9B4C8}
+html[data-ui="glass3d"] .tabs .n{background:rgba(233,180,200,.25);color:#FFE3EC}
+html[data-ui="glass3d"] .bar:not(:has(> .brand)) label{color:#BCC2DA}
+html[data-ui="glass3d"] .stat{background:rgba(255,255,255,.07);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.14);border-radius:4px}
+html[data-ui="glass3d"] .stat b{font-weight:300;letter-spacing:.04em}
+html[data-ui="glass3d"] .b-due{background:rgba(242,211,168,.22);color:#F7E2C2}
+html[data-ui="glass3d"] .b-over{background:rgba(255,120,120,.22);color:#FFD0D0}
+html[data-ui="glass3d"] .b-later{background:rgba(255,255,255,.1);color:#C9CEE3}
+html[data-ui="glass3d"] .b-ok{background:rgba(168,230,200,.2);color:#CFF3E1}
+html[data-ui="glass3d"] .switch span{background:rgba(255,255,255,.2)}
+html[data-ui="glass3d"] .days{background:rgba(255,255,255,.1);color:#fff}
+html[data-ui="glass3d"] .tbl td{border-bottom-color:rgba(255,255,255,.12)}
