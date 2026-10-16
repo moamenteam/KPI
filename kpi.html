@@ -192,7 +192,7 @@ const T = {
     linkHint:"Login accounts are linked here to confidential pharmacist records. Unlinked accounts cannot see any data.", notLinkedMsg:"Your account is not linked to a pharmacist record yet. Ask your supervisor.",
     title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR",
     revToDate:"Branch revenue to date", expectedBy:"Branch expected by", projected:"Branch projected month-end", brTarget:"Branch target", shareOf:"of branch", branchNote:"Target and score are for the whole branch — every pharmacist in it shares the same sales score.", hiChance:"High chance", atRisk:"At risk", lowChance:"Low chance", mySales:"My sales", stale:"Data not updated this week", finalM:"Final — full month target", ofTarget:"of month target",
-    qResults:"Quarter results", rankLbl:"Rank", of:"of", kpiCol:"KPI", actionCol:"Action" },
+    ofBranchSales:"of branch sales", qResults:"Quarter results", rankLbl:"Rank", of:"of", kpiCol:"KPI", actionCol:"Action" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
     haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج", home:"الرئيسية",
     dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", profile:"ملفي", phone:"الجوال", changePhoto:"تغيير الصورة", documents:"المستندات", upload:"رفع ملف", docHint:"PDF أو صورة، حتى 10 ميجابايت", docCv:"السيرة الذاتية", docCert:"شهادة", docId:"هوية / ترخيص", docOther:"أخرى", hr:"الموارد البشرية", hrSoon:"وحدة الموارد البشرية — قريبًا", hrHint:"نفس تسجيل الدخول، نفس سجلات الموظفين والفروع، ونفس صلاحيات الحسابات. الوحدات المخطط لها:", hrStaff:"ملف الموظف", hrAttendance:"الحضور والورديات", hrLeave:"طلبات الإجازة", hrDocs:"المستندات وانتهاء التراخيص", visitReports:"تقارير الزيارات", from:"من", to:"إلى", lastVisit:"آخر زيارة", lastScore:"آخر نتيجة", avgScore:"المتوسط", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
@@ -212,7 +212,7 @@ const T = {
     linkHint:"هنا يتم ربط حسابات الدخول بسجلات الصيادلة السرية. الحسابات غير المرتبطة لا ترى أي بيانات.", notLinkedMsg:"حسابك غير مرتبط بسجل صيدلي بعد. تواصل مع المشرف.",
     title:"المسمى", tPh:"صيدلي", tPm:"مدير صيدلية", tSup:"مشرف", tMgmt:"إدارة", visitResults:"نتائج الزيارات", ranking:"الترتيب", stars:"مسابقة النجوم", starsHint:"متوسط الربع · الأول ١٥٠٠ · الثاني ١٠٠٠ ريال", expired:"المنتهي (بالتكلفة)", ofSales:"من المبيعات", rate:"نسبة", count:"عدد", sar:"ريال",
     revToDate:"إيراد الفرع حتى تاريخه", expectedBy:"المتوقع للفرع حتى", projected:"توقع الفرع نهاية الشهر", brTarget:"هدف الفرع", shareOf:"من الفرع", branchNote:"الهدف والنقاط للفرع كاملًا — كل صيادلة الفرع يأخذون نفس نتيجة المبيعات.", hiChance:"فرصة عالية", atRisk:"معرّض للخطر", lowChance:"فرصة منخفضة", mySales:"مبيعاتي", stale:"لم يتم تحديث البيانات هذا الأسبوع", finalM:"نهائي — على هدف الشهر كاملًا", ofTarget:"من هدف الشهر",
-    qResults:"نتائج الربع", rankLbl:"الترتيب", of:"من", kpiCol:"المؤشر", actionCol:"الإجراء" }
+    ofBranchSales:"من مبيعات الفرع", qResults:"نتائج الربع", rankLbl:"الترتيب", of:"من", kpiCol:"المؤشر", actionCol:"الإجراء" }
 };
 
 /* ---------- helpers ---------- */
@@ -261,6 +261,11 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
       if(!s&&sales&&Number(sales.value)) return {ach:1, actual:0, ratio:0, asOf:sales.as_of, noExpiry:true};
       if(!s||!sales||!Number(sales.value)) return {ach:null};
       const ratio=Number(s.value)/Number(sales.value); return {ach: ratio<=Number(k.threshold)?1:0, actual:Number(s.value), ratio, asOf:s.as_of}; }
+    // private label (Q4+): contribution = private-label sales ÷ the branch's actual sales, scored against threshold (e.g. 15% = full points)
+    if(code==="private"&&Number(k.threshold)>0){ const sales=snap("sales",mk,bid,null);
+      if(!s||!sales||!Number(sales.value)) return {ach:null};
+      const mix=Number(s.value)/Number(sales.value);
+      return {ach:mix/Number(k.threshold), actual:Number(s.value), mix, mixTarget:Number(k.threshold), contrib:true, asOf:s.as_of}; }
     const t=tgt(code,mk,bid,null);
     // lab: once the branch's sales for the month are loaded, no lab reading means 0 lab revenue (shown as 0, not "no data")
     if(!s&&t&&ZERO_IF_MISSING.includes(code)){ const ss=snap("sales",mk,bid,null); if(ss) return {ach:0, actual:0, target:t, asOf:ss.as_of, zero:true}; }
@@ -278,7 +283,7 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
       if(!sh.length) return {ach:null, mine};
       let ach=0, any=false, detail=[]; sh.forEach(x=>{ const r=branchKpi(code,x.branch_id,mk); if(r.ach!=null){ ach+=r.ach*x.share; any=true; } detail.push({...r,...x}); });
       const d0=detail[0]; return any? {ach, actual:d0.actual, target:d0.target, ratio:d0.ratio, asOf:d0.asOf, mixed:sh.length>1,
-        expected:d0.expected, share:d0.share, proj:d0.proj, paced:d0.paced, stale:d0.stale, final:d0.final, mine} : {ach:null, mine}; }
+        expected:d0.expected, share:d0.share, proj:d0.proj, paced:d0.paced, stale:d0.stale, final:d0.final, mine, mix:d0.mix, mixTarget:d0.mixTarget, contrib:d0.contrib} : {ach:null, mine}; }
     if(k.rule==="visit"){ const vs=D.visits.filter(v=>v.pharmacist_id===pid&&monthKey(v.visit_date)===mk); if(!vs.length) return {ach:null};
       const avg=vs.reduce((a,v)=>a+Number(v.score),0)/vs.length; const vt=Number(k.threshold)||1;   // Q4: threshold 0.90 → 90% = full points
       return {ach:avg/vt, actual:avg, target:vt, unit:"rate", n:vs.length}; }
@@ -332,6 +337,7 @@ function ScoreRows({rows,t,lang}){ return <div>{rows.map(r=>{ const cap=r.k.cap=
     <div className="sub small muted">{r.k.code==="sales"&&r.actual!=null&&r.ach!=null? <SalesDetail r={r} t={t} lang={lang}/> :
       r.ach==null? <><span className="na">{t.noData}</span>{r.mine!=null&&<div>{t.mySales}: <strong>{fmt(r.mine)}</strong> {t.sar}</div>}</> :
       r.k.code==="expire"? <>{fmt(r.actual)} {t.sar} · {(r.ratio*100).toFixed(2)}% {t.ofSales}</> :
+      r.contrib? <>{fmt(r.actual)} {t.sar} · <strong>{(r.mix*100).toFixed(1)}%</strong> {t.ofBranchSales} / {t.target} {(r.mixTarget*100).toFixed(0)}%{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}</> :
       r.k.rule==="visit"? <>{r.n} {t.visits.toLowerCase()} · {fmt(r.actual,"rate")}{r.target<1&&<> / {fmt(r.target,"rate")}</>}</> :
       r.ach!=null&&r.actual!=null? <>{fmt(r.actual,r.unit)} / {fmt(r.target,r.unit)}{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}</> : null}</div>
     <div className={"pct "+tone(r.ach)} style={{fontSize:18}}>{r.ach==null?"—":Math.round(r.ach*100)+"%"}</div>
