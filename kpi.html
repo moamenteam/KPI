@@ -191,7 +191,7 @@ const T = {
     scope:"Scope (supervisors)", linkedTo:"Linked pharmacist", notLinked:"— not linked —", unlinked:"Unlinked",
     linkHint:"Login accounts are linked here to confidential pharmacist records. Unlinked accounts cannot see any data.", notLinkedMsg:"Your account is not linked to a pharmacist record yet. Ask your supervisor.",
     title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR",
-    revToDate:"Revenue to date", expectedBy:"Expected by", projected:"Projected month-end", hiChance:"High chance", atRisk:"At risk", lowChance:"Low chance", mySales:"My sales", stale:"Data not updated this week", finalM:"Final — full month target", ofTarget:"of month target",
+    revToDate:"Branch revenue to date", expectedBy:"Branch expected by", projected:"Branch projected month-end", brTarget:"Branch target", shareOf:"of branch", branchNote:"Target and score are for the whole branch — every pharmacist in it shares the same sales score.", hiChance:"High chance", atRisk:"At risk", lowChance:"Low chance", mySales:"My sales", stale:"Data not updated this week", finalM:"Final — full month target", ofTarget:"of month target",
     qResults:"Quarter results", rankLbl:"Rank", of:"of", kpiCol:"KPI", actionCol:"Action" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
     haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج", home:"الرئيسية",
@@ -211,7 +211,7 @@ const T = {
     scope:"النطاق (للمشرفين)", linkedTo:"الصيدلي المرتبط", notLinked:"— غير مرتبط —", unlinked:"غير مرتبط",
     linkHint:"هنا يتم ربط حسابات الدخول بسجلات الصيادلة السرية. الحسابات غير المرتبطة لا ترى أي بيانات.", notLinkedMsg:"حسابك غير مرتبط بسجل صيدلي بعد. تواصل مع المشرف.",
     title:"المسمى", tPh:"صيدلي", tPm:"مدير صيدلية", tSup:"مشرف", tMgmt:"إدارة", visitResults:"نتائج الزيارات", ranking:"الترتيب", stars:"مسابقة النجوم", starsHint:"متوسط الربع · الأول ١٥٠٠ · الثاني ١٠٠٠ ريال", expired:"المنتهي (بالتكلفة)", ofSales:"من المبيعات", rate:"نسبة", count:"عدد", sar:"ريال",
-    revToDate:"الإيراد حتى تاريخه", expectedBy:"المتوقع حتى", projected:"المتوقع نهاية الشهر", hiChance:"فرصة عالية", atRisk:"معرّض للخطر", lowChance:"فرصة منخفضة", mySales:"مبيعاتي", stale:"لم يتم تحديث البيانات هذا الأسبوع", finalM:"نهائي — على هدف الشهر كاملًا", ofTarget:"من هدف الشهر",
+    revToDate:"إيراد الفرع حتى تاريخه", expectedBy:"المتوقع للفرع حتى", projected:"توقع الفرع نهاية الشهر", brTarget:"هدف الفرع", shareOf:"من الفرع", branchNote:"الهدف والنقاط للفرع كاملًا — كل صيادلة الفرع يأخذون نفس نتيجة المبيعات.", hiChance:"فرصة عالية", atRisk:"معرّض للخطر", lowChance:"فرصة منخفضة", mySales:"مبيعاتي", stale:"لم يتم تحديث البيانات هذا الأسبوع", finalM:"نهائي — على هدف الشهر كاملًا", ofTarget:"من هدف الشهر",
     qResults:"نتائج الربع", rankLbl:"الترتيب", of:"من", kpiCol:"المؤشر", actionCol:"الإجراء" }
 };
 
@@ -321,8 +321,9 @@ function SalesDetail({r,t,lang}){ const [cls,lab]=r.paced? signal(r.ach,t) : [""
     <div>{t.revToDate} <strong>{fmt(r.actual)}</strong> {t.sar}{r.asOf&&<span> · {t.asOf} {dayLabel(r.asOf,lang)}</span>}</div>
     {r.paced && <div>{t.expectedBy} {dayLabel(r.asOf,lang)}: <strong>{fmt(r.expected)}</strong> <span className="muted">({(r.share*100).toFixed(1)}% {t.ofTarget})</span></div>}
     {r.paced && <div>{t.projected} ≈ <strong>{fmt(r.proj)}</strong> / {fmt(r.target)} <span className={"chip "+cls}>{lab}</span></div>}
-    {!r.paced && <div>{t.target} {fmt(r.target)}{r.final&&<> <span className="chip grey">{t.finalM}</span></>}</div>}
-    {r.mine!=null && <div>{t.mySales}: <strong>{fmt(r.mine)}</strong> {t.sar}</div>}
+    {!r.paced && <div>{t.brTarget} {fmt(r.target)}{r.final&&<> <span className="chip grey">{t.finalM}</span></>}</div>}
+    {r.mine!=null && <div>{t.mySales}: <strong>{fmt(r.mine)}</strong> {t.sar}{r.actual?<span className="muted"> ({Math.round(r.mine/r.actual*100)}% {t.shareOf})</span>:null}</div>}
+    {r.mine!=null && <div className="muted" style={{fontSize:12}}>{t.branchNote}</div>}
     {r.stale && <div><span className="chip grey">{t.stale}</span></div>}
   </div>; }
 function ScoreRows({rows,t,lang}){ return <div>{rows.map(r=>{ const cap=r.k.cap==null?null:Number(r.k.cap); const maxPts=Number(r.k.weight)*(r.paced?1:(cap??1.5));
