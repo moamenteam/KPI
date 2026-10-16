@@ -721,7 +721,7 @@ function parseJuleb(buf,D){
     lines.push({branch_name:br,receipt_ref:rc,line_no:lineNo[key],order_at:toTs(g(r,"Order Date Time")),order_date:d,cashier:ca,customer:str(g(r,"Customer")),phone:ph,
       product_ref:pref==null||pref===""?null:String(typeof pref==="number"?Math.round(pref):pref).trim(),product_name:str(g(r,"Product Name")),product_name_ar:str(g(r,"Product Name Arabic")),
       category:str(g(r,"Category")),category2:str(g(r,"Category 2")),category3:str(g(r,"Category 3")),qty:Number(g(r,"Sold Qty"))||0,total,payment_method:pm||null,is_wasfaty:/wasfaty/i.test(pm)});
-    sales[br]=(sales[br]||0)+total; const b=bills[key]||(bills[key]={ca,tot:0,ph:false}); b.tot+=total; if(ph&&ph.length>=9) b.ph=true; });
+    sales[br]=(sales[br]||0)+total; const b=bills[key]||(bills[key]={ca,tot:0,ph:false}); b.tot+=total; if(ph&&ph.length>=9&&!/^wasfaty/i.test(String(g(r,"Customer")??"").trim())) b.ph=true; });
   const dates=lines.map(l=>l.order_date).filter(Boolean).sort(); const minD=dates[0], maxD=dates[dates.length-1];
   const months=[...new Set(dates.map(monthKey))];
   const reg={}; Object.values(bills).filter(b=>b.tot>0).forEach(b=>{ const x=reg[b.ca]||(reg[b.ca]={n:0,r:0}); x.n++; if(b.ph) x.r++; });
