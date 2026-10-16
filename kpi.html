@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ui="glass3d">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -259,29 +259,7 @@ html[data-ui="glass3d"] .toast{background:rgba(30,36,58,.9);backdrop-filter:blur
 html[data-ui="glass3d"] tr[style*="F4F7F5"]{background:rgba(255,255,255,.05)!important}
 html[data-ui="glass3d"] .spark polyline{stroke:#F2C6D6}
 </style>
-<script>
-/* shared look: colour theme + interface style set on the home page */
-(function(){
-  try{
-    var q=new URLSearchParams(location.search).get("theme"); if(q){ document.documentElement.dataset.ui=q; return; }
-    var c = supabase.createClient("https://occubmnoepgdysbyacgj.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc");
-    c.from("app_settings").select("value").eq("key","brand").maybeSingle().then(function(r){
-      var b = r && r.data && r.data.value; if(!b) return;
-      var T = {teal:["#0F6B63","#E3F0EE","#14383A"],navy:["#1F3A68","#E5EAF4","#16243D"],olive:["#4F6B2A","#ECF1E1","#2C3A1A"],
-               plum:["#6B2F56","#F3E6EE","#351828"],charcoal:["#37474F","#E8EDEF","#1E2A30"],sand:["#9A6B2F","#F6EDE0","#3C2A14"]};
-      var p = T[b.preset];
-      var primary = b.preset==="custom" ? (b.primary||"#0F6B63") : (p?p[0]:"#0F6B63");
-      var st = document.documentElement.style;
-      document.documentElement.dataset.ui = b.ui || "flat";
-      if (b.ui === "rustic" || b.ui === "glass3d") return;            // the camp theme brings its own colours
-      st.setProperty("--teal", primary);
-      st.setProperty("--teal-soft", p ? p[1] : "color-mix(in srgb,"+primary+" 14%,#fff)");
-      st.setProperty("--ink", p ? p[2] : "#14383A");
-      document.documentElement.dataset.ui = b.ui || "flat";
-    }).catch(function(){});
-  }catch(e){}
-})();
-</script>
+
 <script type="text/babel" data-presets="react">
 /* ================= CONFIG ================= */
 const SUPABASE_URL = "https://occubmnoepgdysbyacgj.supabase.co";
