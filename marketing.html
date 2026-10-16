@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-ui="glass3d">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>First Brand — Marketing</title>
+<link rel="stylesheet" href="./theme.css">
+<script src="./theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
@@ -159,26 +161,6 @@ const OUTCOMES = [
   ["not_interested","غير مهتم","Not interested"],
   ["wrong_number","رقم خاطئ","Wrong number"],
 ];
-
-/* ================= THEME (same "brand" setting as the home page) ================= */
-const THEMES = {
-  teal:["#0F6B63","#E3F0EE","#14383A"], navy:["#1F3A68","#E5EAF4","#16243D"], olive:["#4F6B2A","#ECF1E1","#2C3A1A"],
-  plum:["#6B2F56","#F3E6EE","#351828"], charcoal:["#37474F","#E8EDEF","#1E2A30"], sand:["#9A6B2F","#F6EDE0","#3C2A14"]
-};
-async function applyTheme(){
-  try{
-    const {data}=await sb.from("app_settings").select("value").eq("key","brand").maybeSingle();
-    const b=(data&&data.value)||{};
-    const st=document.documentElement.style;
-    document.documentElement.dataset.ui=b.ui||"flat";
-    const preset=b.preset||"teal", c=THEMES[preset];
-    const primary=preset==="custom"?(b.primary||"#0F6B63"):c[0];
-    st.setProperty("--pri",primary);
-    st.setProperty("--pri-soft",c?c[1]:"color-mix(in srgb, "+primary+" 14%, #fff)");
-    st.setProperty("--ink",c?c[2]:"#14383A");
-    return b.logo_url||null;
-  }catch(e){ return null; }
-}
 
 /* ================= SHARED UI ================= */
 function Phone({phone,tr}){
@@ -685,7 +667,6 @@ function App(){
   const {lang,setLang,tr}=useLang();
   const [state,setState]=useState("loading"); // loading | nokey | out | denied | ok
   const [me,setMe]=useState(null);
-  const [logo,setLogo]=useState(null);
   const [tab,setTab]=useState("refill");
   const [counts,setCounts]=useState({});
   const [asof,setAsof]=useState(null);
@@ -697,7 +678,6 @@ function App(){
     const key=await findKey();
     if(!key){ setState("nokey"); return; }
     sb=supabase.createClient(SB_URL,key);
-    applyTheme().then(setLogo);
     const { data:{ session } } = await sb.auth.getSession();
     if(!session){ setState("out"); return; }
     const p=await sb.from("profiles").select("*").eq("id",session.user.id).maybeSingle();
@@ -713,7 +693,6 @@ function App(){
   })(); },[]);
 
   const header=h("div",{className:"top"},h("div",{className:"in"},
-    logo && h("img",{className:"logo",src:logo,alt:""}),
     h("h1",null,tr("التسويق","Marketing")),
     asof && h("span",{className:"asof"},tr("البيانات حتى ","Data up to "),LTR(asof)),
     h("span",{className:"sp"}),
