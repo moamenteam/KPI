@@ -81,6 +81,10 @@ a{color:var(--pri)}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;min-width:120px}
 .stat b{display:block;font-size:20px}
 .stat span{font-size:12px;color:var(--mute)}
+.billlist{display:grid;gap:4px;margin-top:6px}
+.billlist div{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+.billlist b{color:var(--ink)}
+.linkbtn{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font-size:13px;text-decoration:underline}
 html[data-ui="soft"] .card,html[data-ui="soft"] .stat{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
 html[data-ui="3d"]{background:var(--bg)}
 html[data-ui="3d"] body{background:transparent}
@@ -107,7 +111,7 @@ html[data-ui="3d"] .btn.pri{box-shadow:0 3px 0 color-mix(in srgb,var(--pri) 62%,
 const SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
 let SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
 const TZ = "Asia/Riyadh";
-const COUPON_MIN = 300;
+const COUPON_MIN = 300;          // a single cash bill must be MORE than this (set in the SQL view too)
 const INFANT_DAYS = [9, 26, 30];
 
 const { useState, useEffect, useCallback, useMemo } = React;
@@ -278,50 +282,64 @@ function Refill({tr,toast,onCount}){
   );
 }
 
-/* ================= MODULE 2: COUPON ================= */
+/* ================= MODULE 2: COUPON (single cash bill > 300 SAR) ================= */
 function Coupon({tr,toast,onCount}){
   const [month,setMonth]=useState(monthStr());
   const [branch,setBranch]=useState("");
   const [q,setQ]=useState("");
   const [rows,setRows]=useState(null);
   const [log,setLog]=useState(null);
+  const [open,setOpen]=useState({});   // customer_code -> show all qualifying bills
 
   const load=useCallback(async()=>{
-    setRows(null);
+    setRows(null); setOpen({});
     const r=await sb.from("mkt_coupon_targets").select("*").eq("month",month+"-01")
-      .order("month_total",{ascending:false}).limit(2000);
+      .order("max_bill",{ascending:false}).limit(2000);
     if(r.error){ toast(r.error.message,true); setRows([]); return; }
-    setRows(r.data||[]);
+    setRows((r.data||[]).map(x=>({...x,bill_list:Array.isArray(x.bill_list)?x.bill_list:[]})));
   },[month]);
   useEffect(()=>{ load(); },[load]);
 
-  const branches=useMemo(()=>[...new Set((rows||[]).map(r=>r.branch).filter(Boolean))].sort(),[rows]);
-  const list=(rows||[]).filter(r=>(!branch||r.branch===branch) && match(q,r.customer_name,r.customer_code,r.phone));
+  const branches=useMemo(()=>[...new Set((rows||[]).flatMap(r=>r.bill_list.map(b=>b.branch)).filter(Boolean))].sort(),[rows]);
+  const list=(rows||[]).filter(r=>(!branch||r.bill_list.some(b=>b.branch===branch))
+    && match(q,r.customer_name,r.customer_code,r.phone,...r.bill_list.map(b=>b.bill_no)));
   useEffect(()=>{ if(rows) onCount(list.length); },[rows,branch,q]);
+
+  const billsOf=r=> branch ? r.bill_list.filter(b=>b.branch===branch) : r.bill_list;
+  const BillLine=b=>h("div",{key:b.bill_no},
+    h("b",{className:"num"},fmtMoney(b.amount)+tr(" ر.س"," SAR")),
+    h("span",{className:"num"},fmtDate(b.date)),
+    h("span",null,b.branch),
+    h("span",{className:"num"},LTR("#"+b.bill_no)));
 
   return h(React.Fragment,null,
     h("div",{className:"bar"},
       h("label",null,tr("الشهر","Month"),h("input",{type:"month",value:month,onChange:e=>setMonth(e.target.value)})),
       h(BranchFilter,{tr,branches,value:branch,onChange:setBranch}),
       h(SearchBox,{tr,value:q,onChange:setQ}),
-      h("span",{className:"sub"},tr("عملاء كاش تجاوزت مشترياتهم "+COUPON_MIN+" ريال في الشهر، ولم يتم التواصل معهم بعد",
-                                    "Cash customers above "+COUPON_MIN+" SAR in the month who haven't been contacted yet"))),
+      h("span",{className:"sub"},tr("عملاء كاش لديهم فاتورة واحدة على الأقل أكثر من "+COUPON_MIN+" ريال في الشهر، ولم يتم التواصل معهم بعد",
+                                    "Cash customers with at least one single bill over "+COUPON_MIN+" SAR in the month who haven't been contacted yet"))),
     h("div",{className:"card scroll"},
       rows===null ? h("div",{className:"empty"},"…")
       : !list.length ? h("div",{className:"empty"},tr("لا يوجد عملاء لهذا الشهر. اختر شهرًا آخر أو انتظر تحميل بيانات جديدة.","No customers for this month. Pick another month or wait for the next data load."))
       : h("table",{className:"tbl"},
           h("thead",null,h("tr",null,
-            h("th",null,tr("العميل","Customer")),h("th",null,tr("الجوال","Phone")),h("th",null,tr("إجمالي الشهر","Month total")),
-            h("th",{className:"hide-sm"},tr("الفواتير","Bills")),h("th",{className:"hide-sm"},tr("آخر فاتورة","Last bill")),
+            h("th",null,tr("العميل","Customer")),h("th",null,tr("الجوال","Phone")),h("th",null,tr("أكبر فاتورة","Biggest bill")),
+            h("th",null,tr("فواتير +"+COUPON_MIN,"Bills over "+COUPON_MIN)),h("th",{className:"hide-sm"},tr("آخر فاتورة","Last bill")),
             h("th",{className:"hide-sm"},tr("الفرع","Branch")),h("th",null,""))),
-          h("tbody",null,list.map(r=>h("tr",{key:r.customer_code},
+          h("tbody",null,list.map(r=>{ const bl=billsOf(r); const isOpen=!!open[r.customer_code];
+            return h("tr",{key:r.customer_code},
             h("td",null,h("div",null,r.customer_name||"—"),h("div",{className:"sub num"},r.customer_code)),
             h("td",null,h(Phone,{phone:r.phone,tr})),
-            h("td",{className:"num"},h("b",null,fmtMoney(r.month_total)),tr(" ر.س"," SAR")),
-            h("td",{className:"hide-sm num"},r.bills),
+            h("td",{className:"num"},h("b",null,fmtMoney(r.max_bill)),tr(" ر.س"," SAR")),
+            h("td",null,
+              h("button",{className:"linkbtn",onClick:()=>setOpen(o=>({...o,[r.customer_code]:!isOpen}))},
+                (isOpen?tr("إخفاء ","Hide "):tr("عرض ","Show "))+bl.length+tr(bl.length===1?" فاتورة":" فواتير",bl.length===1?" bill":" bills")),
+              isOpen && h("div",{className:"billlist"},bl.map(BillLine))),
             h("td",{className:"hide-sm num"},fmtDate(r.last_bill)),
             h("td",{className:"hide-sm"},r.branch),
-            h("td",null,h("button",{className:"btn sm pri",onClick:()=>setLog({module:"coupon",customer_code:r.customer_code,customer_name:r.customer_name,ref_key:month,label:fmtMoney(r.month_total)+" SAR"})},tr("تسجيل","Log"))))))
+            h("td",null,h("button",{className:"btn sm pri",onClick:()=>setLog({module:"coupon",customer_code:r.customer_code,customer_name:r.customer_name,ref_key:month,
+              label:tr("أكبر فاتورة ","Biggest bill ")+fmtMoney(r.max_bill)+tr(" ر.س"," SAR")})},tr("تسجيل","Log")))); }))
         )),
     log && h(LogModal,{tr,item:log,toast,onClose:()=>setLog(null),onSaved:()=>{setLog(null);load();}})
   );
@@ -713,7 +731,7 @@ function App(){
   const infantOpen=isInfantDay(todayStr());
   const TABS=(me._lists ? [
     ["refill",tr("إعادة الصرف","Refill")],
-    ["coupon",tr("كوبونات +"+COUPON_MIN,"Coupons "+COUPON_MIN+"+")],
+    ["coupon",tr("كوبونات فاتورة +"+COUPON_MIN,"Coupons: bill "+COUPON_MIN+"+")],
     ["infant",tr("مستلزمات الأطفال","Infant bulk")],
     ["log",tr("سجل التواصل","Contact log")],
   ] : []).concat(me._manager ? [["chronic",tr("الأدوية المزمنة","Chronic medicines")]] : [])
