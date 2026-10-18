@@ -74,6 +74,16 @@ td input,td select{padding:6px 8px}
 .toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));inset-inline-start:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;z-index:60;max-width:90vw}
 [dir=rtl] .toast{transform:translateX(50%)}
 footer{max-width:1060px;margin:0 auto;padding:0 18px 36px;color:var(--muted);font-size:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+/* ---- my profile card ---- */
+.pcard{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.avatar{width:64px;height:64px;border-radius:50%;background:var(--teal2);color:var(--teal);display:grid;place-items:center;font-weight:700;font-size:22px;flex:none;letter-spacing:1px}
+.pinfo{flex:1;min-width:220px}
+.pname{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pfacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.editbtn{background:var(--teal2);color:var(--teal);border:0;border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer;font-weight:500}
+.editbtn:hover{filter:brightness(.96)}
+.pedit{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.pedit input{max-width:300px}
 /* ---- surface styles ---- */
 html[data-ui="soft"] .card,html[data-ui="soft"] .app{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
 html[data-ui="3d"]{background:var(--paper)}
@@ -115,6 +125,8 @@ const qOf = mk => { const m=Number(mk.slice(5,7)); return {year:Number(mk.slice(
 const bname = (branches,id) => (branches.find(b=>b.id===id)||{}).name || "—";
 const kname = (k,lang) => lang==="ar"&&k.name_ar ? k.name_ar : k.name_en;
 const kpisFor = (D,mk) => { const q=qOf(mk); return (D.kpis||[]).map(k=>{ const o=(D.schemes||[]).find(x=>x.kpi_code===k.code&&x.year===q.year&&x.quarter===q.quarter); return o? {...k,weight:o.weight,cap:o.cap,threshold:o.threshold??k.threshold,active:o.active} : k; }).sort((a,b)=>a.sort-b.sort); };
+const cleanName = s => String(s||"").replace(/\s+/g," ").trim();
+const initials = s => cleanName(s).split(" ").filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase() || "?";
 
 /* ---------- HR permission tabs (same keys as hr.html) ---------- */
 const TAB_DEFAULT = ["leave","requests","salary","approvals"];
@@ -210,6 +222,65 @@ const POLICY = {
 <li>Tabs and permissions may change as the business needs change.</li></ul>
 <p class="muted small">For questions, contact Operations or HR.</p>`)
 };
+
+/* ================= MY PROFILE (homepage card) ================= */
+function MyProfile({tr,me,setMe,toast,email}){
+  const [edit,setEdit]=useState(false);
+  const [val,setVal]=useState(me.full_name||"");
+  const [busy,setBusy]=useState(false);
+  const [rec,setRec]=useState(null);   // linked staff record (branch, title, code)
+
+  useEffect(()=>{ setVal(me.full_name||""); },[me.full_name]);
+  useEffect(()=>{ setRec(null); if(!me.pharmacist_id) return;
+    (async()=>{
+      const r=await sb.from("pharmacists").select("emp_code,title,branch_id").eq("id",me.pharmacist_id).maybeSingle();
+      if(!r.data) return;
+      let branch="";
+      if(r.data.branch_id){ const b=await sb.from("branches").select("name").eq("id",r.data.branch_id).maybeSingle(); branch=b.data?b.data.name:""; }
+      setRec({...r.data,branch});
+    })(); },[me.pharmacist_id]);
+
+  const titleName=t=>({"community pharmacist":tr("صيدلي","Community pharmacist"),"pharmacy manager":tr("مدير صيدلية","Pharmacy manager"),
+    "supervisor":tr("مشرف","Supervisor"),"management":tr("إدارة","Management")}[t]||t);
+  const roleName=r=>r==="admin"?tr("إدارة","Management"):r==="supervisor"?tr("مشرف","Supervisor"):tr("صيدلي","Pharmacist");
+
+  const save=async()=>{
+    const n=cleanName(val);
+    if(n.length<2||n.length>60) return toast(tr("الاسم يجب أن يكون بين 2 و 60 حرفًا","Name must be 2–60 characters"),true);
+    if(n===me.full_name){ setEdit(false); return; }
+    setBusy(true);
+    const r=await sb.rpc("set_my_name",{new_name:n});
+    setBusy(false);
+    if(r.error) return toast(r.error.message,true);
+    setMe({...me,full_name:n}); setEdit(false); toast(tr("تم تحديث اسمك","Your name was updated"));
+  };
+  const cancel=()=>{ setVal(me.full_name||""); setEdit(false); };
+
+  return <section className="card pcard">
+    <div className="avatar" aria-hidden="true">{initials(me.full_name||email)}</div>
+    <div className="pinfo">
+      {!edit ? <div className="pname">
+          <span>{me.full_name||email}</span>
+          <button className="editbtn" onClick={()=>setEdit(true)} title={tr("تعديل الاسم","Edit name")}>✎ {tr("تعديل الاسم","Edit name")}</button>
+        </div>
+        : <div className="pedit">
+          <input autoFocus value={val} maxLength={60} placeholder={tr("اكتب اسمك","Type your name")}
+            onChange={e=>setVal(e.target.value)} onKeyDown={e=>{ if(e.key==="Enter") save(); if(e.key==="Escape") cancel(); }}/>
+          <button className="btn" disabled={busy||cleanName(val).length<2} onClick={save}>{busy?"…":tr("حفظ","Save")}</button>
+          <button className="btn sec" disabled={busy} onClick={cancel}>{tr("إلغاء","Cancel")}</button>
+        </div>}
+      <div className="small muted" dir="ltr" style={{textAlign:"start"}}>{email}</div>
+      <div className="pfacts">
+        <span className="chip">{me.is_super?tr("مدير النظام","Super admin"):roleName(me.role)}</span>
+        {rec && rec.title && <span className="chip">{titleName(rec.title)}</span>}
+        {rec && rec.branch && <span className="chip">{tr("الفرع: ","Branch: ")+rec.branch}</span>}
+        {rec && rec.emp_code && <span className="chip">{tr("الرقم الوظيفي: ","Emp. code: ")+rec.emp_code}</span>}
+        {me.phone && <span className="chip" dir="ltr">{me.phone}</span>}
+      </div>
+      {edit && <div className="small muted" style={{marginTop:6}}>{tr("يتغير اسم العرض في جميع الأنظمة. اسمك في سجل الموظفين والتقارير تعدّله الإدارة.","This changes your display name in every system. Your name on the staff record and reports is managed by admin.")}</div>}
+    </div>
+  </section>;
+}
 
 /* ================= TEAM ================= */
 function Team({tr,D,reload,toast,lang}){
@@ -417,7 +488,9 @@ function App(){
 
   const isSuper = !!(me && me.is_super);
   const canMarketing = isSuper || !!(me && ((me.pages||[]).includes("marketing") || ["admin","supervisor"].includes(me.role)));
-  const name = me ? me.full_name : (session ? session.user.email : "");
+  const email = session ? session.user.email : "";
+  const name = me && me.full_name ? me.full_name : email;
+  const firstName = cleanName(name).split(" ")[0] || name;
   const Card=({href,ic,title,sub,onClick,soon,on})=> {
     const inner=<><div className="ic">{ic}</div><b>{title}</b><span className="small muted">{sub}</span>{soon&&<span className="tag">{tr("قريبًا","Soon")}</span>}</>;
     return onClick ? <button className={"app"+(on?" on":"")} onClick={onClick}>{inner}</button>
@@ -438,10 +511,12 @@ function App(){
       <section className="mo hero3d">
         <div>
           <div className="kicker">{tr("منصة فيرست براند","First Brand platform")}</div>
-          <h1>{name ? <>{tr("أهلًا،","Welcome,")}<br/>{name}</> : <>{tr("ابنِ","Start building")}<br/>{tr("مستقبل فروعك","your future")}</>}</h1>
+          <h1>{name ? <>{tr("أهلًا،","Welcome,")}<br/>{firstName}</> : <>{tr("ابنِ","Start building")}<br/>{tr("مستقبل فروعك","your future")}</>}</h1>
           <p className="muted">{tr("اختر النظام الذي تريد فتحه","Choose the system you want to open")}</p>
         </div>
       </section>
+
+      {session && me && <MyProfile tr={tr} me={me} setMe={setMe} toast={toast} email={email}/>}
 
       <div className="apps">
         <Card href="./kpi.html" ic="KPI" title={tr("مؤشرات الأداء","KPI")} sub={tr("نتائج الفروع والصيادلة، الأهداف، وتقارير الزيارات","Branch and pharmacist scores, targets and visit reports")}/>
