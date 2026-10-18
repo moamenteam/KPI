@@ -337,6 +337,19 @@ function Team({tr,D,reload,toast,lang}){
 }
 
 /* ================= ACCOUNTS & PERMISSIONS (KPI + HR + Marketing) ================= */
+/* Marketing tabs — same keys as marketing.html */
+const MK_LIST_TABS = ["refill","coupon","infant","log"];
+const MK_ALL = [...MK_LIST_TABS,"chronic"];
+const mkName = (tr,k) => ({refill:tr("إعادة الصرف","Refill"), coupon:tr("كوبونات فاتورة +300","Coupons: bill 300+"),
+  infant:tr("مستلزمات الأطفال","Infant bulk"), log:tr("سجل التواصل","Contact log"), chronic:tr("الأدوية المزمنة","Chronic medicines")}[k]||k);
+function mkTabs(p){
+  if(!p) return [];
+  if(p.is_super) return MK_ALL;
+  const pg=p.pages||[]; const lists=pg.includes("marketing"); const mgr=["admin","supervisor"].includes(p.role);
+  const base=[...(lists?MK_LIST_TABS:[]),...(mgr?["chronic"]:[])];
+  return pg.includes("mk_set") ? base.filter(k=>pg.includes("mk_"+k)) : base;
+}
+
 const KPI_TABS = [["dash","لوحة المتابعة","Dashboard"],["visits","نموذج الزيارة","Visit form"],["visitReports","تقارير الزيارات","Visit reports"],["data","البيانات","Data"]];
 
 function Access({tr,me,D,toast}){
@@ -367,6 +380,10 @@ function Access({tr,me,D,toast}){
   const setCeo=(pid,v)=>{ const pg=new Set(hrCur(pid).pages); if(v) pg.add("approvals"); hrSave(pid,{is_ceo:v,pages:[...pg]}); };
   const setHrTab=(pid,k,v)=>{ const pg=new Set(hrCur(pid).pages); v?pg.add(k):pg.delete(k); hrSave(pid,{pages:[...pg]}); };
   const setKpiTab=(p,k,v)=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:v?[...cur,k]:cur}); };
+  const setMkAccess=(p,v)=>{ const cur=(p.pages||[]).filter(x=>x!=="marketing" && !x.startsWith("mk_")); upd(p.id,{pages:v?[...cur,"marketing"]:cur}); };
+  const setMkTab=(p,k,v)=>{ const eff=new Set(mkTabs(p)); v?eff.add(k):eff.delete(k);
+    const cur=(p.pages||[]).filter(x=>!x.startsWith("mk_"));
+    upd(p.id,{pages:[...cur,"mk_set",...[...eff].map(x=>"mk_"+x)]}); };
 
   const list=profiles.filter(p=>!q || (p.full_name||"").toLowerCase().includes(q.toLowerCase()) || (p.email||"").toLowerCase().includes(q.toLowerCase()));
   const cb={width:18,height:18};
@@ -383,6 +400,7 @@ function Access({tr,me,D,toast}){
 
     {list.map(p=>{ const linked=pharmacists.find(x=>x.id===p.pharmacist_id); const hc=hrCur(p.id); const isOpen=open===p.id;
       const mk=!!p.is_super || (p.pages||[]).includes("marketing");
+      const mkt=mkTabs(p);
       return <div key={p.id} className="card">
         <div className="row" style={{justifyContent:"space-between",cursor:"pointer"}} onClick={()=>setOpen(isOpen?"":p.id)}>
           <div>
@@ -390,7 +408,7 @@ function Access({tr,me,D,toast}){
             {p.is_super && <span className="chip">{tr("مدير النظام","Super admin")}</span>}
             <div className="small muted" dir="ltr">{p.email||"—"}</div>
             <div className="small muted">{roleName(p.role)}{linked?" · "+linked.full_name+" · "+bname(branches,linked.branch_id):" · "+tr("غير مرتبط","unlinked")}
-              {hc.is_hr?" · HR":""}{hc.is_ceo?" · CEO":""}{(p.pages||[]).includes("marketing")?" · "+tr("تسويق","Marketing"):""}</div>
+              {hc.is_hr?" · HR":""}{hc.is_ceo?" · CEO":""}{(mkt.length>0&&!p.is_super)?" · "+tr("تسويق","Marketing")+" ("+mkt.length+")":""}</div>
           </div>
           <button className="btn sec">{isOpen?tr("إغلاق","Close"):tr("الصلاحيات","Permissions")}</button>
         </div>
@@ -443,9 +461,15 @@ function Access({tr,me,D,toast}){
             <b>{tr("التسويق","Marketing")}</b>
             <div className="row" style={{gap:14,marginTop:8}}>
               <label className="check small" style={{background:"var(--amber2)",borderRadius:8,padding:"2px 8px"}}>
-                <input type="checkbox" style={cb} checked={mk} disabled={!!p.is_super} onChange={e=>setKpiTab(p,"marketing",e.target.checked)}/>{tr("دخول نظام التسويق","Marketing access")}</label>
+                <input type="checkbox" style={cb} checked={mk} disabled={!!p.is_super} onChange={e=>setMkAccess(p,e.target.checked)}/>{tr("دخول نظام التسويق","Marketing access")}</label>
             </div>
-            <div className="small muted" style={{marginTop:6}}>{tr("يفتح قوائم العملاء وأرقام جوالاتهم: إعادة الصرف، الكوبونات، ومستلزمات الأطفال. مدير النظام لديه الصلاحية دائمًا.","Opens customer lists and phone numbers: refills, coupons and infant offers. Super admins always have access.")}</div>
+            <div className="row" style={{gap:14,marginTop:8}}>
+              {MK_ALL.map(k=>{ const mgr=["admin","supervisor"].includes(p.role);
+                const off=!!p.is_super || (k==="chronic" ? !mgr : !mk);
+                return <label key={k} className="check small" style={{opacity:off&&!p.is_super?.5:1}}>
+                  <input type="checkbox" style={cb} checked={mkt.includes(k)} disabled={off} onChange={e=>setMkTab(p,k,e.target.checked)}/>{mkName(tr,k)}</label>; })}
+            </div>
+            <div className="small muted" style={{marginTop:6}}>{tr("«دخول نظام التسويق» يفتح قوائم العملاء وأرقام جوالاتهم، ثم اختر التبويبات التي تظهر له. «الأدوية المزمنة» للمشرف والإدارة فقط. مدير النظام يرى كل التبويبات دائمًا.","\"Marketing access\" opens customer lists and phone numbers; then pick which tabs they see. \"Chronic medicines\" is for supervisors and management only. Super admins always see every tab.")}</div>
           </div>
         </div>}
       </div>; })}
@@ -487,7 +511,7 @@ function App(){
     if(r.error) setErr(r.error.message); else { setErr(""); setOk(tr("أرسلنا رابط تعيين كلمة المرور إلى بريدك","We sent a password reset link to your email")); } };
 
   const isSuper = !!(me && me.is_super);
-  const canMarketing = isSuper || !!(me && ((me.pages||[]).includes("marketing") || ["admin","supervisor"].includes(me.role)));
+  const canMarketing = mkTabs(me).length>0;
   const email = session ? session.user.email : "";
   const name = me && me.full_name ? me.full_name : email;
   const firstName = cleanName(name).split(" ")[0] || name;
