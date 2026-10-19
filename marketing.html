@@ -84,6 +84,10 @@ a{color:var(--pri)}
 .billlist{display:grid;gap:4px;margin-top:6px}
 .billlist div{display:flex;gap:10px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
 .billlist b{color:var(--ink)}
+.cat{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.cat span{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;font-weight:500}
+.cat-g{background:var(--pri-soft);color:var(--pri)}
+.cat-s{background:#eef2f7;color:var(--mute)}
 .linkbtn{background:none;border:0;padding:0;color:var(--pri);cursor:pointer;font-size:13px;text-decoration:underline}
 html[data-ui="soft"] .card,html[data-ui="soft"] .stat{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
 html[data-ui="3d"]{background:var(--bg)}
@@ -230,6 +234,23 @@ function SearchBox({tr,value,onChange}){
     h("input",{value,placeholder:tr("اسم، رقم، صنف","Name, number, item"),onChange:e=>onChange(e.target.value)}));
 }
 const match=(q,...vals)=>{ if(!q) return true; q=q.toLowerCase(); return vals.some(v=>String(v||"").toLowerCase().includes(q)); };
+/* Juleb categories per product: Category 2 = group, Category 3 = sub-group */
+async function loadCategories(refs){
+  const out={}; const list=[...new Set(refs.filter(Boolean))];
+  for(let i=0;i<list.length;i+=200){
+    const r=await sb.from("mkt_product_categories").select("product_ref,category,category2,category3").in("product_ref",list.slice(i,i+200));
+    if(r.error) return {_err:r.error.message};
+    (r.data||[]).forEach(x=>out[x.product_ref]=x);
+  }
+  return out;
+}
+const catGroup = c => c ? (c.category2||c.category||"") : "";
+function CatTag({c}){
+  if(!c || !(c.category2||c.category3||c.category)) return null;
+  return h("div",{className:"cat"},
+    h("span",{className:"cat-g"},c.category2||c.category),
+    c.category3 && h("span",{className:"cat-s"},c.category3));
+}
 
 /* ================= MODULE 1: REFILL ================= */
 function Refill({tr,toast,onCount}){
@@ -241,6 +262,8 @@ function Refill({tr,toast,onCount}){
   const [q,setQ]=useState("");
   const [rows,setRows]=useState(null);
   const [log,setLog]=useState(null);
+  const [cats,setCats]=useState({});
+  const [cat,setCat]=useState("");
 
   const load=useCallback(async()=>{
     setRows(null);
@@ -249,12 +272,17 @@ function Refill({tr,toast,onCount}){
       .order("due_date",{ascending:true}).limit(2000);
     if(r.error){ toast(r.error.message,true); setRows([]); return; }
     setRows(r.data||[]);
+    const c=await loadCategories((r.data||[]).map(x=>x.product_ref));
+    if(c._err){ toast(c._err,true); setCats({}); } else setCats(c);
   },[channel,from,to]);
   useEffect(()=>{ load(); },[load]);
 
   const branches=useMemo(()=>[...new Set((rows||[]).map(r=>r.branch).filter(Boolean))].sort(),[rows]);
-  const list=(rows||[]).filter(r=>(!branch||r.branch===branch) && match(q,r.customer_name,r.customer_code,r.phone,r.product_name,r.product_ref));
-  useEffect(()=>{ if(rows) onCount(list.length); },[rows,branch,q]);
+  const groups=useMemo(()=>[...new Set((rows||[]).map(r=>catGroup(cats[r.product_ref])).filter(Boolean))].sort(),[rows,cats]);
+  const list=(rows||[]).filter(r=>{ const c=cats[r.product_ref]||{};
+    return (!branch||r.branch===branch) && (!cat||catGroup(c)===cat)
+      && match(q,r.customer_name,r.customer_code,r.phone,r.product_name,r.product_ref,c.category,c.category2,c.category3); });
+  useEffect(()=>{ if(rows) onCount(list.length); },[rows,branch,q,cat,cats]);
 
   const badge=r=> r.days_left<0 ? h("span",{className:"badge b-over"},tr("متأخر "+Math.abs(r.days_left)+" يوم",Math.abs(r.days_left)+" days late"))
                   : r.days_left<=5 ? h("span",{className:"badge b-due"},r.days_left===0?tr("اليوم","Today"):tr("بعد "+r.days_left+" يوم","In "+r.days_left+" days"))
@@ -270,6 +298,10 @@ function Refill({tr,toast,onCount}){
       h("button",{className:"btn sm",onClick:()=>{setFrom(t);setTo(addDays(t,5));}},tr("الأيام الخمسة القادمة","Next 5 days")),
       h("button",{className:"btn sm",onClick:()=>{setFrom(addDays(t,-30));setTo(addDays(t,-1));}},tr("المتأخرون","Overdue")),
       h(BranchFilter,{tr,branches,value:branch,onChange:setBranch}),
+      h("label",null,tr("التصنيف","Category"),
+        h("select",{value:cat,onChange:e=>setCat(e.target.value)},
+          h("option",{value:""},tr("كل التصنيفات","All categories")),
+          groups.map(g=>h("option",{key:g,value:g},g)))),
       h(SearchBox,{tr,value:q,onChange:setQ})),
     h("div",{className:"card scroll"},
       rows===null ? h("div",{className:"empty"},"…")
@@ -282,7 +314,7 @@ function Refill({tr,toast,onCount}){
           h("tbody",null,list.map(r=>h("tr",{key:r.customer_code+r.product_ref},
             h("td",null,h("div",null,r.customer_name||"—"),h("div",{className:"sub num"},r.customer_code)),
             h("td",null,h(Phone,{phone:r.phone,tr})),
-            h("td",null,h("div",null,r.product_name||r.product_ref),h("div",{className:"sub"},tr("الكمية ","Qty ")+r.qty)),
+            h("td",null,h("div",null,r.product_name||r.product_ref),h(CatTag,{c:cats[r.product_ref]}),h("div",{className:"sub"},tr("الكمية ","Qty ")+r.qty)),
             h("td",{className:"hide-sm num"},fmtDate(r.last_purchase)),
             h("td",null,h("div",{className:"num"},fmtDate(r.due_date)),badge(r)),
             h("td",{className:"hide-sm"},r.branch),
