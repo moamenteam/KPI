@@ -234,7 +234,7 @@ function SearchBox({tr,value,onChange}){
     h("input",{value,placeholder:tr("اسم، رقم، صنف","Name, number, item"),onChange:e=>onChange(e.target.value)}));
 }
 const match=(q,...vals)=>{ if(!q) return true; q=q.toLowerCase(); return vals.some(v=>String(v||"").toLowerCase().includes(q)); };
-/* Juleb categories per product: Category 2 = group, Category 3 = sub-group */
+/* Juleb sub-category (Category 3) per product, shown in Arabic + English */
 async function loadCategories(refs){
   const out={}; const list=[...new Set(refs.filter(Boolean))];
   for(let i=0;i<list.length;i+=200){
@@ -244,16 +244,43 @@ async function loadCategories(refs){
   }
   return out;
 }
-const catGroup = c => c ? (c.category2||c.category||"") : "";
-function CatTag({c}){
-  if(!c || !(c.category2||c.category3||c.category)) return null;
+const subCat = c => c && c.category3 ? String(c.category3).trim() : "";
+/* built-in suggestions; names saved in "Arabic category names" win over these */
+const CAT_DICT = {
+  "antihypertensive":"خافض للضغط","antihypertensives":"خافضات الضغط","blood pressure":"ضغط الدم",
+  "antidiabetic":"علاج السكري","antidiabetics":"علاج السكري","oral antidiabetics":"خافضات السكر الفموية","insulin":"إنسولين","insulins":"إنسولين","diabetes care":"رعاية السكري",
+  "lipid lowering":"خافضات الدهون","statins":"ستاتينات خافضة للكوليسترول","cholesterol":"الكوليسترول",
+  "anticoagulant":"مضاد تخثر","anticoagulants":"مضادات التخثر","antiplatelet":"مضاد صفائح","antiplatelets":"مضادات الصفائح",
+  "diuretic":"مدر للبول","diuretics":"مدرات البول","beta blockers":"حاصرات بيتا","calcium channel blockers":"حاصرات قنوات الكالسيوم",
+  "ace inhibitors":"مثبطات الإنزيم المحول","arbs":"حاصرات مستقبلات الأنجيوتنسين","anti-anginal":"علاج الذبحة الصدرية","antiarrhythmics":"مضادات اضطراب النظم",
+  "cardiovascular":"القلب والأوعية","cardiac":"أدوية القلب",
+  "antibiotic":"مضاد حيوي","antibiotics":"مضادات حيوية","antifungal":"مضاد فطريات","antifungals":"مضادات الفطريات","antiviral":"مضاد فيروسات","antivirals":"مضادات الفيروسات",
+  "analgesic":"مسكن","analgesics":"مسكنات","pain relief":"مسكنات الألم","nsaids":"مضادات الالتهاب غير الستيرويدية","anti-inflammatory":"مضاد التهاب","fever":"خافض حرارة",
+  "muscle relaxants":"مرخيات العضلات","migraine":"الصداع النصفي","gout":"النقرس","osteoporosis":"هشاشة العظام",
+  "antihistamine":"مضاد هيستامين","antihistamines":"مضادات الهيستامين","allergy":"الحساسية",
+  "bronchodilators":"موسعات الشعب الهوائية","asthma":"الربو","respiratory":"الجهاز التنفسي","cough & cold":"الكحة والبرد","cough and cold":"الكحة والبرد","nasal":"الأنف",
+  "antacids":"مضادات الحموضة","ppi":"مثبطات مضخة البروتون","proton pump inhibitors":"مثبطات مضخة البروتون","gastrointestinal":"الجهاز الهضمي","git":"الجهاز الهضمي",
+  "antiemetics":"مضادات القيء","laxatives":"ملينات","antidiarrheals":"مضادات الإسهال","antispasmodics":"مضادات التقلصات",
+  "thyroid":"الغدة الدرقية","thyroid hormones":"هرمونات الغدة الدرقية","hormones":"هرمونات","corticosteroids":"كورتيزون","steroids":"كورتيزون","contraceptives":"موانع الحمل",
+  "antiepileptics":"مضادات الصرع","anticonvulsants":"مضادات التشنج","antidepressants":"مضادات الاكتئاب","antipsychotics":"مضادات الذهان","anxiolytics":"مضادات القلق",
+  "cns":"الجهاز العصبي","neurology":"الأعصاب","psychiatry":"الطب النفسي",
+  "urology":"المسالك البولية","prostate":"البروستاتا","men health":"صحة الرجل","women health":"صحة المرأة","sexual health":"الصحة الجنسية",
+  "vitamins":"فيتامينات","multivitamins":"فيتامينات متعددة","vitamins & minerals":"فيتامينات ومعادن","supplements":"مكملات غذائية","iron":"الحديد","calcium":"الكالسيوم","vitamin d":"فيتامين د","anemia":"فقر الدم",
+  "dermatology":"الجلدية","skin care":"العناية بالبشرة","hair care":"العناية بالشعر","oral care":"العناية بالفم","cosmetics":"مستحضرات تجميل",
+  "ophthalmic":"العيون","eye drops":"قطرات العين","otic":"الأذن","ear drops":"قطرات الأذن",
+  "baby milk":"حليب أطفال","infant formula":"حليب أطفال","diapers":"حفاضات","first aid":"إسعافات أولية","wound care":"العناية بالجروح","antiseptics":"مطهرات",
+  "medical devices":"أجهزة طبية","weight management":"إدارة الوزن","herbal":"أعشاب"
+};
+const catAr = (en,map) => !en ? "" : ((map&&map[en]) || CAT_DICT[en.toLowerCase()] || "");
+function CatTag({c,ar}){
+  const en=subCat(c); if(!en) return null;
+  const a=catAr(en,ar);
   return h("div",{className:"cat"},
-    h("span",{className:"cat-g"},c.category2||c.category),
-    c.category3 && h("span",{className:"cat-s"},c.category3));
+    a && h("span",{className:"cat-g"},a),
+    h("span",{className:a?"cat-s":"cat-g",dir:"ltr"},en));
 }
-
 /* ================= MODULE 1: REFILL ================= */
-function Refill({tr,toast,onCount}){
+function Refill({tr,toast,onCount,ar}){
   const t=todayStr();
   const [channel,setChannel]=useState("cash");
   const [from,setFrom]=useState(t);
@@ -278,10 +305,10 @@ function Refill({tr,toast,onCount}){
   useEffect(()=>{ load(); },[load]);
 
   const branches=useMemo(()=>[...new Set((rows||[]).map(r=>r.branch).filter(Boolean))].sort(),[rows]);
-  const groups=useMemo(()=>[...new Set((rows||[]).map(r=>catGroup(cats[r.product_ref])).filter(Boolean))].sort(),[rows,cats]);
-  const list=(rows||[]).filter(r=>{ const c=cats[r.product_ref]||{};
-    return (!branch||r.branch===branch) && (!cat||catGroup(c)===cat)
-      && match(q,r.customer_name,r.customer_code,r.phone,r.product_name,r.product_ref,c.category,c.category2,c.category3); });
+  const groups=useMemo(()=>[...new Set((rows||[]).map(r=>subCat(cats[r.product_ref])).filter(Boolean))].sort(),[rows,cats]);
+  const list=(rows||[]).filter(r=>{ const c=cats[r.product_ref]; const sc=subCat(c);
+    return (!branch||r.branch===branch) && (!cat||sc===cat)
+      && match(q,r.customer_name,r.customer_code,r.phone,r.product_name,r.product_ref,sc,catAr(sc,ar)); });
   useEffect(()=>{ if(rows) onCount(list.length); },[rows,branch,q,cat,cats]);
 
   const badge=r=> r.days_left<0 ? h("span",{className:"badge b-over"},tr("متأخر "+Math.abs(r.days_left)+" يوم",Math.abs(r.days_left)+" days late"))
@@ -301,7 +328,7 @@ function Refill({tr,toast,onCount}){
       h("label",null,tr("التصنيف","Category"),
         h("select",{value:cat,onChange:e=>setCat(e.target.value)},
           h("option",{value:""},tr("كل التصنيفات","All categories")),
-          groups.map(g=>h("option",{key:g,value:g},g)))),
+          groups.map(g=>{ const a=catAr(g,ar); return h("option",{key:g,value:g},a?a+" — "+g:g); }))),
       h(SearchBox,{tr,value:q,onChange:setQ})),
     h("div",{className:"card scroll"},
       rows===null ? h("div",{className:"empty"},"…")
@@ -314,7 +341,7 @@ function Refill({tr,toast,onCount}){
           h("tbody",null,list.map(r=>h("tr",{key:r.customer_code+r.product_ref},
             h("td",null,h("div",null,r.customer_name||"—"),h("div",{className:"sub num"},r.customer_code)),
             h("td",null,h(Phone,{phone:r.phone,tr})),
-            h("td",null,h("div",null,r.product_name||r.product_ref),h(CatTag,{c:cats[r.product_ref]}),h("div",{className:"sub"},tr("الكمية ","Qty ")+r.qty)),
+            h("td",null,h("div",null,r.product_name||r.product_ref),h(CatTag,{c:cats[r.product_ref],ar}),h("div",{className:"sub"},tr("الكمية ","Qty ")+r.qty)),
             h("td",{className:"hide-sm num"},fmtDate(r.last_purchase)),
             h("td",null,h("div",{className:"num"},fmtDate(r.due_date)),badge(r)),
             h("td",{className:"hide-sm"},r.branch),
@@ -502,7 +529,65 @@ function Contacts({tr,toast}){
 }
 
 /* ================= CHRONIC LIST (admin / supervisor) ================= */
-function Chronic({tr,toast,me}){
+function Chronic({tr,toast,me,ar,setAr}){
+  const [mode,setMode]=useState("meds");
+  return h(React.Fragment,null,
+    h("div",{className:"bar"},h("div",{className:"seg"},
+      h("button",{className:mode==="meds"?"on":"",onClick:()=>setMode("meds")},tr("الأدوية","Medicines")),
+      h("button",{className:mode==="names"?"on":"",onClick:()=>setMode("names")},tr("أسماء التصنيفات بالعربي","Arabic category names")))),
+    mode==="meds" ? h(ChronicList,{tr,toast,me,ar}) : h(CatNames,{tr,toast,me,ar,setAr}));
+}
+
+function CatNames({tr,toast,me,ar,setAr}){
+  const [rows,setRows]=useState(null);
+  const [q,setQ]=useState("");
+  const [only,setOnly]=useState(false);
+  useEffect(()=>{ (async()=>{
+    const r=await sb.from("mkt_subcategories").select("*").order("products",{ascending:false}).limit(3000);
+    if(r.error){ toast(r.error.message,true); setRows([]); return; }
+    setRows(r.data||[]);
+  })(); },[]);
+  const save=async(en,val)=>{
+    const v=String(val||"").trim(); if(v===(ar[en]||"")) return;
+    const r = v ? await sb.from("mkt_category_ar").upsert({name_en:en,name_ar:v,updated_by:me.id,updated_at:new Date().toISOString()},{onConflict:"name_en"})
+                : await sb.from("mkt_category_ar").delete().eq("name_en",en);
+    if(r.error) return toast(r.error.message,true);
+    setAr(m=>{ const n={...m}; if(v) n[en]=v; else delete n[en]; return n; }); toast(tr("تم الحفظ","Saved"));
+  };
+  const useAll=async()=>{
+    const todo=(rows||[]).filter(r=>!ar[r.name]&&CAT_DICT[r.name.toLowerCase()]).map(r=>({name_en:r.name,name_ar:CAT_DICT[r.name.toLowerCase()],updated_by:me.id,updated_at:new Date().toISOString()}));
+    if(!todo.length) return toast(tr("لا توجد اقتراحات جديدة","No new suggestions"));
+    const r=await sb.from("mkt_category_ar").upsert(todo,{onConflict:"name_en"});
+    if(r.error) return toast(r.error.message,true);
+    setAr(m=>{ const n={...m}; todo.forEach(x=>n[x.name_en]=x.name_ar); return n; }); toast(tr("تم حفظ "+todo.length+" اسم","Saved "+todo.length+" names"));
+  };
+  const all=rows||[];
+  const missing=all.filter(r=>!ar[r.name]).length;
+  const list=all.filter(r=>(!only||!ar[r.name]) && match(q,r.name,ar[r.name]));
+  return h(React.Fragment,null,
+    h("div",{className:"stats"},
+      h("div",{className:"stat"},h("b",{className:"num"},all.length),h("span",null,tr("تصنيف فرعي","Sub-categories"))),
+      h("div",{className:"stat"},h("b",{className:"num"},missing),h("span",null,tr("بدون اسم عربي محفوظ","No saved Arabic name")))),
+    h("div",{className:"bar"},
+      h(SearchBox,{tr,value:q,onChange:setQ}),
+      h("button",{className:"btn sm"+(only?" pri":""),onClick:()=>setOnly(!only)},tr("الناقص فقط","Missing only")),
+      h("button",{className:"btn sm",onClick:useAll},tr("اعتمد كل الاقتراحات","Accept all suggestions"))),
+    h("div",{className:"card scroll"},
+      rows===null ? h("div",{className:"empty"},"…")
+      : !list.length ? h("div",{className:"empty"},tr("لا توجد تصنيفات.","No categories."))
+      : h("table",{className:"tbl"},
+          h("thead",null,h("tr",null,h("th",null,tr("التصنيف (جُلَب)","Sub-category (Juleb)")),h("th",{className:"hide-sm"},tr("الأصناف","Items")),h("th",null,tr("الاسم بالعربي","Arabic name")))),
+          h("tbody",null,list.map(r=>h("tr",{key:r.name},
+            h("td",{dir:"ltr",style:{textAlign:"start"}},r.name),
+            h("td",{className:"hide-sm num"},r.products),
+            h("td",null,h("input",{className:"days",style:{width:"100%",minWidth:180},defaultValue:ar[r.name]||"",key:r.name+"|"+(ar[r.name]||""),
+              placeholder:CAT_DICT[r.name.toLowerCase()]||tr("اكتب الاسم بالعربي","Type the Arabic name"),
+              onBlur:e=>save(r.name,e.target.value), onKeyDown:e=>{ if(e.key==="Enter") e.target.blur(); }}))))))),
+    h("div",{className:"sub",style:{marginTop:10}},tr("الاسم يُحفظ عند الخروج من الخانة. الاقتراح الرمادي يظهر تلقائيًا حتى تحفظ اسمًا، و«اعتمد كل الاقتراحات» يحفظها دفعة واحدة. امسح الخانة لحذف الاسم.",
+      "A name saves when you leave the box. The grey suggestion shows automatically until you save a name; \"Accept all suggestions\" saves them in one go. Clear the box to remove a name.")));
+}
+
+function ChronicList({tr,toast,me,ar}){
   const [rows,setRows]=useState(null);
   const [q,setQ]=useState("");
   const [show,setShow]=useState("all");     // all | yes | no | changed | review
@@ -574,7 +659,7 @@ function Chronic({tr,toast,me}){
             h("th",null,tr("أيام العبوة","Days per pack")),h("th",null,""))),
           h("tbody",null,list.slice(0,limit).map(r=>h("tr",{key:r.product_ref,style:saving[r.product_ref]?{opacity:.5}:null},
             h("td",null,h("div",null,r.product_name||"—"),h("div",{className:"sub num"},r.product_ref)),
-            h("td",{className:"hide-sm"},h("div",null,r.category2||h("span",{className:"badge b-due"},tr("بدون","None"))),h("div",{className:"sub"},r.category3||"")),
+            h("td",{className:"hide-sm"},h("div",null,r.category2||h("span",{className:"badge b-due"},tr("بدون","None"))),h(CatTag,{c:r,ar})),
             h("td",{className:"hide-sm num"},r.customers),
             h("td",null,h("label",{className:"switch"},
               h("input",{type:"checkbox",checked:!!r.is_chronic,disabled:!!saving[r.product_ref],"aria-label":tr("مزمن","Chronic"),
@@ -597,6 +682,7 @@ function App(){
   const [tab,setTab]=useState("refill");
   const [counts,setCounts]=useState({});
   const [asof,setAsof]=useState(null);
+  const [catArMap,setCatArMap]=useState({});
   const [msg,setMsg]=useState(null);
   const toast=(text,err)=>{ setMsg({text,err}); setTimeout(()=>setMsg(null),3500); };
   const setCount=k=>n=>setCounts(c=>c[k]===n?c:{...c,[k]:n});
@@ -616,6 +702,8 @@ function App(){
     setState("ok");
     const l=await sb.from("mkt_loads").select("data_to,loaded_at").order("data_to",{ascending:false}).limit(1).maybeSingle();
     if(l.data) setAsof(l.data.data_to);
+    const ca=await sb.from("mkt_category_ar").select("name_en,name_ar").limit(5000);
+    if(ca.data){ const m={}; ca.data.forEach(x=>m[x.name_en]=x.name_ar); setCatArMap(m); }
   })(); },[]);
 
   const header=h("div",{className:"top"},h("div",{className:"in"},
@@ -651,11 +739,11 @@ function App(){
         label,
         k==="infant" && !infantOpen ? h("span",{className:"n"},tr("مغلق","Closed"))
         : counts[k]!=null && !["log","chronic"].includes(k) ? h("span",{className:"n"},counts[k]) : null))),
-      can("refill") && tab==="refill" && h(Refill,{tr,toast,onCount:setCount("refill")}),
+      can("refill") && tab==="refill" && h(Refill,{tr,toast,onCount:setCount("refill"),ar:catArMap}),
       can("coupon") && tab==="coupon" && h(Coupon,{tr,toast,onCount:setCount("coupon")}),
       can("infant") && tab==="infant" && h(Infant,{tr,toast,onCount:setCount("infant")}),
       can("log") && tab==="log" && h(Contacts,{tr,toast}),
-      can("chronic") && tab==="chronic" && h(Chronic,{tr,toast,me})),
+      can("chronic") && tab==="chronic" && h(Chronic,{tr,toast,me,ar:catArMap,setAr:setCatArMap})),
     msg && h("div",{className:"toast"+(msg.err?" err":""),role:"status"},msg.text));
 }
 
