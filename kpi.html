@@ -817,12 +817,13 @@ function Visits({t,me,D,reload,toast,lang}){
 }
 const E_shares=(D,pid,mk)=>makeEngine(D).shares(pid,mk);
 
-/* ================= JULEB IMPORT (super admin) =================
+/* ================= JULEB IMPORT (super admin, or accounts with "Import Juleb report" ticked in Admin) =================
    Report: Juleb → POS Sales Details · all branches · any date range · Excel.
    1) every sale line is stored in sales_lines (same line never stored twice — overlapping uploads are safe)
    2) kpi_refresh() recalculates month-to-date KPIs from all stored lines of that month (as of the last stored day):
       sales per branch · my sales · registration (phone ≥9 digits ÷ all bills, returns excluded) · lab · private label
    The same lines feed the Marketing page. */
+const canImport = me => !!me && (me.is_super || (me.pages||[]).includes("dataImport"));
 const JULEB_REQ=["Branch Code","Branch Name","Cashier","Receipt Reference","Total Amount","Phone","Order Date Time"];
 const isoLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const tsLocal=d=>`${isoLocal(d)}T${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
@@ -938,7 +939,7 @@ function Data({t,me,D,E,reload,toast,lang}){
   return <div className="grid">
     <div className="row" style={{justifyContent:"space-between"}}><h1>{t.data}</h1><MonthPicker mk={mk} set={setMk} lang={lang}/></div>
     <div className="muted small">{t.dataHint}</div>
-    {me.is_super && <JulebImport t={t} D={D} reload={reload} toast={toast}/>}
+    {canImport(me) && <JulebImport t={t} D={D} reload={reload} toast={toast}/>}
     <div className="card"><h2 style={{marginBottom:8}}>{t.latest} · {monthLabel(mk,lang)}</h2>
       {latest.length===0? <div className="empty">{t.noData}</div> :
       <table><thead><tr><th>{t.kpi}</th><th>{t.branch}/{t.pharmacist}</th><th className="num">{t.value}</th><th>{t.asOf}</th><th>{t.source}</th><th></th></tr></thead><tbody>
