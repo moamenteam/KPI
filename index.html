@@ -350,7 +350,7 @@ function mkTabs(p){
   return pg.includes("mk_set") ? base.filter(k=>pg.includes("mk_"+k)) : base;
 }
 
-const KPI_TABS = [["dash","لوحة المتابعة","Dashboard"],["visits","نموذج الزيارة","Visit form"],["visitReports","تقارير الزيارات","Visit reports"],["data","البيانات","Data"]];
+const KPI_TABS = [["dash","لوحة المتابعة","Dashboard"],["visits","نموذج الزيارة","Visit form"],["visitReports","تقارير الزيارات","Visit reports"],["data","البيانات","Data"],["dataImport","استيراد تقرير جُلَب","Import Juleb report"]];
 
 function Access({tr,me,D,toast}){
   const {branches,pharmacists}=D;
@@ -379,7 +379,10 @@ function Access({tr,me,D,toast}){
   const setHr=(pid,v)=>{ const pg=new Set(hrCur(pid).pages); if(v) ["approvals",...STAFF_TABS].forEach(k=>pg.add(k)); else STAFF_TABS.forEach(k=>pg.delete(k)); hrSave(pid,{is_hr:v,pages:[...pg]}); };
   const setCeo=(pid,v)=>{ const pg=new Set(hrCur(pid).pages); if(v) pg.add("approvals"); hrSave(pid,{is_ceo:v,pages:[...pg]}); };
   const setHrTab=(pid,k,v)=>{ const pg=new Set(hrCur(pid).pages); v?pg.add(k):pg.delete(k); hrSave(pid,{pages:[...pg]}); };
-  const setKpiTab=(p,k,v)=>{ const cur=(p.pages||[]).filter(x=>x!==k); upd(p.id,{pages:v?[...cur,k]:cur}); };
+  const setKpiTab=(p,k,v)=>{ let cur=(p.pages||[]).filter(x=>x!==k);
+    if(v && k==="dataImport" && !cur.includes("data")) cur=[...cur,"data"];   // import lives inside the Data tab
+    if(!v && k==="data") cur=cur.filter(x=>x!=="dataImport");                  // no Data tab = no import
+    upd(p.id,{pages:v?[...cur,k]:cur}); };
   const setMkAccess=(p,v)=>{ const cur=(p.pages||[]).filter(x=>x!=="marketing" && !x.startsWith("mk_")); upd(p.id,{pages:v?[...cur,"marketing"]:cur}); };
   const setMkTab=(p,k,v)=>{ const eff=new Set(mkTabs(p)); v?eff.add(k):eff.delete(k);
     const cur=(p.pages||[]).filter(x=>!x.startsWith("mk_"));
@@ -440,8 +443,9 @@ function Access({tr,me,D,toast}){
             <b>{tr("مؤشرات الأداء","KPI")}</b>
             <div className="row" style={{gap:14,marginTop:8}}>
               {KPI_TABS.map(([k,ar,en])=><label key={k} className="check small">
-                <input type="checkbox" style={cb} checked={(p.pages||[]).includes(k)} disabled={!!p.is_super} onChange={e=>setKpiTab(p,k,e.target.checked)}/>{tr(ar,en)}</label>)}
+                <input type="checkbox" style={cb} checked={!!p.is_super || (p.pages||[]).includes(k)} disabled={!!p.is_super} onChange={e=>setKpiTab(p,k,e.target.checked)}/>{tr(ar,en)}</label>)}
             </div>
+            <div className="small muted" style={{marginTop:6}}>{tr("«استيراد تقرير جُلَب» يُظهر خانة رفع ملف جُلَب داخل تبويب البيانات، ويفتح تبويب البيانات تلقائيًا. مدير النظام لديه كل الصلاحيات دائمًا.","\"Import Juleb report\" shows the Juleb upload box inside the Data tab, and turns the Data tab on with it. Super admins always have everything.")}</div>
           </div>
 
           <div style={{borderTop:"1px solid var(--line)",paddingTop:12}}>
