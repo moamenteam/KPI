@@ -241,7 +241,8 @@ function MyProfile({tr,me,setMe,toast,email}){
     })(); },[me.pharmacist_id]);
 
   const titleName=t=>({"community pharmacist":tr("صيدلي","Community pharmacist"),"pharmacy manager":tr("مدير صيدلية","Pharmacy manager"),
-    "supervisor":tr("مشرف","Supervisor"),"management":tr("إدارة","Management")}[t]||t);
+    "supervisor":tr("مشرف","Supervisor"),"management":tr("إدارة","Management"),
+    "on-call pharmacist":tr("صيدلي جوكر (متنقل)","On-call pharmacist (joker)")}[t]||t);
   const roleName=r=>r==="admin"?tr("إدارة","Management"):r==="supervisor"?tr("مشرف","Supervisor"):tr("صيدلي","Pharmacist");
 
   const save=async()=>{
@@ -286,7 +287,8 @@ function MyProfile({tr,me,setMe,toast,email}){
 function Team({tr,D,reload,toast,lang}){
   const {branches,pharmacists}=D;
   const [nb,setNb]=useState(""); const [np,setNp]=useState({}); const [sel,setSel]=useState("all"); const [mv,setMv]=useState({});
-  const titles=[["community pharmacist",tr("صيدلي","Community pharmacist")],["pharmacy manager",tr("مدير صيدلية","Pharmacy manager")],["supervisor",tr("مشرف","Supervisor")],["management",tr("إدارة","Management")]];
+  const titles=[["community pharmacist",tr("صيدلي","Community pharmacist")],["on-call pharmacist",tr("صيدلي جوكر (متنقل)","On-call pharmacist (joker)")],["pharmacy manager",tr("مدير صيدلية","Pharmacy manager")],["supervisor",tr("مشرف","Supervisor")],["management",tr("إدارة","Management")]];
+  const [per,setPer]=useState(null);   // pharmacist whose branch periods are open
   // next employee code, generated from the highest existing one
   const codes=pharmacists.map(p=>String(p.emp_code||"").trim()).filter(c=>/^\d+$/.test(c));
   const width=Math.max(3,...codes.map(c=>c.length));
@@ -309,6 +311,7 @@ function Team({tr,D,reload,toast,lang}){
   const shown = sel==="all"? branches : branches.filter(b=>b.id===sel);
   const groups=[...shown.map(b=>({id:b.id,name:b.name,list:pharmacists.filter(p=>p.branch_id===b.id)})), ...(sel==="all"?[{id:"none",name:tr("بدون فرع","No branch"),list:pharmacists.filter(p=>!p.branch_id)}]:[])];
   return <div className="grid">
+    {per && <PeriodsEditor tr={tr} p={per} branches={branches} assignments={D.assignments.filter(a=>a.pharmacist_id===per.id)} reload={reload} toast={toast} onClose={()=>setPer(null)}/>}
     <div className="card grid"><h2>{tr("الفروع","Branches")}</h2>
       <div className="row">{branches.map(b=><span key={b.id} className="chip" style={{padding:"6px 10px",fontSize:13,cursor:"pointer",background:sel===b.id?"var(--teal)":"",color:sel===b.id?"#fff":""}} onClick={()=>setSel(sel===b.id?"all":b.id)}>
           {b.name} <span style={{opacity:.7}}>({pharmacists.filter(p=>p.branch_id===b.id).length})</span>
@@ -317,13 +320,14 @@ function Team({tr,D,reload,toast,lang}){
       <div className="row"><input placeholder={tr("اسم فرع جديد","New branch name")} value={nb} onChange={e=>setNb(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addBranch()} style={{maxWidth:280}}/><button className="btn sec" onClick={addBranch}>{tr("إضافة","Add")}</button></div></div>
     {groups.map(g=><div key={g.id} className="card">
       <div className="row" style={{justifyContent:"space-between",marginBottom:8}}><h2 style={{margin:0}}>{g.name}</h2><span className="muted small">{g.list.length} {tr("صيدلي","pharmacists")}</span></div>
-      {g.list.length>0 && <div className="tw"><table><thead><tr><th>{tr("الاسم","Name")}</th><th>{tr("الرقم الوظيفي","Emp. code")}</th><th>{tr("المسمى","Title")}</th><th>{tr("نقل إلى","Move to")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead><tbody>
+      {g.list.length>0 && <div className="tw"><table><thead><tr><th>{tr("الاسم","Name")}</th><th>{tr("الرقم الوظيفي","Emp. code")}</th><th>{tr("المسمى","Title")}</th><th>{tr("الفروع والفترات","Branches & dates")}</th><th>{tr("الحالة","Status")}</th><th></th></tr></thead><tbody>
         {g.list.map(p=><tr key={p.id} style={{opacity:p.active?1:.55}}>
           <td>{p.full_name}</td><td className="muted">{p.emp_code||"—"}</td>
           <td><select value={p.title||"community pharmacist"} onChange={e=>updPh(p.id,{title:e.target.value})}>{titles.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></td>
           <td className="row" style={{gap:6,flexWrap:"nowrap"}}>
+            <button className="btn sec" style={{padding:"5px 10px"}} onClick={()=>setPer(p)}>📅 {tr("الفترات","Periods")} ({D.assignments.filter(a=>a.pharmacist_id===p.id).length})</button>
             <select value={(mv[p.id]||{}).branch||""} onChange={e=>setMv({...mv,[p.id]:{...(mv[p.id]||{}),branch:e.target.value}})}><option value="">—</option>{branches.filter(b=>b.id!==p.branch_id).map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>
-            <button className="btn sec" style={{padding:"5px 10px"}} disabled={!(mv[p.id]||{}).branch} onClick={()=>move(p)}>{tr("نقل","Move")}</button></td>
+            <button className="btn sec" style={{padding:"5px 10px"}} disabled={!(mv[p.id]||{}).branch} onClick={()=>move(p)}>{tr("نقل من اليوم","Move from today")}</button></td>
           <td><label className="check"><input type="checkbox" checked={p.active} onChange={e=>updPh(p.id,{active:e.target.checked})}/>{tr("فعّال","Active")}</label></td>
           <td><button className="btn warn" style={{padding:"5px 10px"}} onClick={()=>removePh(p)}>{tr("حذف","Remove")}</button></td></tr>)}
       </tbody></table></div>}
@@ -333,6 +337,92 @@ function Team({tr,D,reload,toast,lang}){
         <span className="chip">{tr("الرقم الوظيفي ","Emp. code ")+nextCode}</span>
         <button className="btn sec" onClick={()=>addPh(g.id)}>{g.id==="none"?tr("إضافة موظف","Add employee"):tr("إضافة صيدلي","Add pharmacist")}</button></div>
     </div>)}
+  </div>;
+}
+
+/* ================= BRANCH PERIODS (which branch, from – to) =================
+   KPI branch scores are split by the days spent in each branch, so an on-call pharmacist
+   gets each branch's result only for the days he worked there. */
+function PeriodsEditor({tr,p,branches,assignments,reload,toast,onClose}){
+  const sorted=[...assignments].sort((a,b)=>a.from_date<b.from_date?-1:1);
+  const [rows,setRows]=useState(()=>sorted.map(a=>({...a,to_date:a.to_date||""})));
+  const [nw,setNw]=useState({branch_id:p.branch_id||branches[0]?.id||"",from_date:today(),to_date:today()});
+  const [jn,setJn]=useState(p.juleb_name||"");
+  const [busy,setBusy]=useState(false);
+  useEffect(()=>{ setRows([...assignments].sort((a,b)=>a.from_date<b.from_date?-1:1).map(a=>({...a,to_date:a.to_date||""}))); },[assignments]);
+  const bn=id=>(branches.find(b=>b.id===id)||{}).name||"—";
+  const end=r=>r.to_date||"9999-12-31";
+  // problems: to before from, or two periods covering the same day
+  const problems=(list)=>{ const out=[]; const L=[...list].sort((a,b)=>a.from_date<b.from_date?-1:1);
+    L.forEach(r=>{ if(!r.from_date) out.push(tr("فترة بدون تاريخ بداية","A period has no start date"));
+      else if(r.to_date && r.to_date<r.from_date) out.push(`${bn(r.branch_id)}: ${tr("تاريخ النهاية قبل البداية","end date is before start date")} (${r.from_date} → ${r.to_date})`); });
+    for(let i=1;i<L.length;i++){ const a=L[i-1], b=L[i]; if(b.from_date<=end(a)) out.push(`${tr("تداخل","Overlap")}: ${bn(a.branch_id)} (${a.from_date} → ${a.to_date||tr("مفتوحة","open")}) ${tr("و","and")} ${bn(b.branch_id)} (${b.from_date} → ${b.to_date||tr("مفتوحة","open")})`); }
+    return out; };
+  const issues=problems(rows);
+  const setRow=(i,patch)=>setRows(rows.map((r,j)=>j===i?{...r,...patch}:r));
+  const saveAll=async()=>{
+    if(issues.length) return toast(tr("صحّح الأخطاء أولًا","Fix the problems first"),true);
+    setBusy(true);
+    for(const r of rows){ const orig=assignments.find(a=>a.id===r.id); if(!orig) continue;
+      if(orig.branch_id!==r.branch_id||orig.from_date!==r.from_date||(orig.to_date||"")!==(r.to_date||"")){
+        const q=await sb.from("pharmacist_assignments").update({branch_id:r.branch_id,from_date:r.from_date,to_date:r.to_date||null}).eq("id",r.id);
+        if(q.error){ setBusy(false); return toast(q.error.message,true); } } }
+    if((p.juleb_name||"")!==jn.trim()){ const q=await sb.from("pharmacists").update({juleb_name:jn.trim()||null}).eq("id",p.id); if(q.error){ setBusy(false); return toast(q.error.message,true); } }
+    setBusy(false); toast(tr("تم الحفظ","Saved")); reload(); };
+  const add=async()=>{
+    if(!nw.branch_id||!nw.from_date) return;
+    const test=problems([...rows,{...nw,id:"new"}]); if(test.length) return toast(test[test.length-1],true);
+    setBusy(true);
+    const q=await sb.from("pharmacist_assignments").insert({pharmacist_id:p.id,branch_id:nw.branch_id,from_date:nw.from_date,to_date:nw.to_date||null});
+    setBusy(false); if(q.error) return toast(q.error.message,true);
+    toast(tr("تمت إضافة الفترة","Period added")); reload(); };
+  const del=async r=>{ if(!confirm(tr("حذف هذه الفترة؟","Delete this period?"))) return;
+    const q=await sb.from("pharmacist_assignments").delete().eq("id",r.id); if(q.error) return toast(q.error.message,true); toast(tr("تم الحذف","Deleted")); reload(); };
+  // days per branch in each month that has a period
+  const months=[...new Set(rows.flatMap(r=>{ const out=[]; if(!r.from_date) return out; let m=r.from_date.slice(0,7); const last=(r.to_date||today()).slice(0,7); let n=0; while(m<=last&&n<24){ out.push(m); const d=new Date(m+"-01T00:00:00Z"); d.setUTCMonth(d.getUTCMonth()+1); m=d.toISOString().slice(0,7); n++; } return out; }))].sort().slice(-4);
+  const daysIn=(r,m)=>{ const ms=m+"-01"; const me=new Date(ms+"T00:00:00Z"); me.setUTCMonth(me.getUTCMonth()+1); me.setUTCDate(0); const mEnd=me.toISOString().slice(0,10);
+    const f=r.from_date>ms?r.from_date:ms; const t=(r.to_date||"9999-12-31")<mEnd?r.to_date:mEnd; return f>t?0:Math.round((new Date(t)-new Date(f))/864e5)+1; };
+  const isOnCall=p.title==="on-call pharmacist";
+  return <div className="modal" role="dialog" aria-modal="true" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="box" style={{maxWidth:760,width:"100%",maxHeight:"90vh",overflow:"auto",display:"grid",gap:12}}>
+      <div className="row" style={{justifyContent:"space-between"}}>
+        <div><h2 style={{margin:0}}>{p.full_name} — {tr("الفروع والفترات","Branches & dates")}</h2>
+          <div className="muted small">{isOnCall?tr("صيدلي جوكر: سجّل كل فرع عمل فيه بتاريخ من – إلى. تُحسب نقاط الفرع حسب عدد الأيام في كل فرع.","On-call pharmacist: record every branch he covered with From – To dates. Branch scores are split by the days in each branch."):tr("تُحسب نقاط الفرع حسب عدد الأيام في كل فرع.","Branch scores are split by the days in each branch.")}</div></div>
+        <button className="btn sec" onClick={onClose}>{tr("إغلاق","Close")}</button></div>
+
+      <div className="tw"><table><thead><tr><th>{tr("الفرع","Branch")}</th><th>{tr("من","From")}</th><th>{tr("إلى","To")}</th><th>{tr("أيام","Days")}</th><th></th></tr></thead><tbody>
+        {rows.length===0 && <tr><td colSpan="5" className="muted">{tr("لا توجد فترات بعد","No periods yet")}</td></tr>}
+        {rows.map((r,i)=><tr key={r.id}>
+          <td><select value={r.branch_id} onChange={e=>setRow(i,{branch_id:e.target.value})}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></td>
+          <td><input type="date" value={r.from_date} onChange={e=>setRow(i,{from_date:e.target.value})}/></td>
+          <td><input type="date" value={r.to_date} min={r.from_date} onChange={e=>setRow(i,{to_date:e.target.value})}/>{!r.to_date&&<div className="muted small">{tr("مفتوحة (حتى الآن)","open (until now)")}</div>}</td>
+          <td className="muted">{r.from_date?Math.max(0,Math.round((new Date(r.to_date||today())-new Date(r.from_date))/864e5)+1):"—"}</td>
+          <td><button className="btn warn" style={{padding:"5px 10px"}} onClick={()=>del(r)}>{tr("حذف","Delete")}</button></td></tr>)}
+      </tbody></table></div>
+      {issues.length>0 && <div className="err">{issues.map((x,i)=><div key={i}>⚠ {x}</div>)}</div>}
+
+      <div className="card" style={{display:"grid",gap:8,padding:12}}>
+        <b>{tr("إضافة فترة","Add a period")}</b>
+        <div className="row">
+          <select value={nw.branch_id} onChange={e=>setNw({...nw,branch_id:e.target.value})} style={{maxWidth:180}}>{branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>
+          <label className="small">{tr("من","From")} <input type="date" value={nw.from_date} onChange={e=>setNw({...nw,from_date:e.target.value,to_date:nw.to_date&&nw.to_date<e.target.value?e.target.value:nw.to_date})} style={{width:"auto"}}/></label>
+          <label className="small">{tr("إلى","To")} <input type="date" value={nw.to_date} min={nw.from_date} onChange={e=>setNw({...nw,to_date:e.target.value})} style={{width:"auto"}}/></label>
+          <button className="btn" disabled={busy} onClick={add}>{tr("إضافة","Add")}</button>
+        </div>
+        <div className="muted small">{tr("اترك «إلى» فارغًا إذا كان ما زال في هذا الفرع.","Leave To empty if he is still in that branch.")}</div>
+      </div>
+
+      <label className="f">{tr("اسم الكاشير في جوليب (لاحتساب مبيعاته الشخصية)","Cashier name in Juleb (to count his own sales)")}
+        <input dir="ltr" value={jn} onChange={e=>setJn(e.target.value)} placeholder="e.g. Fahd hassan" style={{maxWidth:280}}/></label>
+
+      {months.length>0 && <div><b className="small">{tr("أيام كل فرع في الشهر","Days per branch each month")}</b>
+        <div className="tw"><table><thead><tr><th>{tr("الشهر","Month")}</th>{[...new Set(rows.map(r=>r.branch_id))].map(b=><th key={b}>{bn(b)}</th>)}</tr></thead><tbody>
+          {months.map(m=><tr key={m}><td>{m}</td>{[...new Set(rows.map(r=>r.branch_id))].map(b=><td key={b}>{rows.filter(r=>r.branch_id===b&&r.from_date).reduce((a,r)=>a+daysIn(r,m),0)||"—"}</td>)}</tr>)}
+        </tbody></table></div></div>}
+
+      <div className="row"><button className="btn" disabled={busy||issues.length>0} onClick={saveAll}>{busy?"…":tr("حفظ التعديلات","Save changes")}</button>
+        <span className="muted small">{tr("يُطبَّق على النقاط فورًا بعد الحفظ.","Applies to the scores right after saving.")}</span></div>
+    </div>
   </div>;
 }
 
