@@ -571,6 +571,12 @@ function PharmacistReport({t,D,E,lang,pid,startMk,onClose}){
   const mySales=data.reduce((a,d)=>{ const r=d.rows.find(x=>x.k.code==="sales"); return a+(r&&r.mine!=null?Number(r.mine):0); },0);
   const kpiSum=cols.map(k=>{ const rs=data.map(d=>d.rows.find(r=>r.k.code===k.code)).filter(r=>r&&r.ach!=null);
     return {k, n:rs.length, ach:rs.length? rs.reduce((a,r)=>a+r.ach,0)/rs.length : null, pts:rs.length? rs.reduce((a,r)=>a+r.pts,0)/rs.length : null, w:rs.length? rs.reduce((a,r)=>a+Number(r.k.weight),0)/rs.length : Number(k.weight)}; });
+  // branch revenue: target vs actual per month (sales KPI is branch level)
+  const salesRows=data.map(d=>{ const r=d.rows.find(x=>x.k.code==="sales")||{};
+    return {m:d.m, branch:d.branches, target:r.target!=null?Number(r.target):null, actual:r.actual!=null?Number(r.actual):null,
+      ach:r.target&&r.actual!=null? Number(r.actual)/Number(r.target) : null, mine:r.mine!=null?Number(r.mine):null, final:!!r.final, asOf:r.asOf}; });
+  const sumOf=k=>salesRows.reduce((a,r)=>a+(r[k]||0),0);
+  const tgtTot=sumOf("target"), actTot=sumOf("actual"), mineTot=sumOf("mine");
   const fromD=from+"-01", toD=lastDayIso(to+"-01");
   const visits=D.visits.filter(v=>v.pharmacist_id===pid&&v.visit_date>=fromD&&v.visit_date<=toD).sort((a,b)=>a.visit_date<b.visit_date?-1:1);
   const branchesAll=[...new Set(data.map(d=>d.branches).filter(Boolean).join(" ⇄ ").split(" ⇄ ").filter(x=>x&&x!=="—"))].join(", ")||"—";
@@ -604,7 +610,7 @@ function PharmacistReport({t,D,E,lang,pid,startMk,onClose}){
         <div><span>{t.pharmacist}</span><b>{ph.full_name||"—"}</b></div>
         <div><span>{t.empCode}</span><b>{ph.emp_code||"—"}</b></div>
         <div><span>{t.branch}</span><b>{branchesAll}</b></div>
-        <div><span>{t.title}</span><b>{({pharmacist:t.tPh,manager:t.tPm,pharmacy_manager:t.tPm,supervisor:t.tSup,management:t.tMgmt})[ph.title]||ph.title||"—"}</b></div>
+        <div><span>{t.title}</span><b>{({"community pharmacist":t.tPh,"on-call pharmacist":L("On-call pharmacist (joker)","صيدلي جوكر (متنقل)"),"pharmacy manager":t.tPm,supervisor:t.tSup,management:t.tMgmt})[ph.title]||ph.title||"—"}</b></div>
       </div>
 
       {months.length===0 ? <p style={{color:"#C62828"}}>{L("Choose a valid period (From must be before To).","اختر فترة صحيحة (بداية الفترة قبل نهايتها).")}</p> : <>
@@ -613,7 +619,19 @@ function PharmacistReport({t,D,E,lang,pid,startMk,onClose}){
         <div><span>{L("Best month","أفضل شهر")}</span><b>{best?best.total.toFixed(1):"—"}</b><span>{best?monthLabel(best.m,lang):""}</span></div>
         <div><span>{L("Months with data","أشهر بها بيانات")}</span><b>{scoredMonths.length} / {months.length}</b></div>
         <div><span>{t.mySales} ({t.sar})</span><b>{mySales?fmt(mySales):"—"}</b></div>
+        <div><span>{L("Branch revenue target","هدف إيراد الفرع")} ({t.sar})</span><b>{tgtTot?fmt(tgtTot):"—"}</b>{tgtTot?<span className={pctCls(actTot/tgtTot)}>{Math.round(actTot/tgtTot*100)}% {L("achieved","محقق")}</span>:null}</div>
       </div>
+
+      <h3>{L("Branch revenue vs target","إيراد الفرع مقابل الهدف")}</h3>
+      <table><thead><tr><th className="l">{t.month}</th><th className="l">{t.branch}</th><th>{L("Revenue target","هدف الإيراد")}</th><th>{L("Actual revenue","الإيراد الفعلي")}</th><th>{t.ach}</th><th>{t.mySales}</th><th>{L("Share of branch","النسبة من الفرع")}</th></tr></thead>
+        <tbody>{salesRows.map(r=><tr key={r.m}><td className="l"><b>{monthLabel(r.m,lang)}</b>{r.actual!=null&&!r.final&&r.asOf?<div style={{fontSize:11,color:"#666"}}>{t.asOf} {r.asOf}</div>:null}</td>
+          <td className="l">{r.branch||"—"}</td><td>{r.target==null?L("Not set","غير محدد"):fmt(r.target)}</td><td>{r.actual==null?"—":fmt(r.actual)}</td>
+          <td><b className={pctCls(r.ach)}>{r.ach==null?"—":Math.round(r.ach*100)+"%"}</b></td><td>{r.mine==null?"—":fmt(r.mine)}</td>
+          <td>{r.mine!=null&&r.actual?Math.round(r.mine/r.actual*100)+"%":"—"}</td></tr>)}
+          <tr className="tfoot"><td className="l" colSpan="2">{L("Period total","إجمالي الفترة")}</td><td>{tgtTot?fmt(tgtTot):"—"}</td><td>{actTot?fmt(actTot):"—"}</td>
+            <td>{tgtTot?Math.round(actTot/tgtTot*100)+"%":"—"}</td><td>{mineTot?fmt(mineTot):"—"}</td><td>{mineTot&&actTot?Math.round(mineTot/actTot*100)+"%":"—"}</td></tr>
+        </tbody></table>
+      <div style={{fontSize:11,color:"#666",marginTop:4}}>{L("Achievement here is actual ÷ the full monthly target. The score table uses progress to date for the current month.","التحقق هنا = الفعلي ÷ هدف الشهر كاملًا. جدول النقاط يحسب الشهر الحالي على الإنجاز حتى تاريخه.")}</div>
 
       <h3>{L("Monthly scores","النقاط الشهرية")}</h3>
       <div style={{overflowX:"auto"}}><table>
