@@ -8,7 +8,7 @@ html[data-ui="snow"]{
   --s-ink:#1C1C1C; --s-ink80:rgba(28,28,28,.8); --s-ink45:rgba(28,28,28,.45); --s-ink20:rgba(28,28,28,.2);
   --s-ink10:rgba(28,28,28,.1); --s-ink5:rgba(28,28,28,.05);
   --s-page:#FFFFFF; --s-surface:#F9F9FA; --s-blue:#E6F1FD; --s-purple:#EDEEFC;
-  --s-accent:#33D1FF; --s-mint:#6BE6D3; --s-lav:#B899EB; --s-lime:#71DD8C;
+  --s-accent:#ADADFB; --s-mint:#6BE6D3; --s-lav:#B899EB; --s-lime:#71DD8C;
   --s-green:#1E8A44; --s-green2:#E5F8EA; --s-red:#D93636; --s-red2:#FFE9E9; --s-amber:#B26B00; --s-amber2:#FFF4DE;
 
   /* the variable names each page already uses */
@@ -75,13 +75,14 @@ html[data-ui="snow"] .top + .tabs,html[data-ui="snow"] div.tabs:has(> .in){borde
 html[data-ui="snow"] .tabs .in{padding-top:8px;padding-bottom:8px;gap:4px}
 html[data-ui="snow"] .tab,
 html[data-ui="snow"] .tabs button{
-  background:transparent; color:var(--s-ink45); border:0!important; border-radius:8px;
-  padding:6px 12px; font-weight:400; text-transform:none; letter-spacing:0; font-size:14px;
+  background:transparent; color:var(--s-ink80); border:0!important; border-radius:12px;
+  padding:6px 14px; font-weight:400; text-transform:none; letter-spacing:0; font-size:14px;
 }
 html[data-ui="snow"] .tab:hover,html[data-ui="snow"] .tabs button:hover{background:var(--s-ink5);color:var(--s-ink)}
-html[data-ui="snow"] .tab.on,html[data-ui="snow"] .tabs button.on{background:var(--s-ink5);color:var(--s-ink);font-weight:600}
-html[data-ui="snow"] .badge{background:var(--s-accent);color:var(--s-ink);border-radius:8px}
-html[data-ui="snow"] .tabs .n{background:var(--s-accent);color:var(--s-ink)}
+html[data-ui="snow"] .tab.on,html[data-ui="snow"] .tabs button.on{background:var(--s-ink);color:#fff;font-weight:400}
+html[data-ui="snow"] .tab.on .badge,html[data-ui="snow"] .tabs button.on .n{background:var(--s-accent);color:#fff}
+html[data-ui="snow"] .badge{background:var(--s-accent);color:#fff;border-radius:10px}
+html[data-ui="snow"] .tabs .n{background:var(--s-accent);color:#fff}
 
 /* ---------- cards / blocks ---------- */
 html[data-ui="snow"] .card,
@@ -150,26 +151,39 @@ html[data-ui="snow"] .days{background:var(--s-page);color:var(--s-ink)}
 html[data-ui="snow"] .switch span{background:var(--s-ink20)}
 html[data-ui="snow"] .switch input:checked+span{background:var(--s-ink)}
 
-/* ---------- buttons ---------- */
+/* ---------- buttons (SnowUI button kit) ---------- */
 html[data-ui="snow"] .btn{
-  background:var(--s-ink); color:#fff; border:0; border-radius:8px; box-shadow:none; transform:none;
-  text-transform:none; letter-spacing:0; font-weight:600;
+  background:var(--s-ink); color:#fff; border:0; border-radius:16px; padding:8px 16px;
+  box-shadow:none; transform:none; text-transform:none; letter-spacing:0; font-weight:400; font-size:14px; line-height:20px;
+  transition:opacity .15s ease, background .15s ease;
 }
 html[data-ui="snow"] .btn:hover{opacity:.85}
-html[data-ui="snow"] .btn:active{transform:none;box-shadow:none}
-html[data-ui="snow"] .btn.sec{background:var(--s-ink5);color:var(--s-ink);border:0;box-shadow:none}
-html[data-ui="snow"] .btn.warn,html[data-ui="snow"] .btn.red{background:var(--s-red2);color:var(--s-red);box-shadow:none}
-/* marketing: plain .btn is the secondary style there, .btn.pri is the main one */
-html[data-page="marketing"][data-ui="snow"] .btn{background:var(--s-page);color:var(--s-ink);border:1px solid var(--s-ink10);font-weight:500}
-html[data-page="marketing"][data-ui="snow"] .btn:hover{background:var(--s-ink5);opacity:1}
+html[data-ui="snow"] .btn:active{transform:none;box-shadow:none;opacity:.7}
+html[data-ui="snow"] .btn.sec{background:rgba(0,0,0,.04);color:var(--s-ink);border:0;box-shadow:none}
+html[data-ui="snow"] .btn.sec:hover{background:rgba(0,0,0,.08);opacity:1}
+html[data-ui="snow"] .btn.warn,html[data-ui="snow"] .btn.red{background:#FF4747;color:#fff;box-shadow:none}
+html[data-ui="snow"] .btn.sm{padding:4px 12px;font-size:12px;line-height:16px;border-radius:12px}
+html[data-ui="snow"] .btn:disabled{opacity:.35;cursor:default}
+/* marketing: plain .btn is the outlined style there, .btn.pri is the main one */
+html[data-page="marketing"][data-ui="snow"] .btn{background:#fff;color:var(--s-ink);border:1px solid rgba(0,0,0,.1)}
+html[data-page="marketing"][data-ui="snow"] .btn:hover{background:rgba(0,0,0,.04);opacity:1}
 html[data-page="marketing"][data-ui="snow"] .btn.pri{background:var(--s-ink);color:#fff;border-color:var(--s-ink)}
 html[data-ui="snow"] .lnkbtn,html[data-ui="snow"] .linkbtn{color:var(--s-ink45)}
 html[data-ui="snow"] .lnkbtn:hover,html[data-ui="snow"] .linkbtn:hover{color:var(--s-ink)}
-html[data-ui="snow"] .subtabs button{background:var(--s-ink5);color:var(--s-ink45);border-radius:8px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:400;box-shadow:none}
-html[data-ui="snow"] .subtabs button.on{background:var(--s-ink);color:#fff;font-weight:600}
-html[data-ui="snow"] .seg{background:var(--s-ink5);border:0;border-radius:8px;padding:3px}
-html[data-ui="snow"] .seg button{background:transparent;color:var(--s-ink45);border-radius:6px}
-html[data-ui="snow"] .seg button.on{background:var(--s-page);color:var(--s-ink);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+/* header buttons: outlined, rounded */
+html[data-ui="snow"] header button,
+html[data-ui="snow"] .top button.lnk,
+html[data-ui="snow"] .top .btn,
+html[data-ui="snow"] .ghost{border:1px solid rgba(0,0,0,.1)!important;border-radius:12px;color:var(--s-ink)}
+/* segmented toggles (Daily / Weekly / Monthly style) */
+html[data-ui="snow"] .seg,html[data-ui="snow"] .subtabs{background:rgba(0,0,0,.04);border:0;border-radius:20px;padding:4px;gap:4px;display:inline-flex;flex-wrap:wrap}
+html[data-ui="snow"] .seg button,html[data-ui="snow"] .subtabs button{
+  background:transparent;color:var(--s-ink);border:0;border-radius:16px;padding:6px 14px;
+  font-size:13px;font-weight:400;text-transform:none;letter-spacing:0;box-shadow:none;cursor:pointer;
+}
+html[data-ui="snow"] .seg button:hover,html[data-ui="snow"] .subtabs button:hover{background:rgba(0,0,0,.04)}
+html[data-ui="snow"] .seg button.on,html[data-ui="snow"] .subtabs button.on{background:var(--s-ink);color:#fff;font-weight:400;box-shadow:none}
+html[data-ui="snow"] .subtabs{margin-bottom:14px}
 
 /* ---------- chips / pills / badges ---------- */
 html[data-ui="snow"] .chip{background:var(--s-ink5);color:var(--s-ink);border-radius:8px}
@@ -215,7 +229,7 @@ html[data-ui="snow"] .st::before{background:var(--s-ink10)}
 html[data-ui="snow"] .st .dot{background:var(--s-page);border-color:var(--s-ink10);box-shadow:none}
 html[data-ui="snow"] .st.done .dot{background:var(--s-ink);border-color:var(--s-ink);color:#fff}
 html[data-ui="snow"] .st.done::before,html[data-ui="snow"] .st.cur::before{background:var(--s-ink)}
-html[data-ui="snow"] .st.cur .dot{border-color:var(--s-accent);color:var(--s-ink);box-shadow:0 0 0 4px rgba(51,209,255,.18)}
+html[data-ui="snow"] .st.cur .dot{border-color:var(--s-accent);color:var(--s-ink);box-shadow:0 0 0 4px rgba(173,173,251,.3)}
 html[data-ui="snow"] .st.rej .dot{background:var(--s-red);border-color:var(--s-red);color:#fff}
 html[data-ui="snow"] .slip .ln{border-bottom:1px solid var(--s-ink5)}
 html[data-ui="snow"] .slip .ln.tot{border-top:1px solid var(--s-ink)}
