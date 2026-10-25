@@ -1,4 +1,4 @@
-/* First Brand shared theme — SnowUI (from the free SnowUI dashboard kit by ByeWind).
+/* First Brand shared theme — SnowUI layout with Facebook-style colours.
    Loaded on every page with:
      <link rel="stylesheet" href="./theme.css">
      <script src="./theme.js"></script>
@@ -242,3 +242,119 @@ html[data-ui="snow"] .toast.bad,html[data-ui="snow"] .toast.err{background:var(-
 html[data-ui="snow"] .empty{color:var(--s-ink45)}
 
 @media print{ html[data-ui="snow"] .card{background:#fff;border:1px solid #ddd} }
+
+/* ==========================================================
+   Facebook-style colours (on top of the SnowUI layout)
+   blue #1877F2 · page grey #F0F2F5 · white cards · text #050505 · secondary #65676B
+   ========================================================== */
+html[data-ui="snow"]{
+  --s-ink:#050505; --s-ink80:#1C1E21; --s-ink45:#65676B; --s-ink20:#BCC0C4; --s-ink10:#CED0D4; --s-ink5:#F0F2F5;
+  --s-page:#F0F2F5; --s-surface:#FFFFFF; --s-blue:#E7F3FF; --s-purple:#E6F4EA;
+  --s-accent:#1877F2; --s-pri:#1877F2; --s-pri-dark:#166FE5; --s-hover:#E4E6EB;
+  --s-green:#2E7D32; --s-green2:#E6F4EA; --s-red:#E41E3F; --s-red2:#FFEBEE; --s-amber:#B26B00; --s-amber2:#FFF4DE;
+  background:#F0F2F5;
+}
+html[data-ui="snow"] body{background:#F0F2F5}
+html[data-ui="snow"] a{color:#1877F2}
+
+/* top bar + tabs: white with Facebook shadow */
+html[data-ui="snow"] header,
+html[data-ui="snow"] .top,
+html[data-ui="snow"] .bar:has(> .brand){background:#FFFFFF!important;border-bottom:0;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+html[data-ui="snow"] .tabs{background:#FFFFFF}
+html[data-ui="snow"] .top + .tabs,html[data-ui="snow"] div.tabs:has(> .in){border-bottom:0;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+html[data-ui="snow"] .brand{color:#1877F2;font-weight:700;font-size:18px}
+html[data-ui="snow"] .brand span,html[data-ui="snow"] .brand small{color:#65676B}
+html[data-ui="snow"] header button,
+html[data-ui="snow"] .top button.lnk,
+html[data-ui="snow"] .top .btn,
+html[data-ui="snow"] .ghost{background:#E4E6EB!important;border:0!important;border-radius:6px;color:#050505;font-weight:600}
+html[data-ui="snow"] header button:hover,
+html[data-ui="snow"] .top button.lnk:hover,
+html[data-ui="snow"] .top .btn:hover,
+html[data-ui="snow"] .ghost:hover{background:#D8DADF!important}
+html[data-ui="snow"] .top a{color:#65676B}
+
+/* tabs: active = light blue with blue text */
+html[data-ui="snow"] .tab,html[data-ui="snow"] .tabs button{color:#65676B;border-radius:6px;font-weight:600}
+html[data-ui="snow"] .tab:hover,html[data-ui="snow"] .tabs button:hover{background:#F0F2F5;color:#050505}
+html[data-ui="snow"] .tab.on,html[data-ui="snow"] .tabs button.on{background:#E7F3FF;color:#1877F2;font-weight:600}
+html[data-ui="snow"] .badge,html[data-ui="snow"] .tabs .n,
+html[data-ui="snow"] .tab.on .badge,html[data-ui="snow"] .tabs button.on .n{background:#E41E3F;color:#fff}
+
+/* cards: white, 8px corners, soft shadow */
+html[data-ui="snow"] .card,html[data-ui="snow"] .app{background:#FFFFFF;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+html[data-ui="snow"] .app:hover{background:#FFFFFF;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+html[data-ui="snow"] .app.on{background:#E7F3FF}
+html[data-ui="snow"] .app .ic{background:#E7F3FF;color:#1877F2;border-radius:8px}
+html[data-ui="snow"] .lv{background:#FFFFFF;border:1px solid #CED0D4;border-radius:8px}
+html[data-ui="snow"] .hero3d,html[data-ui="snow"] .mo{background:#1877F2;color:#fff;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+html[data-ui="snow"] .hero3d h1,html[data-ui="snow"] .mo h1,html[data-ui="snow"] .mo h2,html[data-ui="snow"] .mo h3{color:#fff}
+html[data-ui="snow"] .hero3d .kicker,html[data-ui="snow"] .hero3d .muted,html[data-ui="snow"] .mo .muted,
+html[data-ui="snow"] .mo .big small,html[data-ui="snow"] .mo .small{color:rgba(255,255,255,.85)}
+html[data-ui="snow"] .mo .delta.up{color:#B9F6CA}
+html[data-ui="snow"] .mo .delta.down{color:#FFCDD2}
+html[data-ui="snow"] .mo .delta.flat{color:rgba(255,255,255,.8)}
+html[data-ui="snow"] .mo .strip i{background:rgba(255,255,255,.25)}
+html[data-ui="snow"] .mo .strip i.on{background:#fff}
+html[data-ui="snow"] .mo .stars{color:#FFD54F}
+html[data-ui="snow"] .mo .stars i{color:rgba(255,255,255,.3)}
+html[data-ui="snow"] .hero .card:nth-child(2){background:#FFFFFF}
+html[data-ui="snow"] .avatar{background:#E7F3FF;color:#1877F2}
+html[data-ui="snow"] .modal .box,html[data-ui="snow"] .modal .card{background:#FFFFFF;border-radius:8px;box-shadow:0 12px 28px rgba(0,0,0,.2),0 2px 4px rgba(0,0,0,.1)}
+
+/* stat tiles */
+html[data-ui="snow"] .stat{background:#FFFFFF;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+html[data-ui="snow"] .stats .stat:nth-child(even){background:#FFFFFF}
+html[data-ui="snow"] .stat b{color:#1877F2}
+html[data-page="hr"][data-ui="snow"] .card.grid2:has(> .stat){box-shadow:none}
+html[data-page="hr"][data-ui="snow"] .card.grid2 > .stat,
+html[data-page="hr"][data-ui="snow"] .card.grid2 > .stat:nth-child(even){background:#FFFFFF;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+
+/* forms */
+html[data-ui="snow"] input,html[data-ui="snow"] select,html[data-ui="snow"] textarea{background:#F0F2F5;border:1px solid transparent;border-radius:6px}
+html[data-ui="snow"] input:focus,html[data-ui="snow"] select:focus,html[data-ui="snow"] textarea:focus{background:#FFFFFF;border-color:#1877F2;outline:2px solid #E7F3FF}
+html[data-ui="snow"] button:focus-visible,html[data-ui="snow"] .btn:focus-visible{outline:2px solid #1877F2}
+html[data-ui="snow"] .switch input:checked+span{background:#1877F2}
+
+/* buttons */
+html[data-ui="snow"] .btn{background:#1877F2;color:#fff;border-radius:6px;font-weight:600}
+html[data-ui="snow"] .btn:hover{background:#166FE5;opacity:1}
+html[data-ui="snow"] .btn.sec{background:#E4E6EB;color:#050505}
+html[data-ui="snow"] .btn.sec:hover{background:#D8DADF}
+html[data-ui="snow"] .btn.warn,html[data-ui="snow"] .btn.red{background:#E41E3F;color:#fff}
+html[data-ui="snow"] .btn.sm{border-radius:6px}
+html[data-page="marketing"][data-ui="snow"] .btn{background:#E4E6EB;color:#050505;border:0;font-weight:600}
+html[data-page="marketing"][data-ui="snow"] .btn:hover{background:#D8DADF}
+html[data-page="marketing"][data-ui="snow"] .btn.pri{background:#1877F2;color:#fff}
+html[data-page="marketing"][data-ui="snow"] .btn.pri:hover{background:#166FE5}
+html[data-ui="snow"] .lnkbtn,html[data-ui="snow"] .linkbtn{color:#1877F2}
+html[data-ui="snow"] .seg,html[data-ui="snow"] .subtabs{background:#E4E6EB;border-radius:8px}
+html[data-ui="snow"] .seg button,html[data-ui="snow"] .subtabs button{border-radius:6px;font-weight:600;color:#65676B}
+html[data-ui="snow"] .seg button.on,html[data-ui="snow"] .subtabs button.on{background:#FFFFFF;color:#1877F2;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+
+/* chips, pills, progress */
+html[data-ui="snow"] .chip{background:#E7F3FF;color:#1877F2}
+html[data-ui="snow"] .chip.grey,html[data-ui="snow"] .p-off,html[data-ui="snow"] .b-later,html[data-ui="snow"] .cat-s{background:#E4E6EB;color:#65676B}
+html[data-ui="snow"] .cat-g{background:#E7F3FF;color:#1877F2}
+html[data-ui="snow"] .bar-track{background:#E4E6EB}
+html[data-ui="snow"] .bar-fill,html[data-ui="snow"] .bar-fill.good{background:#42B72A}
+html[data-ui="snow"] .bar-fill.mid{background:#F7B928}
+html[data-ui="snow"] .bar-fill.bad{background:#E41E3F}
+html[data-ui="snow"] .strip i.on{background:#1877F2}
+html[data-ui="snow"] .spark polyline{stroke:#1877F2}
+
+/* HR leave stepper */
+html[data-ui="snow"] .st.done .dot{background:#1877F2;border-color:#1877F2;color:#fff}
+html[data-ui="snow"] .st.done::before,html[data-ui="snow"] .st.cur::before{background:#1877F2}
+html[data-ui="snow"] .st.cur .dot{border-color:#1877F2;color:#1877F2;box-shadow:0 0 0 4px #E7F3FF}
+html[data-ui="snow"] .st.rej .dot{background:#E41E3F;border-color:#E41E3F}
+
+/* tables */
+html[data-ui="snow"] th,html[data-ui="snow"] .tbl th{color:#65676B;font-weight:600;border-bottom:1px solid #CED0D4}
+html[data-ui="snow"] td,html[data-ui="snow"] .tbl td{border-bottom-color:#E4E6EB}
+html[data-ui="snow"] tbody tr:hover td{background:#F0F2F5}
+
+/* toast */
+html[data-ui="snow"] .toast{background:#050505;border-radius:8px}
+html[data-ui="snow"] .toast.bad,html[data-ui="snow"] .toast.err{background:#E41E3F}
