@@ -134,6 +134,40 @@ window.addEventListener("unhandledrejection",e=>{document.getElementById("root")
   .pace{display:grid;gap:3px;font-size:13px}
   .pace strong{color:var(--ink)}
   @media print{ .bar,.noprint,.btn{display:none!important} body{background:#fff} .wrap{max-width:none;padding:0} .card{break-inside:avoid;border-color:#999;margin-bottom:8px;padding:10px} input,select,textarea{border:0;border-bottom:1px solid #999;border-radius:0;padding:2px 4px} h1{font-size:18px} h2{font-size:14px} table{font-size:12px} }
+  /* pharmacist period report */
+  .rep-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;overflow:auto;padding:18px}
+  .rep-bar{max-width:920px;margin:0 auto 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;background:#fff;border-radius:8px;padding:12px}
+  .rep-bar label{display:grid;gap:3px;font-size:12px;color:#555}
+  .rep-bar input{width:auto}
+  html body .rep{background:#fff;color:#111;max-width:920px;margin:0 auto;border-radius:8px;padding:28px;font-size:13px;line-height:1.5}
+  html body .rep h2{font-size:20px;margin:0;color:#111}
+  html body .rep h3{font-size:14px;margin:18px 0 8px;color:#111}
+  html body .rep .rhead{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:14px;flex-wrap:wrap}
+  html body .rep .rmeta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px;margin-bottom:6px}
+  html body .rep .rmeta div span{display:block;font-size:11px;color:#666}
+  html body .rep .rsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:10px 0 4px}
+  html body .rep .rsum div{border:1px solid #ddd;border-radius:6px;padding:10px}
+  html body .rep .rsum b{display:block;font-size:22px}
+  html body .rep .rsum span{font-size:11px;color:#666}
+  html body .rep table{width:100%;border-collapse:collapse;font-size:12px}
+  html body .rep th,html body .rep td{border:1px solid #d6d6d6;padding:6px 7px;text-align:center;white-space:nowrap;color:#111;background:#fff}
+  html body .rep th{background:#F2F3F5;font-weight:600;color:#333}
+  html body .rep td.l,html body .rep th.l{text-align:start;white-space:normal}
+  html body .rep tr:hover td{background:#fff}
+  html body .rep .tfoot td{font-weight:700;background:#F7F7F8}
+  html body .rep .good{color:#1E7B34} html body .rep .mid{color:#A86B00} html body .rep .bad{color:#C62828}
+  html body .rep .stars{color:#E5A100} html body .rep .stars i{color:#ccc}
+  html body .rep .sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:34px}
+  html body .rep .sign div{border-top:1px solid #111;padding-top:6px;font-size:12px;color:#444}
+  html body .rep .foot{margin-top:18px;font-size:11px;color:#777}
+  @media print{
+    body.rep-open #root{display:none!important}
+    body.rep-open .rep-ov{position:static;background:none;padding:0;overflow:visible}
+    body.rep-open .rep-bar{display:none!important}
+    body.rep-open .rep{max-width:none;border-radius:0;padding:0}
+    body.rep-open .rep table,body.rep-open .rep .rsum{break-inside:avoid}
+    @page{size:A4;margin:12mm}
+  }
 </style>
 <style>
 html[data-ui="soft"] .card{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
@@ -510,6 +544,104 @@ function Login({t,lang,setLang}){
 /* ================= DASHBOARD ================= */
 // Branch scoping: admin sees the company and every branch; everyone else is locked to their own branch.
 // Pharmacists see their branch and their own pharmacist page only.
+/* ================= PHARMACIST PERIOD REPORT (print / PDF) ================= */
+function PharmacistReport({t,D,E,lang,pid,startMk,onClose}){
+  const L=(en,ar)=>lang==="ar"?ar:en;
+  const ph=D.pharmacists.find(p=>p.id===pid)||{};
+  const q0=qOf(startMk); const qStart=`${q0.year}-${String(q0.quarter*3-2).padStart(2,"0")}-01`;
+  const [from,setFrom]=useState(qStart.slice(0,7)); const [to,setTo]=useState((startMk<thisMonth()?startMk:thisMonth()).slice(0,7));
+  const ref=React.useRef(null);
+  useEffect(()=>{ document.body.classList.add("rep-open"); return ()=>document.body.classList.remove("rep-open"); },[]);
+  const setPreset=k=>{ const cur=thisMonth(), q=qOf(cur);
+    const qs=(y,qq)=>`${y}-${String(qq*3-2).padStart(2,"0")}`;
+    if(k==="month"){ setFrom(cur.slice(0,7)); setTo(cur.slice(0,7)); }
+    if(k==="quarter"){ setFrom(qs(q.year,q.quarter)); setTo(cur.slice(0,7)); }
+    if(k==="lastq"){ const y=q.quarter===1?q.year-1:q.year, qq=q.quarter===1?4:q.quarter-1; const s=qs(y,qq); setFrom(s); setTo(addMonths(s+"-01",2).slice(0,7)); }
+    if(k==="year"){ setFrom(`${q.year}-01`); setTo(cur.slice(0,7)); } };
+
+  // months in the period (max 24)
+  const months=[]; if(from&&to&&from<=to){ let m=from+"-01"; while(m<=to+"-01"&&months.length<24){ months.push(m); m=addMonths(m,1); } }
+  const data=months.map(m=>({m,...E.pharmacistScore(pid,m),branches:E.shares(pid,m).map(x=>bname(D.branches,x.branch_id)).join(" ⇄ ")}));
+  // KPI columns = every active KPI used in any month of the period
+  const cols=[]; data.forEach(d=>d.rows.forEach(r=>{ if(!cols.find(c=>c.code===r.k.code)) cols.push(r.k); }));
+  cols.sort((a,b)=>a.sort-b.sort);
+  const scoredMonths=data.filter(d=>d.total!=null);
+  const avg=scoredMonths.length? scoredMonths.reduce((a,d)=>a+d.total,0)/scoredMonths.length : null;
+  const best=scoredMonths.length? scoredMonths.reduce((a,d)=>d.total>a.total?d:a) : null;
+  const mySales=data.reduce((a,d)=>{ const r=d.rows.find(x=>x.k.code==="sales"); return a+(r&&r.mine!=null?Number(r.mine):0); },0);
+  const kpiSum=cols.map(k=>{ const rs=data.map(d=>d.rows.find(r=>r.k.code===k.code)).filter(r=>r&&r.ach!=null);
+    return {k, n:rs.length, ach:rs.length? rs.reduce((a,r)=>a+r.ach,0)/rs.length : null, pts:rs.length? rs.reduce((a,r)=>a+r.pts,0)/rs.length : null, w:rs.length? rs.reduce((a,r)=>a+Number(r.k.weight),0)/rs.length : Number(k.weight)}; });
+  const fromD=from+"-01", toD=lastDayIso(to+"-01");
+  const visits=D.visits.filter(v=>v.pharmacist_id===pid&&v.visit_date>=fromD&&v.visit_date<=toD).sort((a,b)=>a.visit_date<b.visit_date?-1:1);
+  const branchesAll=[...new Set(data.map(d=>d.branches).filter(Boolean).join(" ⇄ ").split(" ⇄ ").filter(x=>x&&x!=="—"))].join(", ")||"—";
+  const pctCls=a=>a==null?"":a>=1?"good":a>=0.7?"mid":"bad";
+  const periodTxt=`${monthLabel(fromD,lang)} – ${monthLabel(to+"-01",lang)}`;
+  const printedOn=new Date().toLocaleDateString(lang==="ar"?"ar-SA-u-ca-gregory":"en-GB",{day:"2-digit",month:"long",year:"numeric"});
+  const fileName=`${(ph.full_name||"pharmacist").replace(/\s+/g,"_")}_${from}_${to}.pdf`;
+
+  return ReactDOM.createPortal(<div className="rep-ov" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="rep-bar noprint">
+      <label>{L("From","من")}<input type="month" value={from} max={thisMonth().slice(0,7)} onChange={e=>e.target.value&&setFrom(e.target.value)}/></label>
+      <label>{L("To","إلى")}<input type="month" value={to} max={thisMonth().slice(0,7)} onChange={e=>e.target.value&&setTo(e.target.value)}/></label>
+      <div className="subtabs" style={{margin:0}}>
+        <button onClick={()=>setPreset("month")}>{L("This month","هذا الشهر")}</button>
+        <button onClick={()=>setPreset("quarter")}>{L("This quarter","هذا الربع")}</button>
+        <button onClick={()=>setPreset("lastq")}>{L("Last quarter","الربع السابق")}</button>
+        <button onClick={()=>setPreset("year")}>{L("This year","هذه السنة")}</button>
+      </div>
+      <div style={{flex:1}}/>
+      <button className="btn" onClick={()=>window.print()}>🖨 {L("Print","طباعة")}</button>
+      <button className="btn sec" onClick={()=>exportPdf(ref.current,fileName)}>⬇ PDF</button>
+      <button className="btn sec" onClick={onClose}>{L("Close","إغلاق")}</button>
+    </div>
+
+    <div className="rep" ref={ref}>
+      <div className="rhead">
+        <div><h2>{L("Pharmacist performance report","تقرير أداء الصيدلي")}</h2><div style={{color:"#555"}}>{t.app} · {L("KPI system","نظام مؤشرات الأداء")}</div></div>
+        <div style={{textAlign:"end"}}><div><b>{periodTxt}</b></div><div style={{color:"#666",fontSize:12}}>{L("Printed","تاريخ الطباعة")}: {printedOn}</div></div>
+      </div>
+      <div className="rmeta">
+        <div><span>{t.pharmacist}</span><b>{ph.full_name||"—"}</b></div>
+        <div><span>{t.empCode}</span><b>{ph.emp_code||"—"}</b></div>
+        <div><span>{t.branch}</span><b>{branchesAll}</b></div>
+        <div><span>{t.title}</span><b>{({pharmacist:t.tPh,manager:t.tPm,pharmacy_manager:t.tPm,supervisor:t.tSup,management:t.tMgmt})[ph.title]||ph.title||"—"}</b></div>
+      </div>
+
+      {months.length===0 ? <p style={{color:"#C62828"}}>{L("Choose a valid period (From must be before To).","اختر فترة صحيحة (بداية الفترة قبل نهايتها).")}</p> : <>
+      <div className="rsum">
+        <div><span>{L("Average score","متوسط النقاط")}</span><b className={pctCls(avg==null?null:avg/100)}>{avg==null?"—":avg.toFixed(1)}<small style={{fontSize:12,color:"#666"}}> / 100</small></b><Stars n={starsOf(avg)}/></div>
+        <div><span>{L("Best month","أفضل شهر")}</span><b>{best?best.total.toFixed(1):"—"}</b><span>{best?monthLabel(best.m,lang):""}</span></div>
+        <div><span>{L("Months with data","أشهر بها بيانات")}</span><b>{scoredMonths.length} / {months.length}</b></div>
+        <div><span>{t.mySales} ({t.sar})</span><b>{mySales?fmt(mySales):"—"}</b></div>
+      </div>
+
+      <h3>{L("Monthly scores","النقاط الشهرية")}</h3>
+      <div style={{overflowX:"auto"}}><table>
+        <thead><tr><th className="l">{t.month}</th>{cols.map(k=><th key={k.code}>{kname(k,lang)}</th>)}<th>{t.score}</th><th>{L("Stars","النجوم")}</th></tr></thead>
+        <tbody>{data.map(d=><tr key={d.m}><td className="l"><b>{monthLabel(d.m,lang)}</b><div style={{fontSize:11,color:"#666"}}>{d.branches||"—"}</div></td>
+          {cols.map(k=>{ const r=d.rows.find(x=>x.k.code===k.code); return <td key={k.code}>{!r||r.pts==null?"—":<><b>{r.pts.toFixed(1)}</b><span style={{color:"#888"}}>/{r.k.weight}</span><div className={pctCls(r.ach)} style={{fontSize:11}}>{Math.round(r.ach*100)}%</div></>}</td>; })}
+          <td><b className={pctCls(d.total==null?null:d.total/100)}>{d.total==null?"—":d.total.toFixed(1)}</b></td><td><Stars n={starsOf(d.total)}/></td></tr>)}
+          <tr className="tfoot"><td className="l">{L("Period average","متوسط الفترة")}</td>{kpiSum.map(x=><td key={x.k.code}>{x.pts==null?"—":x.pts.toFixed(1)}</td>)}<td>{avg==null?"—":avg.toFixed(1)}</td><td><Stars n={starsOf(avg)}/></td></tr>
+        </tbody></table></div>
+
+      <h3>{L("KPI summary for the period","ملخص المؤشرات خلال الفترة")}</h3>
+      <table><thead><tr><th className="l">{t.kpiCol}</th><th>{t.level}</th><th>{t.weight}</th><th>{L("Months","الأشهر")}</th><th>{L("Avg. achievement","متوسط التحقق")}</th><th>{L("Avg. points","متوسط النقاط")}</th></tr></thead>
+        <tbody>{kpiSum.map(x=><tr key={x.k.code}><td className="l">{kname(x.k,lang)}</td><td>{x.k.level==="branch"?t.branch:t.pharmacist}</td><td>{Number(x.w).toFixed(0)}</td><td>{x.n}</td>
+          <td><b className={pctCls(x.ach)}>{x.ach==null?"—":Math.round(x.ach*100)+"%"}</b></td><td>{x.pts==null?"—":x.pts.toFixed(1)}</td></tr>)}</tbody></table>
+
+      {visits.length>0 && <><h3>{L("Visit reports in the period","تقارير الزيارات خلال الفترة")}</h3>
+        <table><thead><tr><th>{t.date}</th><th>{t.branch}</th><th>{VT[lang].vtype}</th><th>{t.score}</th><th>{VT[lang].decision}</th><th className="l">{VT[lang].priorities}</th></tr></thead>
+          <tbody>{visits.map(v=><tr key={v.id}><td>{v.visit_date}</td><td>{bname(D.branches,v.branch_id)}</td><td>{VT[lang][v.visit_type]||"—"}</td>
+            <td><b className={pctCls(v.score)}>{v.total_points!=null?v.total_points:Math.round(Number(v.score)*100)} / 100</b></td>
+            <td>{({pass:VT[lang].d1,photos:VT[lang].d2,training:VT[lang].d3,revisit:VT[lang].d4})[v.decision]||"—"}</td><td className="l">{v.priorities||""}</td></tr>)}</tbody></table></>}
+      </>}
+
+      <div className="sign"><div>{L("Supervisor signature","توقيع المشرف")}</div><div>{L("Pharmacist signature","توقيع الصيدلي")}</div></div>
+      <div className="foot">{L("Branch-level KPIs (sales, expiry…) are the branch's result and are shared by every pharmacist in it. The current month is scored on progress to date.","مؤشرات مستوى الفرع (المبيعات، المنتهي…) هي نتيجة الفرع ويشترك فيها كل صيادلة الفرع. الشهر الحالي محسوب على الإنجاز حتى تاريخه.")}</div>
+    </div>
+  </div>, document.body);
+}
+
 function Dashboard({t,me,D,E,lang}){
   const isAdmin=me.role==="admin", isPh=me.role==="pharmacist"; const [mk,setMk]=useState(thisMonth());
   const myRec=D.pharmacists.find(p=>p.id===me.pharmacist_id);
@@ -521,6 +653,7 @@ function Dashboard({t,me,D,E,lang}){
   const [pid,setPid]=useState(isPh?me.pharmacist_id:"");
   useEffect(()=>{ if(!phPool.find(p=>p.id===pid)) setPid(phPool[0]?.id||""); },[bid,mk,view]);
   const canOpen=p=>!isPh||p.id===me.pharmacist_id;
+  const [repOpen,setRepOpen]=useState(false);
   const months6=[5,4,3,2,1,0].map(i=>addMonths(mk,-i));
 
   let hero=null, rows=[], sparks=[], extra=null, qr=null;
@@ -562,7 +695,9 @@ function Dashboard({t,me,D,E,lang}){
       <div className="subtabs">{isAdmin&&<button className={view==="company"?"on":""} onClick={()=>setView("company")}>{t.company}</button>}<button className={view==="branch"?"on":""} onClick={()=>setView("branch")}>{t.branch}</button><button className={view==="pharmacist"?"on":""} onClick={()=>setView("pharmacist")}>{t.pharmacist}</button></div>
       {view!=="company" && !lockedBranch && <select value={bid} onChange={e=>setBid(e.target.value)} style={{width:"auto"}}>{view==="pharmacist"&&<option value="">{t.allBranches}</option>}{D.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>}
       {view==="pharmacist" && !isPh && <select value={pid} onChange={e=>setPid(e.target.value)} style={{width:"auto"}}>{phPool.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>}
+      {view==="pharmacist" && pid && <button className="btn sec" onClick={()=>setRepOpen(true)}>🖨 {lang==="ar"?"تقرير لفترة":"Period report"}</button>}
     </div>
+    {repOpen && view==="pharmacist" && pid && <PharmacistReport t={t} D={D} E={E} lang={lang} pid={pid} startMk={mk} onClose={()=>setRepOpen(false)}/>}
     {!hero ? <div className="card empty">{t.noData}</div> : <>
     <div className="hero">
       <div className="mo">
