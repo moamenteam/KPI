@@ -1035,8 +1035,59 @@ function parseAny(buf,D){
   if(A.some(r=>r&&String(r[0]??"").trim()==="Transfer From (Source Branch)")) return parseTransfers(A,D);
   return {kind:"sales",...parseJuleb(buf,D)};
 }
+/* ================= DATA COVERAGE (which days are loaded, per branch) ================= */
+function DataCoverage({D,stamp}){
+  const [mk,setMk]=useState(thisMonth().slice(0,7));
+  const [latest,setLatest]=useState(null); const [days,setDays]=useState(null); const [err,setErr]=useState("");
+  const from=mk+"-01", monthEnd=lastDayIso(from);
+  useEffect(()=>{ let off=false; setErr(""); setDays(null);
+    (async()=>{ const [a,b]=await Promise.all([sb.rpc("kpi_data_latest"), sb.rpc("kpi_data_days",{p_from:from,p_to:monthEnd})]);
+      if(off) return;
+      if(a.error||b.error){ const m=(a.error||b.error).message||""; setErr(/kpi_data_(days|latest)|function/i.test(m)?"Run kpi-coverage.sql in Supabase once to turn on the data check.":m); return; }
+      setLatest(a.data||{}); setDays(b.data||[]); })();
+    return ()=>{ off=true; }; },[mk,stamp]);
+  const fmtDay=d=>d?new Date(d+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"}):"—";
+  const ago=d=>{ if(!d) return ""; const n=Math.round((new Date(today()+"T00:00:00")-new Date(d+"T00:00:00"))/864e5); return n<=0?"today":n===1?"yesterday":`${n} days ago`; };
+  const lag=d=>{ if(!d) return 99; return Math.round((new Date(today()+"T00:00:00")-new Date(d+"T00:00:00"))/864e5); };
+  // days to check: from the 1st to the last loaded day of this month (or month end for past months)
+  const loadedInMonth=days? days.map(x=>x.day).sort().slice(-1)[0] : null;
+  const checkTo = mk<thisMonth().slice(0,7) ? monthEnd : (loadedInMonth||null);
+  const dayList=[]; if(checkTo){ for(let d=1; d<=Number(checkTo.slice(8,10)); d++) dayList.push(mk+"-"+String(d).padStart(2,"0")); }
+  const brs=D.branches.filter(b=>(b.juleb_name||"").trim());
+  const has={}; (days||[]).forEach(x=>{ has[x.branch_name+"|"+x.day]=x; });
+  const missing=[]; brs.forEach(b=>dayList.forEach(d=>{ if(!has[b.juleb_name.trim()+"|"+d]) missing.push({b,d}); }));
+  const wholeDays=dayList.filter(d=>brs.length&&brs.every(b=>!has[b.juleb_name.trim()+"|"+d]));
+  const partial=missing.filter(x=>!wholeDays.includes(x.d));
+  const months=[]; { let m=thisMonth(); for(let i=0;i<6;i++){ months.push(m.slice(0,7)); m=addMonths(m,-1); } }
+  const sl=latest?.sales_last, el=latest?.expiry_last;
+  return <div className="grid" style={{gap:10}}>
+    <div className="row" style={{gap:8}}>
+      <span className={"chip "+(lag(sl)<=2?"":lag(sl)<=7?"amber":"bad")} style={{fontSize:13,padding:"6px 10px"}}>🧾 Sales updated until <b style={{marginInlineStart:4}}>{fmtDay(sl)}</b>{sl&&<span className="muted" style={{marginInlineStart:6}}>({ago(sl)})</span>}</span>
+      <span className="chip grey" style={{fontSize:13,padding:"6px 10px"}}>🗑 Expiry transfers until <b style={{marginInlineStart:4}}>{fmtDay(el)}</b></span>
+      {days && (missing.length===0
+        ? <span className="chip" style={{fontSize:13,padding:"6px 10px"}}>✓ No missing days in {mk}{checkTo?` (1 → ${Number(checkTo.slice(8,10))})`:""}</span>
+        : <span className="chip bad" style={{fontSize:13,padding:"6px 10px"}}>⚠ {wholeDays.length?`${wholeDays.length} day(s) missing for all branches`:""}{wholeDays.length&&partial.length?" · ":""}{partial.length?`${partial.length} branch-day(s) missing`:""}</span>)}
+      <div style={{flex:1}}/>
+      <select value={mk} onChange={e=>setMk(e.target.value)} style={{width:"auto"}}>{months.map(m=><option key={m} value={m}>{m}</option>)}</select>
+    </div>
+    {err && <div className="warn">{err}</div>}
+    {days && days.length===0 && <div className="warn">No sales loaded for {mk} yet.</div>}
+    {wholeDays.length>0 && <div className="err">Missing for <b>all branches</b> — re-export these days from Juleb: {wholeDays.map(d=>fmtDay(d).replace(/ \d{4}$/,"")).join(" · ")}</div>}
+    {partial.length>0 && <div className="warn">No sales for one branch only (closed, or missing from the export): {partial.map(x=>`${x.b.name} ${Number(x.d.slice(8,10))}`).join(" · ")}</div>}
+    {days && dayList.length>0 && <div className="tw"><table className="cov">
+      <thead><tr><th>Branch</th>{dayList.map(d=><th key={d} className="num" style={{padding:"4px 3px",fontSize:11}}>{Number(d.slice(8,10))}</th>)}<th className="num">Days</th></tr></thead>
+      <tbody>{brs.map(b=>{ const n=dayList.filter(d=>has[b.juleb_name.trim()+"|"+d]).length;
+        return <tr key={b.id}><td style={{whiteSpace:"nowrap"}}>{b.name}</td>
+          {dayList.map(d=>{ const x=has[b.juleb_name.trim()+"|"+d];
+            return <td key={d} title={x?`${b.name} · ${d} · ${x.bills} bills · ${fmt(x.total)} SAR`:`${b.name} · ${d} · no sales`}
+              style={{padding:"4px 3px",textAlign:"center",fontSize:11,background:x?"#E6F4EA":wholeDays.includes(d)?"#FFE3E3":"#FFF4DE",color:x?"#2E7D32":"#C62828"}}>{x?"✓":"✕"}</td>; })}
+          <td className="num"><b>{n}</b>/{dayList.length}</td></tr>; })}</tbody></table></div>}
+  </div>;
+}
+
 function JulebImport({t,D,reload,toast}){
   const [res,setRes]=useState(null); const [err,setErr]=useState(""); const [busy,setBusy]=useState(""); const [done,setDone]=useState(null);
+  const [stamp,setStamp]=useState(0);   // bump to re-check coverage after a save
   const onFile=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; setErr(""); setRes(null); setDone(null);
     try{ setRes(parseAny(await f.arrayBuffer(),D)); }catch(x){ setErr(String(x.message||x)); } };
   const refresh=async months=>{ const out=[]; for(const m of months){ setBusy(`Recalculating ${m.slice(0,7)}…`);
@@ -1044,10 +1095,10 @@ function JulebImport({t,D,reload,toast}){
   const save=async()=>{ try{
       if(res.kind==="expiry"){ if(res.exp.length){ setBusy("Saving expiry transfers…");
           const r=await sb.from("expiry_transfers").upsert(res.exp,{onConflict:"transfer_name"}); if(r.error) throw new Error(r.error.message); }
-        const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload(); setBusy(""); return; }
+        const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload(); setStamp(Date.now()); setBusy(""); return; }
       const L=res.lines; for(let i=0;i<L.length;i+=1000){ setBusy(`Saving lines ${Math.min(i+1000,L.length).toLocaleString()} / ${L.length.toLocaleString()}…`);
         const r=await sb.from("sales_lines").upsert(L.slice(i,i+1000),{onConflict:"branch_name,receipt_ref,line_no"}); if(r.error) throw new Error(r.error.message); }
-      const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload();
+      const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload(); setStamp(Date.now());
     }catch(x){ toast(String(x.message||x)); } setBusy(""); };
   const refreshOnly=async()=>{ try{ setDone(await refresh([thisMonth()])); toast(t.saved); reload(); }catch(x){ toast(String(x.message||x)); } setBusy(""); };
   const bByJ=n=>D.branches.find(b=>(b.juleb_name||"").trim()===n);
@@ -1055,6 +1106,7 @@ function JulebImport({t,D,reload,toast}){
     <div className="row" style={{justifyContent:"space-between"}}><h2>Import Juleb report</h2>
       <div className="row" style={{gap:8}}><button className="btn sec" disabled={!!busy} onClick={refreshOnly} title="Recalculate this month from stored lines">↻ Recalculate this month</button>
         <label className="btn" style={{cursor:"pointer"}}>Choose .xlsx<input type="file" accept=".xlsx,.xls" onChange={onFile} style={{display:"none"}} disabled={!!busy}/></label></div></div>
+    <DataCoverage D={D} stamp={stamp}/>
     <div className="muted small">Juleb → <b>POS Sales Details</b> or <b>Internal Transfer Summary</b> (done transfers, all branches incl. Expiry WH) · all branches · <b>any dates</b> · export Excel. The file type is detected automatically. Every line is stored once — overlapping uploads are safe — and the month-to-date KPIs are recalculated from all stored lines. The same lines feed Marketing.</div>
     {err && <div className="err">{err}</div>}
     {busy && <div className="chip amber">{busy}</div>}
