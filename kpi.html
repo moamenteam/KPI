@@ -4,8 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>First Brand KPI</title>
-<link rel="stylesheet" href="./theme.css?v=fb1">
-<script src="./theme.js?v=fb1"></script>
+<link rel="stylesheet" href="./theme.css">
+<script src="./theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Lato:wght@300;400;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
@@ -134,40 +134,6 @@ window.addEventListener("unhandledrejection",e=>{document.getElementById("root")
   .pace{display:grid;gap:3px;font-size:13px}
   .pace strong{color:var(--ink)}
   @media print{ .bar,.noprint,.btn{display:none!important} body{background:#fff} .wrap{max-width:none;padding:0} .card{break-inside:avoid;border-color:#999;margin-bottom:8px;padding:10px} input,select,textarea{border:0;border-bottom:1px solid #999;border-radius:0;padding:2px 4px} h1{font-size:18px} h2{font-size:14px} table{font-size:12px} }
-  /* pharmacist period report */
-  .rep-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;overflow:auto;padding:18px}
-  .rep-bar{max-width:920px;margin:0 auto 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;background:#fff;border-radius:8px;padding:12px}
-  .rep-bar label{display:grid;gap:3px;font-size:12px;color:#555}
-  .rep-bar input{width:auto}
-  html body .rep{background:#fff;color:#111;max-width:920px;margin:0 auto;border-radius:8px;padding:28px;font-size:13px;line-height:1.5}
-  html body .rep h2{font-size:20px;margin:0;color:#111}
-  html body .rep h3{font-size:14px;margin:18px 0 8px;color:#111}
-  html body .rep .rhead{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #111;padding-bottom:12px;margin-bottom:14px;flex-wrap:wrap}
-  html body .rep .rmeta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px;margin-bottom:6px}
-  html body .rep .rmeta div span{display:block;font-size:11px;color:#666}
-  html body .rep .rsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:10px 0 4px}
-  html body .rep .rsum div{border:1px solid #ddd;border-radius:6px;padding:10px}
-  html body .rep .rsum b{display:block;font-size:22px}
-  html body .rep .rsum span{font-size:11px;color:#666}
-  html body .rep table{width:100%;border-collapse:collapse;font-size:12px}
-  html body .rep th,html body .rep td{border:1px solid #d6d6d6;padding:6px 7px;text-align:center;white-space:nowrap;color:#111;background:#fff}
-  html body .rep th{background:#F2F3F5;font-weight:600;color:#333}
-  html body .rep td.l,html body .rep th.l{text-align:start;white-space:normal}
-  html body .rep tr:hover td{background:#fff}
-  html body .rep .tfoot td{font-weight:700;background:#F7F7F8}
-  html body .rep .good{color:#1E7B34} html body .rep .mid{color:#A86B00} html body .rep .bad{color:#C62828}
-  html body .rep .stars{color:#E5A100} html body .rep .stars i{color:#ccc}
-  html body .rep .sign{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:34px}
-  html body .rep .sign div{border-top:1px solid #111;padding-top:6px;font-size:12px;color:#444}
-  html body .rep .foot{margin-top:18px;font-size:11px;color:#777}
-  @media print{
-    body.rep-open #root{display:none!important}
-    body.rep-open .rep-ov{position:static;background:none;padding:0;overflow:visible}
-    body.rep-open .rep-bar{display:none!important}
-    body.rep-open .rep{max-width:none;border-radius:0;padding:0}
-    body.rep-open .rep table,body.rep-open .rep .rsum{break-inside:avoid}
-    @page{size:A4;margin:12mm}
-  }
 </style>
 <style>
 html[data-ui="soft"] .card{box-shadow:0 2px 10px rgba(20,40,38,.06);border-radius:16px}
@@ -544,122 +510,6 @@ function Login({t,lang,setLang}){
 /* ================= DASHBOARD ================= */
 // Branch scoping: admin sees the company and every branch; everyone else is locked to their own branch.
 // Pharmacists see their branch and their own pharmacist page only.
-/* ================= PHARMACIST PERIOD REPORT (print / PDF) ================= */
-function PharmacistReport({t,D,E,lang,pid,startMk,onClose}){
-  const L=(en,ar)=>lang==="ar"?ar:en;
-  const ph=D.pharmacists.find(p=>p.id===pid)||{};
-  const q0=qOf(startMk); const qStart=`${q0.year}-${String(q0.quarter*3-2).padStart(2,"0")}-01`;
-  const [from,setFrom]=useState(qStart.slice(0,7)); const [to,setTo]=useState((startMk<thisMonth()?startMk:thisMonth()).slice(0,7));
-  const ref=React.useRef(null);
-  useEffect(()=>{ document.body.classList.add("rep-open"); return ()=>document.body.classList.remove("rep-open"); },[]);
-  const setPreset=k=>{ const cur=thisMonth(), q=qOf(cur);
-    const qs=(y,qq)=>`${y}-${String(qq*3-2).padStart(2,"0")}`;
-    if(k==="month"){ setFrom(cur.slice(0,7)); setTo(cur.slice(0,7)); }
-    if(k==="quarter"){ setFrom(qs(q.year,q.quarter)); setTo(cur.slice(0,7)); }
-    if(k==="lastq"){ const y=q.quarter===1?q.year-1:q.year, qq=q.quarter===1?4:q.quarter-1; const s=qs(y,qq); setFrom(s); setTo(addMonths(s+"-01",2).slice(0,7)); }
-    if(k==="year"){ setFrom(`${q.year}-01`); setTo(cur.slice(0,7)); } };
-
-  // months in the period (max 24)
-  const months=[]; if(from&&to&&from<=to){ let m=from+"-01"; while(m<=to+"-01"&&months.length<24){ months.push(m); m=addMonths(m,1); } }
-  const data=months.map(m=>({m,...E.pharmacistScore(pid,m),branches:E.shares(pid,m).map(x=>bname(D.branches,x.branch_id)).join(" ⇄ ")}));
-  // KPI columns = every active KPI used in any month of the period
-  const cols=[]; data.forEach(d=>d.rows.forEach(r=>{ if(!cols.find(c=>c.code===r.k.code)) cols.push(r.k); }));
-  cols.sort((a,b)=>a.sort-b.sort);
-  const scoredMonths=data.filter(d=>d.total!=null);
-  const avg=scoredMonths.length? scoredMonths.reduce((a,d)=>a+d.total,0)/scoredMonths.length : null;
-  const best=scoredMonths.length? scoredMonths.reduce((a,d)=>d.total>a.total?d:a) : null;
-  const mySales=data.reduce((a,d)=>{ const r=d.rows.find(x=>x.k.code==="sales"); return a+(r&&r.mine!=null?Number(r.mine):0); },0);
-  const kpiSum=cols.map(k=>{ const rs=data.map(d=>d.rows.find(r=>r.k.code===k.code)).filter(r=>r&&r.ach!=null);
-    return {k, n:rs.length, ach:rs.length? rs.reduce((a,r)=>a+r.ach,0)/rs.length : null, pts:rs.length? rs.reduce((a,r)=>a+r.pts,0)/rs.length : null, w:rs.length? rs.reduce((a,r)=>a+Number(r.k.weight),0)/rs.length : Number(k.weight)}; });
-  // branch revenue: target vs actual per month (sales KPI is branch level)
-  const salesRows=data.map(d=>{ const r=d.rows.find(x=>x.k.code==="sales")||{};
-    return {m:d.m, branch:d.branches, target:r.target!=null?Number(r.target):null, actual:r.actual!=null?Number(r.actual):null,
-      ach:r.target&&r.actual!=null? Number(r.actual)/Number(r.target) : null, mine:r.mine!=null?Number(r.mine):null, final:!!r.final, asOf:r.asOf}; });
-  const sumOf=k=>salesRows.reduce((a,r)=>a+(r[k]||0),0);
-  const tgtTot=sumOf("target"), actTot=sumOf("actual"), mineTot=sumOf("mine");
-  const fromD=from+"-01", toD=lastDayIso(to+"-01");
-  const visits=D.visits.filter(v=>v.pharmacist_id===pid&&v.visit_date>=fromD&&v.visit_date<=toD).sort((a,b)=>a.visit_date<b.visit_date?-1:1);
-  const branchesAll=[...new Set(data.map(d=>d.branches).filter(Boolean).join(" ⇄ ").split(" ⇄ ").filter(x=>x&&x!=="—"))].join(", ")||"—";
-  const pctCls=a=>a==null?"":a>=1?"good":a>=0.7?"mid":"bad";
-  const periodTxt=`${monthLabel(fromD,lang)} – ${monthLabel(to+"-01",lang)}`;
-  const printedOn=new Date().toLocaleDateString(lang==="ar"?"ar-SA-u-ca-gregory":"en-GB",{day:"2-digit",month:"long",year:"numeric"});
-  const fileName=`${(ph.full_name||"pharmacist").replace(/\s+/g,"_")}_${from}_${to}.pdf`;
-
-  return ReactDOM.createPortal(<div className="rep-ov" onClick={e=>e.target===e.currentTarget&&onClose()}>
-    <div className="rep-bar noprint">
-      <label>{L("From","من")}<input type="month" value={from} max={thisMonth().slice(0,7)} onChange={e=>e.target.value&&setFrom(e.target.value)}/></label>
-      <label>{L("To","إلى")}<input type="month" value={to} max={thisMonth().slice(0,7)} onChange={e=>e.target.value&&setTo(e.target.value)}/></label>
-      <div className="subtabs" style={{margin:0}}>
-        <button onClick={()=>setPreset("month")}>{L("This month","هذا الشهر")}</button>
-        <button onClick={()=>setPreset("quarter")}>{L("This quarter","هذا الربع")}</button>
-        <button onClick={()=>setPreset("lastq")}>{L("Last quarter","الربع السابق")}</button>
-        <button onClick={()=>setPreset("year")}>{L("This year","هذه السنة")}</button>
-      </div>
-      <div style={{flex:1}}/>
-      <button className="btn" onClick={()=>window.print()}>🖨 {L("Print","طباعة")}</button>
-      <button className="btn sec" onClick={()=>exportPdf(ref.current,fileName)}>⬇ PDF</button>
-      <button className="btn sec" onClick={onClose}>{L("Close","إغلاق")}</button>
-    </div>
-
-    <div className="rep" ref={ref}>
-      <div className="rhead">
-        <div><h2>{L("Pharmacist performance report","تقرير أداء الصيدلي")}</h2><div style={{color:"#555"}}>{t.app} · {L("KPI system","نظام مؤشرات الأداء")}</div></div>
-        <div style={{textAlign:"end"}}><div><b>{periodTxt}</b></div><div style={{color:"#666",fontSize:12}}>{L("Printed","تاريخ الطباعة")}: {printedOn}</div></div>
-      </div>
-      <div className="rmeta">
-        <div><span>{t.pharmacist}</span><b>{ph.full_name||"—"}</b></div>
-        <div><span>{t.empCode}</span><b>{ph.emp_code||"—"}</b></div>
-        <div><span>{t.branch}</span><b>{branchesAll}</b></div>
-        <div><span>{t.title}</span><b>{({"community pharmacist":t.tPh,"on-call pharmacist":L("On-call pharmacist (joker)","صيدلي جوكر (متنقل)"),"pharmacy manager":t.tPm,supervisor:t.tSup,management:t.tMgmt})[ph.title]||ph.title||"—"}</b></div>
-      </div>
-
-      {months.length===0 ? <p style={{color:"#C62828"}}>{L("Choose a valid period (From must be before To).","اختر فترة صحيحة (بداية الفترة قبل نهايتها).")}</p> : <>
-      <div className="rsum">
-        <div><span>{L("Average score","متوسط النقاط")}</span><b className={pctCls(avg==null?null:avg/100)}>{avg==null?"—":avg.toFixed(1)}<small style={{fontSize:12,color:"#666"}}> / 100</small></b><Stars n={starsOf(avg)}/></div>
-        <div><span>{L("Best month","أفضل شهر")}</span><b>{best?best.total.toFixed(1):"—"}</b><span>{best?monthLabel(best.m,lang):""}</span></div>
-        <div><span>{L("Months with data","أشهر بها بيانات")}</span><b>{scoredMonths.length} / {months.length}</b></div>
-        <div><span>{t.mySales} ({t.sar})</span><b>{mySales?fmt(mySales):"—"}</b></div>
-        <div><span>{L("Branch revenue target","هدف إيراد الفرع")} ({t.sar})</span><b>{tgtTot?fmt(tgtTot):"—"}</b>{tgtTot?<span className={pctCls(actTot/tgtTot)}>{Math.round(actTot/tgtTot*100)}% {L("achieved","محقق")}</span>:null}</div>
-      </div>
-
-      <h3>{L("Branch revenue vs target","إيراد الفرع مقابل الهدف")}</h3>
-      <table><thead><tr><th className="l">{t.month}</th><th className="l">{t.branch}</th><th>{L("Revenue target","هدف الإيراد")}</th><th>{L("Actual revenue","الإيراد الفعلي")}</th><th>{t.ach}</th><th>{t.mySales}</th><th>{L("Share of branch","النسبة من الفرع")}</th></tr></thead>
-        <tbody>{salesRows.map(r=><tr key={r.m}><td className="l"><b>{monthLabel(r.m,lang)}</b>{r.actual!=null&&!r.final&&r.asOf?<div style={{fontSize:11,color:"#666"}}>{t.asOf} {r.asOf}</div>:null}</td>
-          <td className="l">{r.branch||"—"}</td><td>{r.target==null?L("Not set","غير محدد"):fmt(r.target)}</td><td>{r.actual==null?"—":fmt(r.actual)}</td>
-          <td><b className={pctCls(r.ach)}>{r.ach==null?"—":Math.round(r.ach*100)+"%"}</b></td><td>{r.mine==null?"—":fmt(r.mine)}</td>
-          <td>{r.mine!=null&&r.actual?Math.round(r.mine/r.actual*100)+"%":"—"}</td></tr>)}
-          <tr className="tfoot"><td className="l" colSpan="2">{L("Period total","إجمالي الفترة")}</td><td>{tgtTot?fmt(tgtTot):"—"}</td><td>{actTot?fmt(actTot):"—"}</td>
-            <td>{tgtTot?Math.round(actTot/tgtTot*100)+"%":"—"}</td><td>{mineTot?fmt(mineTot):"—"}</td><td>{mineTot&&actTot?Math.round(mineTot/actTot*100)+"%":"—"}</td></tr>
-        </tbody></table>
-      <div style={{fontSize:11,color:"#666",marginTop:4}}>{L("Achievement here is actual ÷ the full monthly target. The score table uses progress to date for the current month.","التحقق هنا = الفعلي ÷ هدف الشهر كاملًا. جدول النقاط يحسب الشهر الحالي على الإنجاز حتى تاريخه.")}</div>
-
-      <h3>{L("Monthly scores","النقاط الشهرية")}</h3>
-      <div style={{overflowX:"auto"}}><table>
-        <thead><tr><th className="l">{t.month}</th>{cols.map(k=><th key={k.code}>{kname(k,lang)}</th>)}<th>{t.score}</th><th>{L("Stars","النجوم")}</th></tr></thead>
-        <tbody>{data.map(d=><tr key={d.m}><td className="l"><b>{monthLabel(d.m,lang)}</b><div style={{fontSize:11,color:"#666"}}>{d.branches||"—"}</div></td>
-          {cols.map(k=>{ const r=d.rows.find(x=>x.k.code===k.code); return <td key={k.code}>{!r||r.pts==null?"—":<><b>{r.pts.toFixed(1)}</b><span style={{color:"#888"}}>/{r.k.weight}</span><div className={pctCls(r.ach)} style={{fontSize:11}}>{Math.round(r.ach*100)}%</div></>}</td>; })}
-          <td><b className={pctCls(d.total==null?null:d.total/100)}>{d.total==null?"—":d.total.toFixed(1)}</b></td><td><Stars n={starsOf(d.total)}/></td></tr>)}
-          <tr className="tfoot"><td className="l">{L("Period average","متوسط الفترة")}</td>{kpiSum.map(x=><td key={x.k.code}>{x.pts==null?"—":x.pts.toFixed(1)}</td>)}<td>{avg==null?"—":avg.toFixed(1)}</td><td><Stars n={starsOf(avg)}/></td></tr>
-        </tbody></table></div>
-
-      <h3>{L("KPI summary for the period","ملخص المؤشرات خلال الفترة")}</h3>
-      <table><thead><tr><th className="l">{t.kpiCol}</th><th>{t.level}</th><th>{t.weight}</th><th>{L("Months","الأشهر")}</th><th>{L("Avg. achievement","متوسط التحقق")}</th><th>{L("Avg. points","متوسط النقاط")}</th></tr></thead>
-        <tbody>{kpiSum.map(x=><tr key={x.k.code}><td className="l">{kname(x.k,lang)}</td><td>{x.k.level==="branch"?t.branch:t.pharmacist}</td><td>{Number(x.w).toFixed(0)}</td><td>{x.n}</td>
-          <td><b className={pctCls(x.ach)}>{x.ach==null?"—":Math.round(x.ach*100)+"%"}</b></td><td>{x.pts==null?"—":x.pts.toFixed(1)}</td></tr>)}</tbody></table>
-
-      {visits.length>0 && <><h3>{L("Visit reports in the period","تقارير الزيارات خلال الفترة")}</h3>
-        <table><thead><tr><th>{t.date}</th><th>{t.branch}</th><th>{VT[lang].vtype}</th><th>{t.score}</th><th>{VT[lang].decision}</th><th className="l">{VT[lang].priorities}</th></tr></thead>
-          <tbody>{visits.map(v=><tr key={v.id}><td>{v.visit_date}</td><td>{bname(D.branches,v.branch_id)}</td><td>{VT[lang][v.visit_type]||"—"}</td>
-            <td><b className={pctCls(v.score)}>{v.total_points!=null?v.total_points:Math.round(Number(v.score)*100)} / 100</b></td>
-            <td>{({pass:VT[lang].d1,photos:VT[lang].d2,training:VT[lang].d3,revisit:VT[lang].d4})[v.decision]||"—"}</td><td className="l">{v.priorities||""}</td></tr>)}</tbody></table></>}
-      </>}
-
-      <div className="sign"><div>{L("Supervisor signature","توقيع المشرف")}</div><div>{L("Pharmacist signature","توقيع الصيدلي")}</div></div>
-      <div className="foot">{L("Branch-level KPIs (sales, expiry…) are the branch's result and are shared by every pharmacist in it. The current month is scored on progress to date.","مؤشرات مستوى الفرع (المبيعات، المنتهي…) هي نتيجة الفرع ويشترك فيها كل صيادلة الفرع. الشهر الحالي محسوب على الإنجاز حتى تاريخه.")}</div>
-    </div>
-  </div>, document.body);
-}
-
 function Dashboard({t,me,D,E,lang}){
   const isAdmin=me.role==="admin", isPh=me.role==="pharmacist"; const [mk,setMk]=useState(thisMonth());
   const myRec=D.pharmacists.find(p=>p.id===me.pharmacist_id);
@@ -671,7 +521,6 @@ function Dashboard({t,me,D,E,lang}){
   const [pid,setPid]=useState(isPh?me.pharmacist_id:"");
   useEffect(()=>{ if(!phPool.find(p=>p.id===pid)) setPid(phPool[0]?.id||""); },[bid,mk,view]);
   const canOpen=p=>!isPh||p.id===me.pharmacist_id;
-  const [repOpen,setRepOpen]=useState(false);
   const months6=[5,4,3,2,1,0].map(i=>addMonths(mk,-i));
 
   let hero=null, rows=[], sparks=[], extra=null, qr=null;
@@ -713,9 +562,7 @@ function Dashboard({t,me,D,E,lang}){
       <div className="subtabs">{isAdmin&&<button className={view==="company"?"on":""} onClick={()=>setView("company")}>{t.company}</button>}<button className={view==="branch"?"on":""} onClick={()=>setView("branch")}>{t.branch}</button><button className={view==="pharmacist"?"on":""} onClick={()=>setView("pharmacist")}>{t.pharmacist}</button></div>
       {view!=="company" && !lockedBranch && <select value={bid} onChange={e=>setBid(e.target.value)} style={{width:"auto"}}>{view==="pharmacist"&&<option value="">{t.allBranches}</option>}{D.branches.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select>}
       {view==="pharmacist" && !isPh && <select value={pid} onChange={e=>setPid(e.target.value)} style={{width:"auto"}}>{phPool.map(p=><option key={p.id} value={p.id}>{p.full_name}</option>)}</select>}
-      {view==="pharmacist" && pid && <button className="btn sec" onClick={()=>setRepOpen(true)}>🖨 {lang==="ar"?"تقرير لفترة":"Period report"}</button>}
     </div>
-    {repOpen && view==="pharmacist" && pid && <PharmacistReport t={t} D={D} E={E} lang={lang} pid={pid} startMk={mk} onClose={()=>setRepOpen(false)}/>}
     {!hero ? <div className="card empty">{t.noData}</div> : <>
     <div className="hero">
       <div className="mo">
@@ -970,13 +817,12 @@ function Visits({t,me,D,reload,toast,lang}){
 }
 const E_shares=(D,pid,mk)=>makeEngine(D).shares(pid,mk);
 
-/* ================= JULEB IMPORT (super admin, or accounts with "Import Juleb report" ticked in Admin) =================
+/* ================= JULEB IMPORT (super admin) =================
    Report: Juleb → POS Sales Details · all branches · any date range · Excel.
    1) every sale line is stored in sales_lines (same line never stored twice — overlapping uploads are safe)
    2) kpi_refresh() recalculates month-to-date KPIs from all stored lines of that month (as of the last stored day):
       sales per branch · my sales · registration (phone ≥9 digits ÷ all bills, returns excluded) · lab · private label
    The same lines feed the Marketing page. */
-const canImport = me => !!me && (me.is_super || (me.pages||[]).includes("dataImport"));
 const JULEB_REQ=["Branch Code","Branch Name","Cashier","Receipt Reference","Total Amount","Phone","Order Date Time"];
 const isoLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const tsLocal=d=>`${isoLocal(d)}T${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
@@ -1010,7 +856,14 @@ function parseJuleb(buf,D){
   const unP=Object.keys(reg).filter(n=>!D.pharmacists.some(p=>(p.juleb_name||"").trim()===n));
   return {lines,months,startDate:startDate||minD,endDate:endDate||maxD,rowsN:rows.length,billsN:Object.keys(bills).length,sales,reg,unB,unP};
 }
-// Juleb → Internal Transfer Summary (done transfers). Expired = transfers TO the expiry warehouse, at Total Avg Cost.
+// Juleb -> Internal Transfer Summary. Expired = done transfers TO the expiry warehouse, at Total Avg Cost.
+const EXP_RX=/expir|\bexp\b|exp\s*wh|exp\.|اكسب|إكسب|منته|تالف|هالك|damag/i;
+const BAD_STATUS=/draft|cancel|pending|wait|reject|ready|مسود|ملغ|انتظار/i;
+// map a Juleb source name to a branch: exact juleb_name first, then case-insensitive containment either way
+const matchBranch=(n,D)=>{ const x=(n||"").trim(), lx=x.toLowerCase(); if(!x) return null;
+  return D.branches.find(b=>(b.juleb_name||"").trim()===x)
+      || D.branches.find(b=>{ const j=(b.juleb_name||"").trim().toLowerCase(); return j && (lx.includes(j)||j.includes(lx)); })
+      || D.branches.find(b=>{ const j=(b.name||"").trim().toLowerCase(); return j.length>3 && lx.includes(j); }) || null; };
 function parseTransfers(A,D){
   const h=A.findIndex(r=>r&&String(r[0]??"").trim()==="Transfer From (Source Branch)");
   const H=A[h].map(x=>String(x??"").trim()); const need=["Transfer From (Source Branch)","Transfer To (Destination Branch)","Transfer Name","Transfer Date","Total Avg Cost"];
@@ -1019,86 +872,46 @@ function parseTransfers(A,D){
   let endDate=null, startDate=null;
   for(let i=0;i<h;i++){ (A[i]||[]).forEach((x,j)=>{ const lab=String(x??"").toLowerCase().trim(); const below=(A[i+1]||[])[j];
     if(lab==="end date") endDate=toIsoDate(below)||endDate; if(lab==="start date") startDate=toIsoDate(below)||startDate; }); }
-  const all=A.slice(h+1).filter(r=>r&&g(r,"Transfer Name")!=null&&String(g(r,"Transfer Name")).trim()!=="");   // drops the totals row
-  const exp=all.filter(r=>/expir/i.test(String(g(r,"Transfer To (Destination Branch)")??""))&&String(g(r,"Status")??"done").toLowerCase()==="done")
-    .map(r=>({transfer_name:String(g(r,"Transfer Name")).trim(),source_branch:String(g(r,"Transfer From (Source Branch)")??"").trim(),
-      dest_branch:String(g(r,"Transfer To (Destination Branch)")??"").trim(),transfer_date:toIsoDate(g(r,"Transfer Date")),
-      qty:Number(g(r,"Total QTY"))||0,cost:Number(g(r,"Total Avg Cost"))||0,status:String(g(r,"Status")??"done").trim()}));
-  const by={}; exp.forEach(x=>{ by[x.source_branch]=(by[x.source_branch]||0)+x.cost; });
-  const dates=[startDate,endDate,...exp.map(x=>x.transfer_date)].filter(Boolean).sort();
-  let months=[]; for(let m=monthKey(dates[0]); m<=monthKey(dates[dates.length-1]); m=addMonths(m,1)) months.push(m);
-  const unB=Object.keys(by).filter(n=>!D.branches.some(b=>(b.juleb_name||"").trim()===n));
-  return {kind:"expiry",exp,allN:all.length,by,months,startDate:startDate||dates[0],endDate:endDate||dates[dates.length-1],unB};
+  const num=v=>{ if(v==null) return 0; if(typeof v==="number") return v; const n=Number(String(v).replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; };
+  // every row (drops the totals row); lines of the same transfer are summed into one transfer
+  const T={};
+  A.slice(h+1).forEach(r=>{ if(!r) return; const name=String(g(r,"Transfer Name")??"").trim(); if(!name) return;
+    const st=String(g(r,"Status")??"done").trim(); if(BAD_STATUS.test(st)) return;
+    const x=T[name]||(T[name]={transfer_name:name,source_branch:String(g(r,"Transfer From (Source Branch)")??"").trim(),
+      dest_branch:String(g(r,"Transfer To (Destination Branch)")??"").trim(),transfer_date:toIsoDate(g(r,"Transfer Date")),qty:0,cost:0,status:st});
+    x.qty+=num(g(r,"Total QTY")); x.cost+=num(g(r,"Total Avg Cost")); });
+  const all=Object.values(T).filter(x=>x.transfer_date);
+  const dests={}; all.forEach(x=>{ const d=dests[x.dest_branch]||(dests[x.dest_branch]={name:x.dest_branch,n:0,cost:0}); d.n++; d.cost+=x.cost; });
+  const dates=[startDate,endDate,...all.map(x=>x.transfer_date)].filter(Boolean).sort();
+  let months=[]; if(dates.length) for(let m=monthKey(dates[0]); m<=monthKey(dates[dates.length-1]); m=addMonths(m,1)) months.push(m);
+  return {kind:"expiry",all,allN:all.length,dests:Object.values(dests).sort((a,b)=>b.cost-a.cost),
+    autoDest:Object.keys(dests).filter(n=>EXP_RX.test(n)),months,startDate:startDate||dates[0],endDate:endDate||dates[dates.length-1]};
+}
+// apply the chosen expiry warehouse(s): rows to save, per-branch totals, unmatched source names
+function expiryPick(res,sel,D){
+  const exp=res.all.filter(x=>sel.includes(x.dest_branch)).map(x=>{ const b=matchBranch(x.source_branch,D);
+    return {...x, cost:Math.round(x.cost*100)/100, source_branch:b?(b.juleb_name||"").trim()||x.source_branch:x.source_branch, _b:b}; });
+  const by={}; exp.forEach(x=>{ const k=x._b?x._b.id:"?"+x.source_branch; (by[k]=by[k]||{name:x._b?x._b.name:x.source_branch,ok:!!x._b,cost:0,n:0}); by[k].cost+=x.cost; by[k].n++; });
+  return {exp:exp.map(({_b,...x})=>x), by:Object.values(by).sort((a,b)=>b.cost-a.cost), unB:Object.values(by).filter(x=>!x.ok).map(x=>x.name)};
 }
 function parseAny(buf,D){
   const wb=XLSX.read(buf,{type:"array",cellDates:true}); const A=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null});
   if(A.some(r=>r&&String(r[0]??"").trim()==="Transfer From (Source Branch)")) return parseTransfers(A,D);
   return {kind:"sales",...parseJuleb(buf,D)};
 }
-/* ================= DATA COVERAGE (which days are loaded, per branch) ================= */
-function DataCoverage({D,stamp}){
-  const [mk,setMk]=useState(thisMonth().slice(0,7));
-  const [latest,setLatest]=useState(null); const [days,setDays]=useState(null); const [err,setErr]=useState("");
-  const from=mk+"-01", monthEnd=lastDayIso(from);
-  useEffect(()=>{ let off=false; setErr(""); setDays(null);
-    (async()=>{ const [a,b]=await Promise.all([sb.rpc("kpi_data_latest"), sb.rpc("kpi_data_days",{p_from:from,p_to:monthEnd})]);
-      if(off) return;
-      if(a.error||b.error){ const m=(a.error||b.error).message||""; setErr(/kpi_data_(days|latest)|function/i.test(m)?"Run kpi-coverage.sql in Supabase once to turn on the data check.":m); return; }
-      setLatest(a.data||{}); setDays(b.data||[]); })();
-    return ()=>{ off=true; }; },[mk,stamp]);
-  const fmtDay=d=>d?new Date(d+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"}):"—";
-  const ago=d=>{ if(!d) return ""; const n=Math.round((new Date(today()+"T00:00:00")-new Date(d+"T00:00:00"))/864e5); return n<=0?"today":n===1?"yesterday":`${n} days ago`; };
-  const lag=d=>{ if(!d) return 99; return Math.round((new Date(today()+"T00:00:00")-new Date(d+"T00:00:00"))/864e5); };
-  // days to check: from the 1st to the last loaded day of this month (or month end for past months)
-  const loadedInMonth=days? days.map(x=>x.day).sort().slice(-1)[0] : null;
-  const checkTo = mk<thisMonth().slice(0,7) ? monthEnd : (loadedInMonth||null);
-  const dayList=[]; if(checkTo){ for(let d=1; d<=Number(checkTo.slice(8,10)); d++) dayList.push(mk+"-"+String(d).padStart(2,"0")); }
-  const brs=D.branches.filter(b=>(b.juleb_name||"").trim());
-  const has={}; (days||[]).forEach(x=>{ has[x.branch_name+"|"+x.day]=x; });
-  const missing=[]; brs.forEach(b=>dayList.forEach(d=>{ if(!has[b.juleb_name.trim()+"|"+d]) missing.push({b,d}); }));
-  const wholeDays=dayList.filter(d=>brs.length&&brs.every(b=>!has[b.juleb_name.trim()+"|"+d]));
-  const partial=missing.filter(x=>!wholeDays.includes(x.d));
-  const months=[]; { let m=thisMonth(); for(let i=0;i<6;i++){ months.push(m.slice(0,7)); m=addMonths(m,-1); } }
-  const sl=latest?.sales_last, el=latest?.expiry_last;
-  return <div className="grid" style={{gap:10}}>
-    <div className="row" style={{gap:8}}>
-      <span className={"chip "+(lag(sl)<=2?"":lag(sl)<=7?"amber":"bad")} style={{fontSize:13,padding:"6px 10px"}}>🧾 Sales updated until <b style={{marginInlineStart:4}}>{fmtDay(sl)}</b>{sl&&<span className="muted" style={{marginInlineStart:6}}>({ago(sl)})</span>}</span>
-      <span className="chip grey" style={{fontSize:13,padding:"6px 10px"}}>🗑 Expiry transfers until <b style={{marginInlineStart:4}}>{fmtDay(el)}</b></span>
-      {days && (missing.length===0
-        ? <span className="chip" style={{fontSize:13,padding:"6px 10px"}}>✓ No missing days in {mk}{checkTo?` (1 → ${Number(checkTo.slice(8,10))})`:""}</span>
-        : <span className="chip bad" style={{fontSize:13,padding:"6px 10px"}}>⚠ {wholeDays.length?`${wholeDays.length} day(s) missing for all branches`:""}{wholeDays.length&&partial.length?" · ":""}{partial.length?`${partial.length} branch-day(s) missing`:""}</span>)}
-      <div style={{flex:1}}/>
-      <select value={mk} onChange={e=>setMk(e.target.value)} style={{width:"auto"}}>{months.map(m=><option key={m} value={m}>{m}</option>)}</select>
-    </div>
-    {err && <div className="warn">{err}</div>}
-    {days && days.length===0 && <div className="warn">No sales loaded for {mk} yet.</div>}
-    {wholeDays.length>0 && <div className="err">Missing for <b>all branches</b> — re-export these days from Juleb: {wholeDays.map(d=>fmtDay(d).replace(/ \d{4}$/,"")).join(" · ")}</div>}
-    {partial.length>0 && <div className="warn">No sales for one branch only (closed, or missing from the export): {partial.map(x=>`${x.b.name} ${Number(x.d.slice(8,10))}`).join(" · ")}</div>}
-    {days && dayList.length>0 && <div className="tw"><table className="cov">
-      <thead><tr><th>Branch</th>{dayList.map(d=><th key={d} className="num" style={{padding:"4px 3px",fontSize:11}}>{Number(d.slice(8,10))}</th>)}<th className="num">Days</th></tr></thead>
-      <tbody>{brs.map(b=>{ const n=dayList.filter(d=>has[b.juleb_name.trim()+"|"+d]).length;
-        return <tr key={b.id}><td style={{whiteSpace:"nowrap"}}>{b.name}</td>
-          {dayList.map(d=>{ const x=has[b.juleb_name.trim()+"|"+d];
-            return <td key={d} title={x?`${b.name} · ${d} · ${x.bills} bills · ${fmt(x.total)} SAR`:`${b.name} · ${d} · no sales`}
-              style={{padding:"4px 3px",textAlign:"center",fontSize:11,background:x?"#E6F4EA":wholeDays.includes(d)?"#FFE3E3":"#FFF4DE",color:x?"#2E7D32":"#C62828"}}>{x?"✓":"✕"}</td>; })}
-          <td className="num"><b>{n}</b>/{dayList.length}</td></tr>; })}</tbody></table></div>}
-  </div>;
-}
-
 function JulebImport({t,D,reload,toast}){
-  const [res,setRes]=useState(null); const [err,setErr]=useState(""); const [busy,setBusy]=useState(""); const [done,setDone]=useState(null);
-  const [stamp,setStamp]=useState(0);   // bump to re-check coverage after a save
+  const [res,setRes]=useState(null); const [sel,setSel]=useState([]); const [err,setErr]=useState(""); const [busy,setBusy]=useState(""); const [done,setDone]=useState(null);
   const onFile=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; setErr(""); setRes(null); setDone(null);
-    try{ setRes(parseAny(await f.arrayBuffer(),D)); }catch(x){ setErr(String(x.message||x)); } };
+    try{ const r=parseAny(await f.arrayBuffer(),D); setRes(r); setSel(r.kind==="expiry"?r.autoDest:[]); }catch(x){ setErr(String(x.message||x)); } };
   const refresh=async months=>{ const out=[]; for(const m of months){ setBusy(`Recalculating ${m.slice(0,7)}…`);
       const r=await sb.rpc("kpi_refresh",{p_month:m}); if(r.error) throw new Error(r.error.message); out.push(r.data); } return out; };
   const save=async()=>{ try{
-      if(res.kind==="expiry"){ if(res.exp.length){ setBusy("Saving expiry transfers…");
-          const r=await sb.from("expiry_transfers").upsert(res.exp,{onConflict:"transfer_name"}); if(r.error) throw new Error(r.error.message); }
-        const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload(); setStamp(Date.now()); setBusy(""); return; }
+      if(res.kind==="expiry"){ const pk=expiryPick(res,sel,D); if(pk.exp.length){ setBusy("Saving expiry transfers…");
+          const r=await sb.from("expiry_transfers").upsert(pk.exp,{onConflict:"transfer_name"}); if(r.error) throw new Error(r.error.message); }
+        const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload(); setBusy(""); return; }
       const L=res.lines; for(let i=0;i<L.length;i+=1000){ setBusy(`Saving lines ${Math.min(i+1000,L.length).toLocaleString()} / ${L.length.toLocaleString()}…`);
         const r=await sb.from("sales_lines").upsert(L.slice(i,i+1000),{onConflict:"branch_name,receipt_ref,line_no"}); if(r.error) throw new Error(r.error.message); }
-      const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload(); setStamp(Date.now());
+      const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload();
     }catch(x){ toast(String(x.message||x)); } setBusy(""); };
   const refreshOnly=async()=>{ try{ setDone(await refresh([thisMonth()])); toast(t.saved); reload(); }catch(x){ toast(String(x.message||x)); } setBusy(""); };
   const bByJ=n=>D.branches.find(b=>(b.juleb_name||"").trim()===n);
@@ -1106,18 +919,21 @@ function JulebImport({t,D,reload,toast}){
     <div className="row" style={{justifyContent:"space-between"}}><h2>Import Juleb report</h2>
       <div className="row" style={{gap:8}}><button className="btn sec" disabled={!!busy} onClick={refreshOnly} title="Recalculate this month from stored lines">↻ Recalculate this month</button>
         <label className="btn" style={{cursor:"pointer"}}>Choose .xlsx<input type="file" accept=".xlsx,.xls" onChange={onFile} style={{display:"none"}} disabled={!!busy}/></label></div></div>
-    <DataCoverage D={D} stamp={stamp}/>
     <div className="muted small">Juleb → <b>POS Sales Details</b> or <b>Internal Transfer Summary</b> (done transfers, all branches incl. Expiry WH) · all branches · <b>any dates</b> · export Excel. The file type is detected automatically. Every line is stored once — overlapping uploads are safe — and the month-to-date KPIs are recalculated from all stored lines. The same lines feed Marketing.</div>
     {err && <div className="err">{err}</div>}
     {busy && <div className="chip amber">{busy}</div>}
-    {res && res.kind==="expiry" && <>
-      <div className="row small"><span className="chip">Internal Transfer Summary · {res.startDate} → {res.endDate}</span><span className="chip grey">{res.allN} transfers · {res.exp.length} to expiry warehouse</span></div>
-      {res.unB.length>0 && <div className="err">Not matched — set their Juleb name in Team: {res.unB.join(" · ")}</div>}
-      {res.exp.length===0? <div className="chip">No transfers to the expiry warehouse in this period — every branch keeps full expiry points.</div> :
+    {res && res.kind==="expiry" && (()=>{ const pk=expiryPick(res,sel,D); return <>
+      <div className="row small"><span className="chip">Internal Transfer Summary · {res.startDate} → {res.endDate}</span><span className="chip grey">{res.allN} transfers · {pk.exp.length} to expiry warehouse</span></div>
+      <div className="grid" style={{gap:6}}><strong className="small">Which destination is the expiry warehouse?</strong>
+        <table><thead><tr><th></th><th>Destination</th><th className="num">Transfers</th><th className="num">Cost</th></tr></thead><tbody>
+          {res.dests.map(d=><tr key={d.name}><td style={{width:30}}><input type="checkbox" style={{width:18,height:18}} checked={sel.includes(d.name)} onChange={e=>setSel(e.target.checked?[...sel,d.name]:sel.filter(x=>x!==d.name))}/></td>
+            <td>{d.name||"—"}{res.autoDest.includes(d.name)&&<span className="chip" style={{marginInlineStart:6}}>auto</span>}</td><td className="num">{d.n}</td><td className="num">{d.cost.toLocaleString("en",{maximumFractionDigits:2})}</td></tr>)}</tbody></table></div>
+      {pk.unB.length>0 && <div className="err">Not matched — set their Juleb name in Team: {pk.unB.join(" · ")}</div>}
+      {pk.exp.length===0? <div className="chip">Nothing ticked as expiry warehouse — every branch keeps full expiry points.</div> :
         <table><thead><tr><th>{t.branch}</th><th className="num">Expired (cost)</th><th className="num">Transfers</th></tr></thead><tbody>
-          {Object.entries(res.by).sort((a,b)=>b[1]-a[1]).map(([n,v])=><tr key={n}><td>{bByJ(n)?.name||<span className="chip bad">{n}</span>}</td><td className="num">{v.toLocaleString("en",{maximumFractionDigits:2})}</td><td className="num">{res.exp.filter(x=>x.source_branch===n).length}</td></tr>)}</tbody></table>}
+          {pk.by.map(x=><tr key={x.name}><td>{x.ok?x.name:<span className="chip bad">{x.name}</span>}</td><td className="num">{x.cost.toLocaleString("en",{maximumFractionDigits:2})}</td><td className="num">{x.n}</td></tr>)}</tbody></table>}
       <div className="row"><button className="btn" disabled={!!busy} onClick={save}>Save expiry & update KPIs</button><button className="btn sec" disabled={!!busy} onClick={()=>setRes(null)}>{t.cancel}</button></div>
-    </>}
+    </>; })()}
     {res && res.kind==="sales" && <>
       <div className="row small"><span className="chip">{res.startDate} → {res.endDate}</span><span className="chip grey">{res.rowsN.toLocaleString()} lines · {res.billsN.toLocaleString()} bills</span>{res.months.length>1&&<span className="chip amber">{res.months.length} months</span>}</div>
       {(res.unB.length>0||res.unP.length>0) && <div className="err">Not matched — lines are stored, but these are left out of the KPIs until you set their Juleb name in Team and press ↻ Recalculate: {[...res.unB,...res.unP].join(" · ")}</div>}
@@ -1144,7 +960,7 @@ function Data({t,me,D,E,reload,toast,lang}){
   return <div className="grid">
     <div className="row" style={{justifyContent:"space-between"}}><h1>{t.data}</h1><MonthPicker mk={mk} set={setMk} lang={lang}/></div>
     <div className="muted small">{t.dataHint}</div>
-    {canImport(me) && <JulebImport t={t} D={D} reload={reload} toast={toast}/>}
+    {me.is_super && <JulebImport t={t} D={D} reload={reload} toast={toast}/>}
     <div className="card"><h2 style={{marginBottom:8}}>{t.latest} · {monthLabel(mk,lang)}</h2>
       {latest.length===0? <div className="empty">{t.noData}</div> :
       <table><thead><tr><th>{t.kpi}</th><th>{t.branch}/{t.pharmacist}</th><th className="num">{t.value}</th><th>{t.asOf}</th><th>{t.source}</th><th></th></tr></thead><tbody>
