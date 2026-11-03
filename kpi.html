@@ -288,7 +288,7 @@ const T = {
     linkHint:"Login accounts are linked here to confidential pharmacist records. Unlinked accounts cannot see any data.", notLinkedMsg:"Your account is not linked to a pharmacist record yet. Ask your supervisor.",
     title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR",
     revToDate:"Branch revenue to date", expectedBy:"Branch expected by", projected:"Branch projected month-end", brTarget:"Branch target", shareOf:"of branch", branchNote:"Target and score are for the whole branch — every pharmacist in it shares the same sales score.", hiChance:"High chance", atRisk:"At risk", lowChance:"Low chance", mySales:"My sales", stale:"Data not updated this week", finalM:"Final — full month target", ofTarget:"of month target",
-    ofBranchSales:"of branch sales", ofMySales:"of my sales", avgOf:"average of", splitT:"branch target split by days worked", orders:"orders", qResults:"Quarter results", rankLbl:"Rank", of:"of", kpiCol:"KPI", actionCol:"Action" },
+    ofBranchSales:"of branch sales", ofMySales:"of my sales", plItems:"Private label", plTitle:"Private label items", plHint:"Every sale of these items counts toward your private-label KPI. Target: 15% of your own sales.", plMine:"My private label this month", search:"Search name or code", all:"All", plOther:"Private label list", lastPrice:"Last price", code:"Code", items:"items", plNone:"No items found.", item:"Item", category:"Category", avgOf:"average of", splitT:"branch target split by days worked", orders:"orders", qResults:"Quarter results", rankLbl:"Rank", of:"of", kpiCol:"KPI", actionCol:"Action" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
     haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج", home:"الرئيسية",
     dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", profile:"ملفي", phone:"الجوال", changePhoto:"تغيير الصورة", documents:"المستندات", upload:"رفع ملف", docHint:"PDF أو صورة، حتى 10 ميجابايت", docCv:"السيرة الذاتية", docCert:"شهادة", docId:"هوية / ترخيص", docOther:"أخرى", hr:"الموارد البشرية", hrSoon:"وحدة الموارد البشرية — قريبًا", hrHint:"نفس تسجيل الدخول، نفس سجلات الموظفين والفروع، ونفس صلاحيات الحسابات. الوحدات المخطط لها:", hrStaff:"ملف الموظف", hrAttendance:"الحضور والورديات", hrLeave:"طلبات الإجازة", hrDocs:"المستندات وانتهاء التراخيص", visitReports:"تقارير الزيارات", from:"من", to:"إلى", lastVisit:"آخر زيارة", lastScore:"آخر نتيجة", avgScore:"المتوسط", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
@@ -308,7 +308,7 @@ const T = {
     linkHint:"هنا يتم ربط حسابات الدخول بسجلات الصيادلة السرية. الحسابات غير المرتبطة لا ترى أي بيانات.", notLinkedMsg:"حسابك غير مرتبط بسجل صيدلي بعد. تواصل مع المشرف.",
     title:"المسمى", tPh:"صيدلي", tPm:"مدير صيدلية", tSup:"مشرف", tMgmt:"إدارة", visitResults:"نتائج الزيارات", ranking:"الترتيب", stars:"مسابقة النجوم", starsHint:"متوسط الربع · الأول ١٥٠٠ · الثاني ١٠٠٠ ريال", expired:"المنتهي (بالتكلفة)", ofSales:"من المبيعات", rate:"نسبة", count:"عدد", sar:"ريال",
     revToDate:"إيراد الفرع حتى تاريخه", expectedBy:"المتوقع للفرع حتى", projected:"توقع الفرع نهاية الشهر", brTarget:"هدف الفرع", shareOf:"من الفرع", branchNote:"الهدف والنقاط للفرع كاملًا — كل صيادلة الفرع يأخذون نفس نتيجة المبيعات.", hiChance:"فرصة عالية", atRisk:"معرّض للخطر", lowChance:"فرصة منخفضة", mySales:"مبيعاتي", stale:"لم يتم تحديث البيانات هذا الأسبوع", finalM:"نهائي — على هدف الشهر كاملًا", ofTarget:"من هدف الشهر",
-    ofBranchSales:"من مبيعات الفرع", ofMySales:"من مبيعاتي", avgOf:"متوسط", splitT:"هدف الفرع مقسّم حسب أيام العمل", orders:"طلبات", qResults:"نتائج الربع", rankLbl:"الترتيب", of:"من", kpiCol:"المؤشر", actionCol:"الإجراء" }
+    ofBranchSales:"من مبيعات الفرع", ofMySales:"من مبيعاتي", plItems:"المنتجات الخاصة", plTitle:"أصناف المنتجات الخاصة", plHint:"كل بيع لهذه الأصناف يُحسب في مؤشر المنتجات الخاصة. الهدف: 15% من مبيعاتك.", plMine:"منتجاتي الخاصة هذا الشهر", search:"ابحث بالاسم أو الكود", all:"الكل", plOther:"قائمة المنتجات الخاصة", lastPrice:"آخر سعر", code:"الكود", items:"صنف", plNone:"لا توجد أصناف.", item:"الصنف", category:"التصنيف", avgOf:"متوسط", splitT:"هدف الفرع مقسّم حسب أيام العمل", orders:"طلبات", qResults:"نتائج الربع", rankLbl:"الترتيب", of:"من", kpiCol:"المؤشر", actionCol:"الإجراء" }
 };
 
 /* ---------- helpers ---------- */
@@ -1027,6 +1027,41 @@ function Data({t,me,D,E,reload,toast,lang}){
   </div>;
 }
 
+/* ================= PRIVATE LABEL ITEMS (everyone with Dashboard access) =================
+   List = private_label_items (Moamen's list) + every Cetaphil / Lacalut product seen in Juleb sales.
+   Read through private_label_list() so pharmacists don't need access to the raw sales lines. */
+function PrivateLabel({t,me,D,E,lang}){
+  const [rows,setRows]=useState(null); const [err,setErr]=useState(""); const [q,setQ]=useState(""); const [brand,setBrand]=useState("");
+  useEffect(()=>{ (async()=>{ const r=await sb.rpc("private_label_list"); if(r.error) setErr(r.error.message); setRows(r.data||[]); })(); },[]);
+  const mine = me.pharmacist_id && D.pharmacists.some(p=>p.id===me.pharmacist_id&&scored(p))
+    ? E.pharmacistScore(me.pharmacist_id,thisMonth()).rows.find(r=>r.k.code==="private") : null;
+  const brands=[...new Set((rows||[]).map(r=>r.brand))];
+  const blab=b=> b==="Private label"? t.plOther : b;
+  const qq=q.trim().toLowerCase();
+  const list=(rows||[]).filter(r=>(!brand||r.brand===brand)&&(!qq||[r.name_en,r.name_ar,r.product_ref].some(x=>String(x||"").toLowerCase().includes(qq))));
+  const nm=r=> lang==="ar"? (r.name_ar||r.name_en) : (r.name_en||r.name_ar);
+  return <div className="grid">
+    <div className="row" style={{justifyContent:"space-between"}}><h1>{t.plTitle}</h1>{rows&&<span className="muted small">{list.length} {t.items}</span>}</div>
+    <div className="muted small">{t.plHint}</div>
+    {mine && mine.ach!=null && <div className="card row" style={{justifyContent:"space-between"}}>
+      <div><strong>{t.plMine}</strong><div className="muted small">{fmt(mine.actual)} {t.sar} · <strong>{(mine.mix*100).toFixed(1)}%</strong> {t.ofMySales} / {t.target} {(mine.mixTarget*100).toFixed(0)}%{mine.asOf&&<> · {t.asOf} {dayLabel(mine.asOf,lang)}</>}</div></div>
+      <div className={"pct "+tone(mine.ach)}>{Math.round(mine.ach*100)}%</div></div>}
+    <div className="card grid">
+      <div className="row">
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t.search} style={{flex:1,minWidth:200}}/>
+        <div className="subtabs"><button className={brand===""?"on":""} onClick={()=>setBrand("")}>{t.all}</button>{brands.map(b=><button key={b} className={brand===b?"on":""} onClick={()=>setBrand(b)}>{blab(b)}</button>)}</div>
+      </div>
+      {err && <div className="err">{err}</div>}
+      {rows==null? <div className="empty">…</div> : list.length===0? <div className="empty">{t.plNone}</div> :
+      <div style={{overflowX:"auto"}}><table><thead><tr><th>{t.code}</th><th>{t.item}</th><th>{t.category}</th><th></th><th className="num">{t.lastPrice}</th></tr></thead><tbody>
+        {list.map(r=><tr key={r.product_ref}><td className="small muted" dir="ltr">{r.product_ref}</td>
+          <td><strong>{nm(r)||"—"}</strong>{lang!=="ar"&&r.name_ar&&r.name_en&&<div className="small muted" dir="rtl">{r.name_ar}</div>}{lang==="ar"&&r.name_en&&r.name_ar&&<div className="small muted" dir="ltr">{r.name_en}</div>}</td>
+          <td className="small muted">{r.category||""}</td><td><span className={"chip"+(r.brand==="Private label"?"":" amber")}>{blab(r.brand)}</span></td>
+          <td className="num">{r.last_price==null?"—":Number(r.last_price).toLocaleString("en",{maximumFractionDigits:2})+" "+t.sar}</td></tr>)}</tbody></table></div>}
+    </div>
+  </div>;
+}
+
 /* ================= PROFILE (everyone) ================= */
 function Profile({t,me,D,lang,toast,setMe}){
   const rec=D.pharmacists.find(p=>p.id===me.pharmacist_id); const [phone,setPhone]=useState(me.phone||rec?.phone||""); const [docs,setDocs]=useState([]); const [photo,setPhoto]=useState(null); const [busy,setBusy]=useState(false); const [kind,setKind]=useState("cv");
@@ -1089,8 +1124,8 @@ function App(){
   if(!me||!D) return <div className="empty">…</div>;
   const linked = me.role!=="pharmacist" || !!me.pharmacist_id;
   // tab visibility: super admin sees everything; others follow the page_access matrix (Admin → Settings)
-  const can=k=> me.is_super&&me.role==="admin"? true : (me.pages||[]).includes(k);
-  const GROUPS=[["dash",t.dash,["dash"]],["visits",t.visits,["visits","visitReports"]],["data",t.data,["data"]]];
+  const can=k=> me.is_super&&me.role==="admin"? true : (me.pages||[]).includes(k==="plItems"?"dash":k);   // Private label tab follows Dashboard access
+  const GROUPS=[["dash",t.dash,["dash"]],["plItems",t.plItems,["plItems"]],["visits",t.visits,["visits","visitReports"]],["data",t.data,["data"]]];
   const tabs=GROUPS.filter(g=>g[2].some(can)).map(g=>[g[0],g[1]]);
   const firstAllowed=GROUPS.flatMap(g=>g[2]).find(can);
   const group=GROUPS.find(g=>g[2].includes(page))?.[0]||""; const subs=(GROUPS.find(g=>g[0]===group)?.[2]||[]).filter(can);
@@ -1107,6 +1142,7 @@ function App(){
       {page==="dash"     && <Dashboard key={me.id} {...props}/>}
       {page==="visits"   && can("visits")   && <Visits {...props}/>}
       {page==="visitReports" && can("visitReports") && <VisitReports {...props}/>}
+      {page==="plItems" && can("plItems") && <PrivateLabel {...props}/>}
       {page==="profile" && <Profile {...props} setMe={setMe}/>}
       {page==="data"     && can("data")     && <Data {...props}/>}
 </>}</div>
