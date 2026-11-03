@@ -288,7 +288,7 @@ const T = {
     linkHint:"Login accounts are linked here to confidential pharmacist records. Unlinked accounts cannot see any data.", notLinkedMsg:"Your account is not linked to a pharmacist record yet. Ask your supervisor.",
     title:"Title", tPh:"Community pharmacist", tPm:"Pharmacy manager", tSup:"Supervisor", tMgmt:"Management", visitResults:"Visit results", ranking:"Ranking", stars:"Star competition", starsHint:"Quarter average · 1st 1,500 · 2nd 1,000 SAR", expired:"Expired (cost)", ofSales:"of sales", rate:"rate", count:"count", sar:"SAR",
     revToDate:"Branch revenue to date", expectedBy:"Branch expected by", projected:"Branch projected month-end", brTarget:"Branch target", shareOf:"of branch", branchNote:"Target and score are for the whole branch — every pharmacist in it shares the same sales score.", hiChance:"High chance", atRisk:"At risk", lowChance:"Low chance", mySales:"My sales", stale:"Data not updated this week", finalM:"Final — full month target", ofTarget:"of month target",
-    ofBranchSales:"of branch sales", qResults:"Quarter results", rankLbl:"Rank", of:"of", kpiCol:"KPI", actionCol:"Action" },
+    ofBranchSales:"of branch sales", ofMySales:"of my sales", avgOf:"average of", splitT:"branch target split by days worked", orders:"orders", qResults:"Quarter results", rankLbl:"Rank", of:"of", kpiCol:"KPI", actionCol:"Action" },
   ar:{ app:"فيرست براند", kpi:"مؤشرات الأداء", login:"تسجيل الدخول", signup:"إنشاء حساب", email:"البريد الإلكتروني", pass:"كلمة المرور", name:"الاسم الكامل",
     haveAcc:"لديك حساب؟ سجّل الدخول", noAcc:"جديد؟ أنشئ حسابًا", out:"خروج", home:"الرئيسية",
     dash:"لوحة المتابعة", date:"التاريخ", admin2:"الإدارة", tabs:"التبويبات", profile:"ملفي", phone:"الجوال", changePhoto:"تغيير الصورة", documents:"المستندات", upload:"رفع ملف", docHint:"PDF أو صورة، حتى 10 ميجابايت", docCv:"السيرة الذاتية", docCert:"شهادة", docId:"هوية / ترخيص", docOther:"أخرى", hr:"الموارد البشرية", hrSoon:"وحدة الموارد البشرية — قريبًا", hrHint:"نفس تسجيل الدخول، نفس سجلات الموظفين والفروع، ونفس صلاحيات الحسابات. الوحدات المخطط لها:", hrStaff:"ملف الموظف", hrAttendance:"الحضور والورديات", hrLeave:"طلبات الإجازة", hrDocs:"المستندات وانتهاء التراخيص", visitReports:"تقارير الزيارات", from:"من", to:"إلى", lastVisit:"آخر زيارة", lastScore:"آخر نتيجة", avgScore:"المتوسط", access:"صلاحيات التبويبات", accessHint:"حدد التبويبات المتاحة لكل نوع حساب. يسري عند إعادة التحميل.", accessSuper:"الحسابات والإعدادات لمدير النظام فقط دائمًا.", noAccess:"لا توجد صفحات مفعّلة لحسابك بعد.", targets:"الأهداف", visits:"الزيارات", data:"البيانات", team:"الفريق", accounts:"الحسابات", settings:"الإعدادات", lang:"English",
@@ -308,7 +308,7 @@ const T = {
     linkHint:"هنا يتم ربط حسابات الدخول بسجلات الصيادلة السرية. الحسابات غير المرتبطة لا ترى أي بيانات.", notLinkedMsg:"حسابك غير مرتبط بسجل صيدلي بعد. تواصل مع المشرف.",
     title:"المسمى", tPh:"صيدلي", tPm:"مدير صيدلية", tSup:"مشرف", tMgmt:"إدارة", visitResults:"نتائج الزيارات", ranking:"الترتيب", stars:"مسابقة النجوم", starsHint:"متوسط الربع · الأول ١٥٠٠ · الثاني ١٠٠٠ ريال", expired:"المنتهي (بالتكلفة)", ofSales:"من المبيعات", rate:"نسبة", count:"عدد", sar:"ريال",
     revToDate:"إيراد الفرع حتى تاريخه", expectedBy:"المتوقع للفرع حتى", projected:"توقع الفرع نهاية الشهر", brTarget:"هدف الفرع", shareOf:"من الفرع", branchNote:"الهدف والنقاط للفرع كاملًا — كل صيادلة الفرع يأخذون نفس نتيجة المبيعات.", hiChance:"فرصة عالية", atRisk:"معرّض للخطر", lowChance:"فرصة منخفضة", mySales:"مبيعاتي", stale:"لم يتم تحديث البيانات هذا الأسبوع", finalM:"نهائي — على هدف الشهر كاملًا", ofTarget:"من هدف الشهر",
-    ofBranchSales:"من مبيعات الفرع", qResults:"نتائج الربع", rankLbl:"الترتيب", of:"من", kpiCol:"المؤشر", actionCol:"الإجراء" }
+    ofBranchSales:"من مبيعات الفرع", ofMySales:"من مبيعاتي", avgOf:"متوسط", splitT:"هدف الفرع مقسّم حسب أيام العمل", orders:"طلبات", qResults:"نتائج الربع", rankLbl:"الترتيب", of:"من", kpiCol:"المؤشر", actionCol:"الإجراء" }
 };
 
 /* ---------- helpers ---------- */
@@ -329,7 +329,9 @@ const tone = p => p==null?"":p>=1?"good": p>=0.7?"mid":"bad";
 const scored = p => p && p.active && !["management","supervisor"].includes(p.title||"");   // only these staff have KPIs
 const starsOf = s => s==null? null : s>=95?4 : s>=85?3 : s>=70?2 : 1;                    // Q4 star scale
 function Stars({n}){ if(n==null) return null; return <span className="stars" title={n+" ★"}>{"★".repeat(n)}<i>{"★".repeat(4-n)}</i></span>; }
-const ZERO_IF_MISSING = ["lab","lab_branch"];   // KPIs shown as 0 (not "no data") when nothing was sold
+const ZERO_IF_MISSING = ["lab","lab_branch","online"];   // KPIs shown as 0 (not "no data") when nothing was sold
+// Nov 2026: these KPIs are scored per pharmacist (own sales / own orders), whatever level is stored in the kpis table
+const PH_LEVEL = ["private","lab","lab_branch","online"];
 const signal = (ach,t) => ach>=1? ["", "🟢 "+t.hiChance] : ach>=0.85? ["amber","🟡 "+t.atRisk] : ["bad","🔴 "+t.lowChance];
 
 /* ---------- scoring engine ---------- */
@@ -341,7 +343,7 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
     return tot? done/tot : 0; };
   const tgt=(code,mk,bid,pid)=>{ const q=qOf(mk); const r=D.targets.find(x=>x.kpi_code===code&&x.year===q.year&&x.quarter===q.quarter&&(bid?x.branch_id===bid:x.pharmacist_id===pid)); return r? Number(r["m"+(q.idx+1)]) : null; };
   const snap=(code,mk,bid,pid)=>D.snaps.find(s=>s.kpi_code===code&&s.month===mk&&(bid?s.branch_id===bid:s.pharmacist_id===pid))||null;
-  const kpisFor=mk=>{ const q=qOf(mk); return D.kpis.map(k=>{ const o=(D.schemes||[]).find(x=>x.kpi_code===k.code&&x.year===q.year&&x.quarter===q.quarter); return o? {...k,weight:o.weight,cap:o.cap,threshold:o.threshold??k.threshold,active:o.active} : k; }).sort((a,b)=>a.sort-b.sort); };
+  const kpisFor=mk=>{ const q=qOf(mk); return D.kpis.map(k=>{ const o=(D.schemes||[]).find(x=>x.kpi_code===k.code&&x.year===q.year&&x.quarter===q.quarter); const r= o? {...k,weight:o.weight,cap:o.cap,threshold:o.threshold??k.threshold,active:o.active} : k; return PH_LEVEL.includes(r.code)? {...r,level:"pharmacist"} : r; }).sort((a,b)=>a.sort-b.sort); };
   const kpi=(code,mk)=>kpisFor(mk).find(k=>k.code===code);
   // branch shares for a pharmacist in a month: [{branch_id, share}]
   const shares=(pid,mk)=>{ const start=mk, end=addMonths(mk,1), n=daysInMonth(mk); const out={};
@@ -350,6 +352,13 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
       const d=Math.max(0,(new Date(t)-new Date(f))/864e5); out[a.branch_id]=(out[a.branch_id]||0)+d/n; });
     return Object.entries(out).map(([branch_id,share])=>({branch_id,share})); };
   const addDaysIso=(s,n)=>{ const d=new Date(s+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+  // pharmacist target: own target if set; otherwise the branch target split by days worked
+  // (my share of the month ÷ all scored pharmacists' shares in that branch). On-call staff get a part from each branch.
+  const phTarget=(code,pid,mk)=>{ const own=tgt(code,mk,null,pid); if(own) return {t:own};
+    let sum=0; shares(pid,mk).forEach(x=>{ const bt=tgt(code,mk,x.branch_id,null); if(!bt) return;
+      const tot=D.pharmacists.filter(scored).reduce((a,p)=>a+(shares(p.id,mk).find(s=>s.branch_id===x.branch_id)?.share||0),0)||x.share;
+      sum+=bt*x.share/tot; });
+    return sum? {t:sum, split:true} : {t:null}; };
 
   function branchKpi(code,bid,mk){ const k=kpi(code,mk); const s=snap(code,mk,bid,null);
     if(code==="expire"){ const sales=snap("sales",mk,bid,null);
@@ -357,14 +366,7 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
       if(!s&&sales&&Number(sales.value)) return {ach:1, actual:0, ratio:0, asOf:sales.as_of, noExpiry:true};
       if(!s||!sales||!Number(sales.value)) return {ach:null};
       const ratio=Number(s.value)/Number(sales.value); return {ach: ratio<=Number(k.threshold)?1:0, actual:Number(s.value), ratio, asOf:s.as_of}; }
-    // private label (Q4+): contribution = private-label sales ÷ the branch's actual sales, scored against threshold (e.g. 15% = full points)
-    if(code==="private"&&Number(k.threshold)>0){ const sales=snap("sales",mk,bid,null);
-      if(!s||!sales||!Number(sales.value)) return {ach:null};
-      const mix=Number(s.value)/Number(sales.value);
-      return {ach:mix/Number(k.threshold), actual:Number(s.value), mix, mixTarget:Number(k.threshold), contrib:true, asOf:s.as_of}; }
     const t=tgt(code,mk,bid,null);
-    // lab: once the branch's sales for the month are loaded, no lab reading means 0 lab revenue (shown as 0, not "no data")
-    if(!s&&t&&ZERO_IF_MISSING.includes(code)){ const ss=snap("sales",mk,bid,null); if(ss) return {ach:0, actual:0, target:t, asOf:ss.as_of, zero:true}; }
     if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
     if(code==="sales"){ const actual=Number(s.value);
       if(s.as_of>=lastDayIso(mk)) return {ach:actual/t, actual, target:t, asOf:s.as_of, final:true};
@@ -379,15 +381,22 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
       if(!sh.length) return {ach:null, mine};
       let ach=0, any=false, detail=[]; sh.forEach(x=>{ const r=branchKpi(code,x.branch_id,mk); if(r.ach!=null){ ach+=r.ach*x.share; any=true; } detail.push({...r,...x}); });
       const d0=detail[0]; return any? {ach, actual:d0.actual, target:d0.target, ratio:d0.ratio, asOf:d0.asOf, mixed:sh.length>1,
-        expected:d0.expected, share:d0.share, proj:d0.proj, paced:d0.paced, stale:d0.stale, final:d0.final, mine, mix:d0.mix, mixTarget:d0.mixTarget, contrib:d0.contrib} : {ach:null, mine}; }
+        expected:d0.expected, share:d0.share, proj:d0.proj, paced:d0.paced, stale:d0.stale, final:d0.final, mine} : {ach:null, mine}; }
     if(k.rule==="visit"){ const vs=D.visits.filter(v=>v.pharmacist_id===pid&&monthKey(v.visit_date)===mk); if(!vs.length) return {ach:null};
       const avg=vs.reduce((a,v)=>a+Number(v.score),0)/vs.length; const vt=Number(k.threshold)||1;   // Q4: threshold 0.90 → 90% = full points
       return {ach:avg/vt, actual:avg, target:vt, unit:"rate", n:vs.length}; }
-    const s=snap(code,mk,null,pid);
+    const s=snap(code,mk,null,pid); const ms=snap("sales",mk,null,pid);
+    // private label per pharmacist: my private-label sales ÷ my own sales (excl. Wasfaty); threshold e.g. 15% = full points, no cap
+    if(code==="private"&&Number(k.threshold)>0){ if(!ms||!Number(ms.value)) return {ach:null};
+      const v=s?Number(s.value):0; const mix=v/Number(ms.value);
+      return {ach:mix/Number(k.threshold), actual:v, mix, mixTarget:Number(k.threshold), contrib:true, asOf:(s||ms).as_of}; }
     if(k.rule==="rate"){ const t=tgt(code,mk,null,pid)||Number(k.threshold); if(!s||!Number(s.denominator)) return {ach:null,target:t,unit:"rate"};
       const rate=Number(s.numerator)/Number(s.denominator); return {ach:rate/t, actual:rate, target:t, unit:"rate", asOf:s.as_of}; }
-    const t=tgt(code,mk,null,pid); if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
-    return {ach:Number(s.value)/t, actual:Number(s.value), target:t, asOf:s.as_of}; }
+    const pt=phTarget(code,pid,mk); const t=pt.t;
+    // lab / website orders: once my sales are loaded, nothing recorded means 0 (shown as 0, not "no data")
+    if(!s&&t&&ZERO_IF_MISSING.includes(code)&&ms) return {ach:0, actual:0, target:t, asOf:ms.as_of, zero:true, split:pt.split, unit:code==="online"?"orders":null};
+    if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
+    return {ach:Number(s.value)/t, actual:Number(s.value), target:t, asOf:s.as_of, split:pt.split, unit:code==="online"?"orders":null}; }
 
   // paced (mid-month) sales points are capped at full weight
   const pts=(k,ach,paced)=> ach==null? null : Number(k.weight)*Math.min(ach, paced?1:(k.cap==null?Infinity:Number(k.cap)));
@@ -396,7 +405,7 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
     return {rows, total: has.length? has.reduce((a,r)=>a+r.pts,0):null, covered: has.reduce((a,r)=>a+Number(r.k.weight),0), salesAch:sr?sr.ach:null}; }
   function branchScore(bid,mk){ const phs=D.pharmacists.filter(p=>scored(p)&&shares(p.id,mk).some(s=>s.branch_id===bid));
     const rows=kpisFor(mk).filter(k=>k.active).map(k=>{ if(k.level==="branch"){ const r=branchKpi(k.code,bid,mk); return {k,...r,pts:pts(k,r.ach,r.paced)}; }
-      const vals=phs.map(p=>{ const r=phKpi(k.code,p.id,mk); return pts(k,r.ach,r.paced); }).filter(v=>v!=null); return {k, ach:null, pts: vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : null, n:vals.length}; });
+      const vals=phs.map(p=>{ const r=phKpi(k.code,p.id,mk); return pts(k,r.ach,r.paced); }).filter(v=>v!=null); return {k, ach:null, avg:true, pts: vals.length? vals.reduce((a,b)=>a+b,0)/vals.length : null, n:vals.length}; });
     const has=rows.filter(r=>r.pts!=null); const sr=rows.find(r=>r.k.code==="sales");
     return {rows, total: has.length? has.reduce((a,r)=>a+r.pts,0):null, phs, salesAch:sr?sr.ach:null}; }
   function quarterAvg(fn,id,mk){ const q=qOf(mk); const ms=[0,1,2].map(i=>addMonths(mk,i-q.idx)).map(m=>fn(id,m).total).filter(x=>x!=null); return ms.length? ms.reduce((a,b)=>a+b,0)/ms.length : null; }
@@ -452,14 +461,16 @@ function SalesDetail({r,t,lang}){ const [cls,lab]=r.paced? signal(r.ach,t) : [""
     {r.stale && <div><span className="chip grey">{t.stale}</span></div>}
   </div>; }
 function ScoreRows({rows,t,lang}){ return <div>{rows.map(r=>{ const cap=r.k.cap==null?null:Number(r.k.cap); const maxPts=Number(r.k.weight)*(r.paced?1:(cap??1.5));
+  const un=r.unit==="orders"?" "+t.orders:"";
   return <div key={r.k.code} className="score-row">
     <div><strong>{kname(r.k,lang)}</strong><div className="muted small">{r.k.level==="branch"?t.branch:t.pharmacist} · {t.weight} {r.k.weight}{r.mixed&&" · ⇄"}</div></div>
     <div className="sub small muted">{r.k.code==="sales"&&r.actual!=null&&r.ach!=null? <SalesDetail r={r} t={t} lang={lang}/> :
+      r.avg&&r.pts!=null? <>{t.avgOf} {r.n} {t.pharmacists.toLowerCase()}</> :
       r.ach==null? <><span className="na">{t.noData}</span>{r.mine!=null&&<div>{t.mySales}: <strong>{fmt(r.mine)}</strong> {t.sar}</div>}</> :
       r.k.code==="expire"? <>{fmt(r.actual)} {t.sar} · {(r.ratio*100).toFixed(2)}% {t.ofSales}</> :
-      r.contrib? <>{fmt(r.actual)} {t.sar} · <strong>{(r.mix*100).toFixed(1)}%</strong> {t.ofBranchSales} / {t.target} {(r.mixTarget*100).toFixed(0)}%{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}</> :
+      r.contrib? <>{fmt(r.actual)} {t.sar} · <strong>{(r.mix*100).toFixed(1)}%</strong> {r.k.level==="pharmacist"?t.ofMySales:t.ofBranchSales} / {t.target} {(r.mixTarget*100).toFixed(0)}%{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}</> :
       r.k.rule==="visit"? <>{r.n} {t.visits.toLowerCase()} · {fmt(r.actual,"rate")}{r.target<1&&<> / {fmt(r.target,"rate")}</>}</> :
-      r.ach!=null&&r.actual!=null? <>{fmt(r.actual,r.unit)} / {fmt(r.target,r.unit)}{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}</> : null}</div>
+      r.ach!=null&&r.actual!=null? <>{r.unit==="orders"?Number(r.actual):fmt(r.actual,r.unit)} / {r.unit==="orders"?Number(r.target).toLocaleString("en",{maximumFractionDigits:1}):fmt(r.target,r.unit)}{un}{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}{r.split&&<div style={{fontSize:12}}>{t.splitT}</div>}</> : null}</div>
     <div className={"pct "+tone(r.ach)} style={{fontSize:18}}>{r.ach==null?"—":Math.round(r.ach*100)+"%"}</div>
     <div className="pts">{r.pts==null?"—":r.pts.toFixed(1)}<small> / {r.k.weight}</small>
       <div className="bar-track" style={{margin:"4px 0 0"}}><div className={"bar-fill "+tone(r.ach)} style={{width:(r.pts==null?0:Math.min(100,r.pts/maxPts*100))+"%"}}/></div></div>
@@ -818,11 +829,12 @@ function Visits({t,me,D,reload,toast,lang}){
 const E_shares=(D,pid,mk)=>makeEngine(D).shares(pid,mk);
 
 /* ================= JULEB IMPORT (super admin) =================
-   Report: Juleb → POS Sales Details · all branches · any date range · Excel.
-   1) every sale line is stored in sales_lines (same line never stored twice — overlapping uploads are safe)
-   2) kpi_refresh() recalculates month-to-date KPIs from all stored lines of that month (as of the last stored day):
-      sales per branch · my sales · registration (phone ≥9 digits ÷ all bills, returns excluded) · lab · private label
-   The same lines feed the Marketing page. */
+   Reports (file type detected automatically):
+   • POS Sales Details — every sale line stored once in sales_lines (overlapping uploads are safe)
+   • Internal Transfer Summary — done transfers to the expiry warehouse, at cost
+   • Website orders (sale_order export) — stored once per order in website_orders
+   After saving: kpi_refresh() recalculates the month-to-date branch KPIs (sales, my sales, registration, expiry)
+   and kpi_ph_refresh() recalculates the per-pharmacist KPIs: private label (÷ own sales), lab tests and website orders. */
 const JULEB_REQ=["Branch Code","Branch Name","Cashier","Receipt Reference","Total Amount","Phone","Order Date Time"];
 const isoLocal=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const tsLocal=d=>`${isoLocal(d)}T${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
@@ -894,21 +906,53 @@ function expiryPick(res,sel,D){
   const by={}; exp.forEach(x=>{ const k=x._b?x._b.id:"?"+x.source_branch; (by[k]=by[k]||{name:x._b?x._b.name:x.source_branch,ok:!!x._b,cost:0,n:0}); by[k].cost+=x.cost; by[k].n++; });
   return {exp:exp.map(({_b,...x})=>x), by:Object.values(by).sort((a,b)=>b.cost-a.cost), unB:Object.values(by).filter(x=>!x.ok).map(x=>x.name)};
 }
+// Website orders (sale_order export). Counted = pickup only (Delivery Method containing "Oto" = delivery → not counted)
+// and invoiced (Invoice Status "Fully Invoiced"). "Last Updated by" = the user who placed the order.
+const ORDER_REQ=["Order Reference","Order Date","Company","Total","Last Updated by"];
+const orderCounts=o=> !o.is_delivery && (!o.invoice_status || /fully\s*invoiced/i.test(o.invoice_status));
+const BOT_RX=/juleb\s*bot/i;
+function parseOrders(A,D){
+  const h=A.findIndex(r=>r&&String(r[0]??"").trim()==="Order Reference");
+  const H=A[h].map(x=>String(x??"").trim()); const miss=ORDER_REQ.filter(c=>!H.includes(c)); if(miss.length) throw new Error("Missing columns: "+miss.join(", "));
+  const g=(r,n)=>{ const i=H.indexOf(n); return i<0?null:r[i]; }; const str=v=> v==null||v===""||v===false||String(v).toLowerCase()==="false"? null : String(v).trim();
+  const orders=[]; A.slice(h+1).forEach(r=>{ if(!r) return; const ref=str(g(r,"Order Reference")); if(!ref) return;
+    const company=str(g(r,"Company"))||""; const b=matchBranch(company.replace(/^PH\d+\s*-\s*/i,""),D)||matchBranch(company,D);
+    const dm=str(g(r,"Delivery Method"));
+    orders.push({order_ref:ref, order_at:toTs(g(r,"Order Date")), order_date:toIsoDate(g(r,"Order Date")), company,
+      branch_name:b?((b.juleb_name||"").trim()||b.name):company, total:Number(g(r,"Total"))||0, invoice_status:str(g(r,"Invoice Status")),
+      delivery_method:dm, is_delivery:/oto/i.test(dm||""), created_by:str(g(r,"Last Updated by")), _b:b}); });
+  const ok=orders.filter(o=>o.order_date); if(!ok.length) throw new Error("No orders found.");
+  const phByName=n=>D.pharmacists.find(p=>(p.juleb_name||"").trim().toLowerCase()===(n||"").trim().toLowerCase());
+  const by={}; ok.forEach(o=>{ const k=o.created_by||"—"; const x=by[k]||(by[k]={user:k,ph:phByName(k),bot:BOT_RX.test(k),branch:o._b?o._b.name:o.company,n:0,sar:0,del:0,notInv:0});
+    if(o.is_delivery) x.del++; else if(!orderCounts(o)) x.notInv++; else { x.n++; x.sar+=o.total; } });
+  const dates=ok.map(o=>o.order_date).sort(); const months=[...new Set(dates.map(monthKey))];
+  const users=Object.values(by).sort((a,b)=>b.n-a.n||b.sar-a.sar);
+  return {kind:"orders", orders:ok.map(({_b,...o})=>o), months, startDate:dates[0], endDate:dates[dates.length-1], users,
+    counted:ok.filter(orderCounts).length, delivery:ok.filter(o=>o.is_delivery).length, notInv:ok.filter(o=>!o.is_delivery&&!orderCounts(o)).length,
+    unB:[...new Set(ok.filter(o=>!o._b).map(o=>o.company))], unP:users.filter(u=>!u.ph&&!u.bot).map(u=>u.user)};
+}
 function parseAny(buf,D){
   const wb=XLSX.read(buf,{type:"array",cellDates:true}); const A=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:null});
   if(A.some(r=>r&&String(r[0]??"").trim()==="Transfer From (Source Branch)")) return parseTransfers(A,D);
+  if(A.some(r=>r&&String(r[0]??"").trim()==="Order Reference")) return parseOrders(A,D);
   return {kind:"sales",...parseJuleb(buf,D)};
 }
 function JulebImport({t,D,reload,toast}){
   const [res,setRes]=useState(null); const [sel,setSel]=useState([]); const [err,setErr]=useState(""); const [busy,setBusy]=useState(""); const [done,setDone]=useState(null);
   const onFile=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; setErr(""); setRes(null); setDone(null);
     try{ const r=parseAny(await f.arrayBuffer(),D); setRes(r); setSel(r.kind==="expiry"?r.autoDest:[]); }catch(x){ setErr(String(x.message||x)); } };
-  const refresh=async months=>{ const out=[]; for(const m of months){ setBusy(`Recalculating ${m.slice(0,7)}…`);
-      const r=await sb.rpc("kpi_refresh",{p_month:m}); if(r.error) throw new Error(r.error.message); out.push(r.data); } return out; };
+  // branch KPIs (kpi_refresh) + per-pharmacist KPIs (kpi_ph_refresh: private label, lab, website orders)
+  const refresh=async (months,phOnly)=>{ const out=[]; for(const m of months){ setBusy(`Recalculating ${m.slice(0,7)}…`);
+      let main=null; if(!phOnly){ const r=await sb.rpc("kpi_refresh",{p_month:m}); if(r.error) throw new Error(r.error.message); main=r.data; }
+      const r2=await sb.rpc("kpi_ph_refresh",{p_month:m}); if(r2.error) throw new Error("kpi_ph_refresh: "+r2.error.message);
+      out.push({month:m, main, ph:r2.data}); } return out; };
   const save=async()=>{ try{
       if(res.kind==="expiry"){ const pk=expiryPick(res,sel,D); if(pk.exp.length){ setBusy("Saving expiry transfers…");
           const r=await sb.from("expiry_transfers").upsert(pk.exp,{onConflict:"transfer_name"}); if(r.error) throw new Error(r.error.message); }
         const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload(); setBusy(""); return; }
+      if(res.kind==="orders"){ setBusy("Saving website orders…");
+        const r=await sb.from("website_orders").upsert(res.orders,{onConflict:"order_ref"}); if(r.error) throw new Error(r.error.message);
+        const out=await refresh(res.months,true); setDone(out); setRes(null); toast(t.saved); reload(); setBusy(""); return; }
       const L=res.lines; for(let i=0;i<L.length;i+=1000){ setBusy(`Saving lines ${Math.min(i+1000,L.length).toLocaleString()} / ${L.length.toLocaleString()}…`);
         const r=await sb.from("sales_lines").upsert(L.slice(i,i+1000),{onConflict:"branch_name,receipt_ref,line_no"}); if(r.error) throw new Error(r.error.message); }
       const out=await refresh(res.months); setDone(out); setRes(null); toast(t.saved); reload();
@@ -919,9 +963,17 @@ function JulebImport({t,D,reload,toast}){
     <div className="row" style={{justifyContent:"space-between"}}><h2>Import Juleb report</h2>
       <div className="row" style={{gap:8}}><button className="btn sec" disabled={!!busy} onClick={refreshOnly} title="Recalculate this month from stored lines">↻ Recalculate this month</button>
         <label className="btn" style={{cursor:"pointer"}}>Choose .xlsx<input type="file" accept=".xlsx,.xls" onChange={onFile} style={{display:"none"}} disabled={!!busy}/></label></div></div>
-    <div className="muted small">Juleb → <b>POS Sales Details</b> or <b>Internal Transfer Summary</b> (done transfers, all branches incl. Expiry WH) · all branches · <b>any dates</b> · export Excel. The file type is detected automatically. Every line is stored once — overlapping uploads are safe — and the month-to-date KPIs are recalculated from all stored lines. The same lines feed Marketing.</div>
+    <div className="muted small">Juleb → <b>POS Sales Details</b>, <b>Internal Transfer Summary</b> (done transfers, all branches incl. Expiry WH) or <b>website orders</b> (sale_order export) · all branches · <b>any dates</b> · export Excel. The file type is detected automatically. Every line/order is stored once — overlapping uploads are safe — and the month-to-date KPIs are recalculated from everything stored. Private label, lab tests and website orders are scored per pharmacist. The same sales lines feed Marketing.</div>
     {err && <div className="err">{err}</div>}
     {busy && <div className="chip amber">{busy}</div>}
+    {res && res.kind==="orders" && <>
+      <div className="row small"><span className="chip">Website orders · {res.startDate} → {res.endDate}</span><span className="chip grey">{res.counted} counted · {res.delivery} delivery (not counted) · {res.notInv} not invoiced yet</span></div>
+      {(res.unB.length>0||res.unP.length>0) && <div className="err">Not matched — orders are stored, but these are left out until you set their Juleb name in Team and press ↻ Recalculate: {[...res.unB,...res.unP].join(" · ")}</div>}
+      <table><thead><tr><th>Placed by</th><th>{t.pharmacist}</th><th>{t.branch}</th><th className="num">Counted</th><th className="num">{t.sar}</th><th className="num">Delivery</th><th className="num">Not invoiced</th></tr></thead><tbody>
+        {res.users.map(u=><tr key={u.user}><td>{u.user}</td><td>{u.ph? u.ph.full_name : u.bot? <span className="chip grey">branch only</span> : <span className="chip bad">not matched</span>}</td><td className="small muted">{u.branch}</td>
+          <td className="num"><strong>{u.n}</strong></td><td className="num">{u.sar.toLocaleString("en",{maximumFractionDigits:2})}</td><td className="num muted">{u.del||""}</td><td className="num muted">{u.notInv||""}</td></tr>)}</tbody></table>
+      <div className="row"><button className="btn" disabled={!!busy} onClick={save}>Save {res.orders.length} orders & update KPIs</button><button className="btn sec" disabled={!!busy} onClick={()=>setRes(null)}>{t.cancel}</button></div>
+    </>}
     {res && res.kind==="expiry" && (()=>{ const pk=expiryPick(res,sel,D); return <>
       <div className="row small"><span className="chip">Internal Transfer Summary · {res.startDate} → {res.endDate}</span><span className="chip grey">{res.allN} transfers · {pk.exp.length} to expiry warehouse</span></div>
       <div className="grid" style={{gap:6}}><strong className="small">Which destination is the expiry warehouse?</strong>
@@ -945,8 +997,11 @@ function JulebImport({t,D,reload,toast}){
       </div>
       <div className="row"><button className="btn" disabled={!!busy} onClick={save}>Save {res.rowsN.toLocaleString()} lines & update KPIs</button><button className="btn sec" disabled={!!busy} onClick={()=>setRes(null)}>{t.cancel}</button></div>
     </>}
-    {done && <div className="grid" style={{gap:6}}>{done.map(d=><div key={d.month} className="row small"><span className="chip">✓ {String(d.month).slice(0,7)} · month-to-date as of {d.as_of}</span><span className="chip grey">{d.rows} KPI readings</span>
-      {(d.unmatched||[]).length>0&&<span className="chip bad">Not matched: {d.unmatched.join(" · ")}</span>}</div>)}</div>}
+    {done && <div className="grid" style={{gap:6}}>{done.map(d=><div key={d.month} className="row small">
+      {d.main && <><span className="chip">✓ {String(d.month).slice(0,7)} · month-to-date as of {d.main.as_of}</span><span className="chip grey">{d.main.rows} KPI readings</span>
+        {(d.main.unmatched||[]).length>0&&<span className="chip bad">Not matched: {d.main.unmatched.join(" · ")}</span>}</>}
+      {d.ph && <><span className="chip">✓ per pharmacist · {d.ph.rows} readings{d.ph.orders_as_of?` · orders as of ${d.ph.orders_as_of}`:""}</span>
+        {(d.ph.unmatched||[]).length>0&&<span className="chip bad">Not matched: {d.ph.unmatched.join(" · ")}</span>}</>}</div>)}</div>}
   </div>;
 }
 /* ================= DATA (admin): snapshots ================= */
