@@ -323,7 +323,7 @@ const lastDayIso = mk => { const [y,m]=mk.split("-").map(Number); return new Dat
 const monthLabel = (mk,lang) => new Date(mk+"T00:00:00").toLocaleDateString(lang==="ar"?"ar-SA":"en-GB",{month:"long",year:"numeric"});
 const dayLabel = (d,lang) => d? new Date(d+"T00:00:00").toLocaleDateString(lang==="ar"?"ar-SA":"en-GB",{weekday:"short",day:"2-digit",month:"2-digit"}) : "";
 const fmt = (n,unit) => n==null? "—" : unit==="rate"? (n*100).toFixed(1)+"%" : Number(n).toLocaleString("en",{maximumFractionDigits:0});
-const kname = (k,lang) => lang==="ar"&&k.name_ar?k.name_ar:k.name_en;
+const kname = (k,lang) => k.code==="lab_branch"? (lang==="ar"?"التحاليل":"Lab tests") : (lang==="ar"&&k.name_ar?k.name_ar:k.name_en);
 const bname = (branches,id) => branches.find(b=>b.id===id)?.name || "—";
 const tone = p => p==null?"":p>=1?"good": p>=0.7?"mid":"bad";
 const scored = p => p && p.active && !["management","supervisor"].includes(p.title||"");   // only these staff have KPIs
@@ -352,13 +352,15 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
       const d=Math.max(0,(new Date(t)-new Date(f))/864e5); out[a.branch_id]=(out[a.branch_id]||0)+d/n; });
     return Object.entries(out).map(([branch_id,share])=>({branch_id,share})); };
   const addDaysIso=(s,n)=>{ const d=new Date(s+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
-  // pharmacist target: own target if set; otherwise the branch target split by days worked
-  // (my share of the month ÷ all scored pharmacists' shares in that branch). On-call staff get a part from each branch.
-  const phTarget=(code,pid,mk)=>{ const own=tgt(code,mk,null,pid); if(own) return {t:own};
-    let sum=0; shares(pid,mk).forEach(x=>{ const bt=tgt(code,mk,x.branch_id,null); if(!bt) return;
-      const tot=D.pharmacists.filter(scored).reduce((a,p)=>a+(shares(p.id,mk).find(s=>s.branch_id===x.branch_id)?.share||0),0)||x.share;
-      sum+=bt*x.share/tot; });
-    return sum? {t:sum, split:true} : {t:null}; };
+  // lab is stored as "lab" or "lab_branch" depending on the quarter — both codes are the same KPI
+  const LAB=["lab","lab_branch"]; const alias=code=> LAB.includes(code)? LAB : [code];
+  const tgtA=(code,mk,bid,pid)=>{ for(const c of alias(code)){ const v=tgt(c,mk,bid,pid); if(v) return v; } return null; };
+  const snapA=(code,mk,bid,pid)=>{ for(const c of alias(code)){ const v=snap(c,mk,bid,pid); if(v) return v; } return null; };
+  // pharmacist target: the pharmacist's own target. If the target was entered on the branch, it is the target
+  // for EACH pharmacist of that branch (not split). On-call staff get it pro-rata for the days worked in each branch.
+  const phTarget=(code,pid,mk)=>{ const own=tgtA(code,mk,null,pid); if(own) return {t:own};
+    let sum=0; shares(pid,mk).forEach(x=>{ const bt=tgtA(code,mk,x.branch_id,null); if(bt) sum+=bt*Math.min(1,x.share); });
+    return sum? {t:sum, fromBranch:true} : {t:null}; };
 
   function branchKpi(code,bid,mk){ const k=kpi(code,mk); const s=snap(code,mk,bid,null);
     if(code==="expire"){ const sales=snap("sales",mk,bid,null);
@@ -385,7 +387,7 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
     if(k.rule==="visit"){ const vs=D.visits.filter(v=>v.pharmacist_id===pid&&monthKey(v.visit_date)===mk); if(!vs.length) return {ach:null};
       const avg=vs.reduce((a,v)=>a+Number(v.score),0)/vs.length; const vt=Number(k.threshold)||1;   // Q4: threshold 0.90 → 90% = full points
       return {ach:avg/vt, actual:avg, target:vt, unit:"rate", n:vs.length}; }
-    const s=snap(code,mk,null,pid); const ms=snap("sales",mk,null,pid);
+    const s=snapA(code,mk,null,pid); const ms=snap("sales",mk,null,pid);
     // private label per pharmacist: my private-label sales ÷ my own sales (excl. Wasfaty); threshold e.g. 15% = full points, no cap
     if(code==="private"&&Number(k.threshold)>0){ if(!ms||!Number(ms.value)) return {ach:null};
       // show 0 only after the per-pharmacist recalculation has run for this month; before that = no data (not a false 0)
@@ -397,9 +399,9 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
       const rate=Number(s.numerator)/Number(s.denominator); return {ach:rate/t, actual:rate, target:t, unit:"rate", num:Number(s.numerator), den:Number(s.denominator), asOf:s.as_of}; }
     const pt=phTarget(code,pid,mk); const t=pt.t;
     // lab / website orders: once my sales are loaded, nothing recorded means 0 (shown as 0, not "no data")
-    if(!s&&t&&ZERO_IF_MISSING.includes(code)&&ms) return {ach:0, actual:0, target:t, asOf:ms.as_of, zero:true, split:pt.split, unit:code==="online"?"orders":null};
+    if(!s&&t&&ZERO_IF_MISSING.includes(code)&&ms) return {ach:0, actual:0, target:t, asOf:ms.as_of, zero:true, unit:code==="online"?"orders":null};
     if(!s||!t) return {ach:null, actual:s?Number(s.value):null, target:t};
-    return {ach:Number(s.value)/t, actual:Number(s.value), target:t, asOf:s.as_of, split:pt.split, unit:code==="online"?"orders":null}; }
+    return {ach:Number(s.value)/t, actual:Number(s.value), target:t, asOf:s.as_of, unit:code==="online"?"orders":null}; }
 
   // paced (mid-month) sales points are capped at full weight
   const pts=(k,ach,paced)=> ach==null? null : Number(k.weight)*Math.min(ach, paced?1:(k.cap==null?Infinity:Number(k.cap)));
@@ -485,7 +487,7 @@ function ScoreRows({rows,t,lang}){ return <div>{rows.map(r=>{ const cap=r.k.cap=
       r.k.code==="expire"? <>{fmt(r.actual)} {t.sar} · {(r.ratio*100).toFixed(2)}% {t.ofSales}</> :
       r.contrib? <>{fmt(r.actual)} {t.sar} · <strong>{(r.mix*100).toFixed(1)}%</strong> {r.agg||r.k.level!=="pharmacist"?t.ofBranchSales:t.ofMySales} / {t.target} {(r.mixTarget*100).toFixed(0)}%{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}</> :
       r.k.rule==="visit"? <>{r.n} {t.visits.toLowerCase()} · {fmt(r.actual,"rate")}{r.target<1&&<> / {fmt(r.target,"rate")}</>}</> :
-      r.ach!=null&&r.actual!=null? <>{r.unit==="orders"?Number(r.actual):fmt(r.actual,r.unit)} / {r.unit==="orders"?Number(r.target).toLocaleString("en",{maximumFractionDigits:1}):fmt(r.target,r.unit)}{un}{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}{r.split&&<div style={{fontSize:12}}>{t.splitT}</div>}</> : null}</div>
+      r.ach!=null&&r.actual!=null? <>{r.unit==="orders"?Number(r.actual):fmt(r.actual,r.unit)} / {r.unit==="orders"?Number(r.target).toLocaleString("en",{maximumFractionDigits:1}):fmt(r.target,r.unit)}{un}{r.asOf&&<span> · {t.asOf} {r.asOf.slice(5)}</span>}</> : null}</div>
     <div className={"pct "+tone(r.ach)} style={{fontSize:18}}>{r.ach==null?"—":Math.round(r.ach*100)+"%"}</div>
     <div className="pts">{r.pts==null?"—":r.pts.toFixed(1)}<small> / {r.k.weight}</small>
       <div className="bar-track" style={{margin:"4px 0 0"}}><div className={"bar-fill "+tone(r.ach)} style={{width:(r.pts==null?0:Math.min(100,r.pts/maxPts*100))+"%"}}/></div></div>
