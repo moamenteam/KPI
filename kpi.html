@@ -388,6 +388,9 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
     const s=snap(code,mk,null,pid); const ms=snap("sales",mk,null,pid);
     // private label per pharmacist: my private-label sales ÷ my own sales (excl. Wasfaty); threshold e.g. 15% = full points, no cap
     if(code==="private"&&Number(k.threshold)>0){ if(!ms||!Number(ms.value)) return {ach:null};
+      // show 0 only after the per-pharmacist recalculation has run for this month; before that = no data (not a false 0)
+      const ran=D.snaps.some(x=>x.kpi_code==="private"&&x.month===mk&&x.pharmacist_id);
+      if(!s&&!ran) return {ach:null, mine:Number(ms.value)};
       const v=s?Number(s.value):0; const mix=v/Number(ms.value);
       return {ach:mix/Number(k.threshold), actual:v, mix, mixTarget:Number(k.threshold), contrib:true, asOf:(s||ms).as_of}; }
     if(k.rule==="rate"){ const t=tgt(code,mk,null,pid)||Number(k.threshold); if(!s||!Number(s.denominator)) return {ach:null,target:t,unit:"rate"};
