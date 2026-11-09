@@ -1039,7 +1039,7 @@ function Data({t,me,D,E,reload,toast,lang}){
   return <div className="grid">
     <div className="row" style={{justifyContent:"space-between"}}><h1>{t.data}</h1><MonthPicker mk={mk} set={setMk} lang={lang}/></div>
     <div className="muted small">{t.dataHint}</div>
-    {me.is_super && <JulebImport t={t} D={D} reload={reload} toast={toast}/>}
+    {(me.is_super||(me.pages||[]).includes("dataImport")) && <JulebImport t={t} D={D} reload={reload} toast={toast}/>}   {/* Admin → Accounts → KPI → Import Juleb report */}
     <div className="card"><h2 style={{marginBottom:8}}>{t.latest} · {monthLabel(mk,lang)}</h2>
       {latest.length===0? <div className="empty">{t.noData}</div> :
       <table><thead><tr><th>{t.kpi}</th><th>{t.branch}/{t.pharmacist}</th><th className="num">{t.value}</th><th>{t.asOf}</th><th>{t.source}</th><th></th></tr></thead><tbody>
