@@ -116,7 +116,8 @@ const SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
 let SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
 const TZ = "Asia/Riyadh";
 const COUPON_MIN = 300;          // a single cash bill must be MORE than this (set in the SQL view too)
-const INFANT_DAYS = [9, 26, 30];
+const INFANT_DAYS = [9, 26, 30]; // the infant list OPENS on these days (30 → last day in February)
+const INFANT_LEN  = 3;           // ...and stays open this many days, counting the opening day (9–11, 26–28, 30–1st)
 /* Per-account tab access, set in Home → Admin → Accounts & permissions.
    pages keys: "marketing" = list access, "mk_set" = tabs chosen explicitly, "mk_<tab>" = tab shown. */
 const MK_LIST_TABS = ["refill","coupon","infant","log"];
@@ -135,18 +136,25 @@ let sb = null;
 /* ================= HELPERS ================= */
 const todayStr = () => new Intl.DateTimeFormat("en-CA",{timeZone:TZ}).format(new Date()); // YYYY-MM-DD
 const addDays = (s,n) => { const d=new Date(s+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+const daysBetween = (a,b) => Math.round((new Date(b+"T00:00:00Z")-new Date(a+"T00:00:00Z"))/864e5);
 const monthStr = () => todayStr().slice(0,7);
 const lastDayOf = (y,m) => new Date(Date.UTC(y,m,0)).getUTCDate(); // m = 1..12
-function isInfantDay(s){
-  const [y,m,d]=s.split("-").map(Number);
-  if (INFANT_DAYS.includes(d)) return true;
-  return m===2 && d===lastDayOf(y,2);   // February has no 30th
+const ymd = (y,m,d) => `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+/* opening days of a month (a day the month doesn't have → its last day, e.g. 30 → 28 Feb) */
+function infantStarts(y,m){ const last=lastDayOf(y,m); return [...new Set(INFANT_DAYS.map(d=>Math.min(d,last)))].map(d=>ymd(y,m,d)); }
+/* windows containing date s (from this and last month's opening days) */
+function infantHits(s){ const [y,m]=s.split("-").map(Number); const py=m===1?y-1:y, pm=m===1?12:m-1;
+  return [...infantStarts(py,pm),...infantStarts(y,m)].map(st=>({start:st,end:addDays(st,INFANT_LEN-1)})).filter(w=>w.start<=s&&s<=w.end); }
+/* the open window containing s, or null. Overlapping/back-to-back windows (e.g. 26–28 Feb + 28 Feb–2 Mar) merge into one. */
+function infantWindow(s){
+  if(!infantHits(s).length) return null;
+  let start=s, end=s;
+  while(infantHits(addDays(start,-1)).length) start=addDays(start,-1);
+  while(infantHits(addDays(end,1)).length) end=addDays(end,1);
+  return {start,end};
 }
-function nextInfantDay(s){
-  let cur=s;
-  for(let i=1;i<=40;i++){ cur=addDays(s,i); if(isInfantDay(cur)) return cur; }
-  return cur;
-}
+const isInfantDay = s => !!infantWindow(s);
+function nextInfantDay(s){ for(let i=1;i<=40;i++){ const d=addDays(s,i); if(isInfantDay(d)) return d; } return addDays(s,40); }
 function waPhone(p){
   if(!p) return "";
   let d=String(p).replace(/\D/g,"");
@@ -414,10 +422,12 @@ function Coupon({tr,toast,onCount}){
   );
 }
 
-/* ================= MODULE 3: INFANT ================= */
+/* ================= MODULE 3: INFANT =================
+   Opens on the 9th, 26th and 30th and stays open INFANT_LEN days (counting the opening day).
+   A customer contacted once during an open window is not shown again until the next window. */
 function Infant({tr,toast,onCount}){
   const t=todayStr();
-  const open=isInfantDay(t);
+  const win=infantWindow(t); const open=!!win;
   const [branch,setBranch]=useState("");
   const [q,setQ]=useState("");
   const [rows,setRows]=useState(null);
@@ -428,8 +438,11 @@ function Infant({tr,toast,onCount}){
     setRows(null);
     const r=await sb.from("mkt_infant_targets").select("*").order("spent_60d",{ascending:false}).limit(2000);
     if(r.error){ toast(r.error.message,true); setRows([]); return; }
-    setRows(r.data||[]);
-  },[open]);
+    // hide customers already contacted since this window opened
+    const c=await sb.from("mkt_contacts").select("customer_code").eq("module","infant").gte("contacted_at",win.start+"T00:00:00+03:00").limit(5000);
+    const done=new Set((c.data||[]).map(x=>x.customer_code));
+    setRows((r.data||[]).filter(x=>!done.has(x.customer_code)));
+  },[open,win&&win.start]);
   useEffect(()=>{ load(); },[load]);
 
   const branches=useMemo(()=>[...new Set((rows||[]).map(r=>r.branch).filter(Boolean))].sort(),[rows]);
@@ -437,21 +450,25 @@ function Infant({tr,toast,onCount}){
   useEffect(()=>{ if(rows) onCount(open?list.length:0); },[rows,branch,q]);
 
   if(!open){
-    const nx=nextInfantDay(t);
+    const nx=nextInfantDay(t); const nw=infantWindow(nx);
     return h("div",{className:"card closed"},
-      h("div",{className:"sub"},tr("قائمة مستلزمات الأطفال متاحة أيام 9 و26 و30 من كل شهر فقط","The infant list opens on the 9th, 26th and 30th of each month only")),
-      h("div",{className:"big num"},LTR(nx)),
-      h("div",{className:"sub"},tr("الموعد القادم — بعد ","Next campaign day — in ")+Math.round((new Date(nx)-new Date(t))/864e5)+tr(" يوم"," days")));
+      h("div",{className:"sub"},tr("قائمة مستلزمات الأطفال تفتح أيام 9 و26 و30 من كل شهر، وتبقى مفتوحة "+INFANT_LEN+" أيام",
+                                 "The infant list opens on the 9th, 26th and 30th of each month and stays open for "+INFANT_LEN+" days")),
+      h("div",{className:"big num"},LTR(nx),nw&&nw.end!==nx?h("span",{className:"sub"}," → ",LTR(nw.end)):null),
+      h("div",{className:"sub"},tr("تفتح بعد ","Opens in ")+daysBetween(t,nx)+tr(" يوم"," days")));
   }
+  const left=daysBetween(t,win.end)+1;
 
   return h(React.Fragment,null,
     h("div",{className:"bar"},
       h(BranchFilter,{tr,branches,value:branch,onChange:setBranch}),
       h(SearchBox,{tr,value:q,onChange:setQ}),
+      h("span",{className:"badge "+(left===1?"b-over":"b-due")},left===1?tr("آخر يوم — تُغلق الليلة","Last day — closes tonight"):tr("مفتوحة حتى ","Open until ")),
+      left>1 && h("span",{className:"num"},LTR(win.end),tr(" (باقي "+left+" أيام)"," ("+left+" days left)")),
       h("span",{className:"sub"},tr("عملاء اشتروا حليب أطفال أو حفاضات أو أدوية أطفال خلال آخر 60 يومًا — اعرض عليهم شراء كمية","Customers who bought infant milk, diapers or infant medicines in the last 60 days — offer a bulk purchase"))),
     h("div",{className:"card scroll"},
       rows===null ? h("div",{className:"empty"},"…")
-      : !list.length ? h("div",{className:"empty"},tr("تم التواصل مع كل العملاء اليوم، أو لا توجد مشتريات أطفال حديثة.","Every customer has been contacted today, or there are no recent infant purchases."))
+      : !list.length ? h("div",{className:"empty"},tr("تم التواصل مع كل العملاء في هذه الفترة، أو لا توجد مشتريات أطفال حديثة.","Every customer has been contacted in this window, or there are no recent infant purchases."))
       : h("table",{className:"tbl"},
           h("thead",null,h("tr",null,
             h("th",null,tr("العميل","Customer")),h("th",null,tr("الجوال","Phone")),h("th",null,tr("الأصناف","Items")),
@@ -464,7 +481,7 @@ function Infant({tr,toast,onCount}){
             h("td",{className:"hide-sm num"},fmtMoney(r.spent_60d)),
             h("td",{className:"hide-sm num"},fmtDate(r.last_purchase)),
             h("td",{className:"hide-sm"},r.branch),
-            h("td",null,h("button",{className:"btn sm pri",onClick:()=>setLog({module:"infant",customer_code:r.customer_code,customer_name:r.customer_name,ref_key:t})},tr("تسجيل","Log"))))))
+            h("td",null,h("button",{className:"btn sm pri",onClick:()=>setLog({module:"infant",customer_code:r.customer_code,customer_name:r.customer_name,ref_key:win.start})},tr("تسجيل","Log"))))))
         )),
     log && h(LogModal,{tr,item:log,toast,onClose:()=>setLog(null),onSaved:()=>{setLog(null);load();}})
   );
