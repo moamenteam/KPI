@@ -481,7 +481,7 @@ function Infant({tr,toast,onCount}){
       (lpFrom||lpTo) && h("button",{className:"btn sm",onClick:()=>{setLpFrom("");setLpTo("");}},tr("مسح التاريخ","Clear dates")),
       h("span",{className:"badge "+(left===1?"b-over":"b-due")},left===1?tr("آخر يوم — تُغلق الليلة","Last day — closes tonight"):tr("مفتوحة حتى ","Open until ")),
       left>1 && h("span",{className:"num"},LTR(win.end),tr(" (باقي "+left+" أيام)"," ("+left+" days left)")),
-      h("span",{className:"sub"},tr("عملاء اشتروا حليب أطفال أو حفاضات أو أدوية أطفال خلال آخر 60 يومًا — اعرض عليهم شراء كمية","Customers who bought infant milk, diapers or infant medicines in the last 60 days — offer a bulk purchase"))),
+      h("span",{className:"sub"},tr("عملاء اشتروا من قسم الأم والطفل خلال آخر 60 يومًا (لديهم أطفال) — بدون من يشتري حليب أطفال بأكثر من 350 ريال شهريًا. اعرض عليهم شراء كمية","Customers who bought Mom & Baby products in the last 60 days (they have children), excluding those already buying over 350 SAR of milk a month — offer a bulk purchase"))),
     h("div",{className:"card scroll"},
       rows===null ? h("div",{className:"empty"},"…")
       : !list.length ? h("div",{className:"empty"},tr("تم التواصل مع كل العملاء في هذه الفترة، أو لا توجد مشتريات أطفال حديثة.","Every customer has been contacted in this window, or there are no recent infant purchases."))
@@ -489,6 +489,7 @@ function Infant({tr,toast,onCount}){
           h("thead",null,h("tr",null,
             h("th",null,tr("العميل","Customer")),h("th",null,tr("الجوال","Phone")),h("th",null,tr("الأصناف","Items")),
             h("th",{className:"hide-sm"},h("button",{className:"linkbtn",onClick:()=>sortBtn("amount")},tr("المبلغ المدفوع (60 يوم)","Amount paid (60 days)")+arrow("amount"))),
+            h("th",{className:"hide-sm"},tr("منها حليب (أعلى شهر)","Of which milk (top month)")),
             h("th",{className:"hide-sm"},h("button",{className:"linkbtn",onClick:()=>sortBtn("date")},tr("آخر شراء","Last purchase")+arrow("date"))),
             h("th",{className:"hide-sm"},tr("الفرع","Branch")),h("th",null,""))),
           h("tbody",null,list.map(r=>h("tr",{key:r.customer_code},
@@ -496,6 +497,7 @@ function Infant({tr,toast,onCount}){
             h("td",null,h(Phone,{phone:r.phone,tr})),
             h("td",null,h("div",{className:"sub"},r.items)),
             h("td",{className:"hide-sm num"},fmtMoney(r.spent_60d)),
+            h("td",{className:"hide-sm num"},Number(r.milk_30d)>0? h("span",null,fmtMoney(r.milk_30d),h("div",{className:"sub"},"/ 350")) : h("span",{className:"sub"},tr("لا يوجد","None"))),
             h("td",{className:"hide-sm num"},fmtDate(r.last_purchase)),
             h("td",{className:"hide-sm"},r.branch),
             h("td",null,h("button",{className:"btn sm pri",onClick:()=>setLog({module:"infant",customer_code:r.customer_code,customer_name:r.customer_name,ref_key:win.start})},tr("تسجيل","Log"))))))
