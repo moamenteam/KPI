@@ -429,6 +429,8 @@ function Infant({tr,toast,onCount}){
   const t=todayStr();
   const win=infantWindow(t); const open=!!win;
   const [branch,setBranch]=useState("");
+  const [sort,setSort]=useState("amount_desc");   // amount_desc | amount_asc | date_desc | date_asc
+  const [lpFrom,setLpFrom]=useState(""); const [lpTo,setLpTo]=useState("");
   const [q,setQ]=useState("");
   const [rows,setRows]=useState(null);
   const [log,setLog]=useState(null);
@@ -446,8 +448,14 @@ function Infant({tr,toast,onCount}){
   useEffect(()=>{ load(); },[load]);
 
   const branches=useMemo(()=>[...new Set((rows||[]).map(r=>r.branch).filter(Boolean))].sort(),[rows]);
-  const list=(rows||[]).filter(r=>(!branch||r.branch===branch) && match(q,r.customer_name,r.customer_code,r.phone,r.items));
-  useEffect(()=>{ if(rows) onCount(open?list.length:0); },[rows,branch,q]);
+  const lp=r=>String(r.last_purchase||"").slice(0,10);
+  const SORTS={amount_desc:(a,b)=>(Number(b.spent_60d)||0)-(Number(a.spent_60d)||0), amount_asc:(a,b)=>(Number(a.spent_60d)||0)-(Number(b.spent_60d)||0),
+               date_desc:(a,b)=>lp(b).localeCompare(lp(a)), date_asc:(a,b)=>lp(a).localeCompare(lp(b))};
+  const list=(rows||[]).filter(r=>(!branch||r.branch===branch) && (!lpFrom||lp(r)>=lpFrom) && (!lpTo||lp(r)<=lpTo)
+    && match(q,r.customer_name,r.customer_code,r.phone,r.items)).sort(SORTS[sort]);
+  useEffect(()=>{ if(rows) onCount(open?list.length:0); },[rows,branch,q,lpFrom,lpTo]);
+  const sortBtn=(col)=>{ const d=col+"_desc", a=col+"_asc"; setSort(sort===d?a:d); };
+  const arrow=col=> sort===col+"_desc"?" ▼":sort===col+"_asc"?" ▲":"";
 
   if(!open){
     const nx=nextInfantDay(t); const nw=infantWindow(nx);
@@ -463,6 +471,14 @@ function Infant({tr,toast,onCount}){
     h("div",{className:"bar"},
       h(BranchFilter,{tr,branches,value:branch,onChange:setBranch}),
       h(SearchBox,{tr,value:q,onChange:setQ}),
+      h("label",null,tr("آخر شراء من","Last purchase from"),h("input",{type:"date",value:lpFrom,onChange:e=>setLpFrom(e.target.value)})),
+      h("label",null,tr("إلى","To"),h("input",{type:"date",value:lpTo,onChange:e=>setLpTo(e.target.value)})),
+      h("label",null,tr("الترتيب","Sort by"),h("select",{value:sort,onChange:e=>setSort(e.target.value)},
+        h("option",{value:"amount_desc"},tr("المبلغ المدفوع: الأعلى أولًا","Amount paid: highest first")),
+        h("option",{value:"amount_asc"},tr("المبلغ المدفوع: الأقل أولًا","Amount paid: lowest first")),
+        h("option",{value:"date_desc"},tr("آخر شراء: الأحدث أولًا","Last purchase: newest first")),
+        h("option",{value:"date_asc"},tr("آخر شراء: الأقدم أولًا","Last purchase: oldest first")))),
+      (lpFrom||lpTo) && h("button",{className:"btn sm",onClick:()=>{setLpFrom("");setLpTo("");}},tr("مسح التاريخ","Clear dates")),
       h("span",{className:"badge "+(left===1?"b-over":"b-due")},left===1?tr("آخر يوم — تُغلق الليلة","Last day — closes tonight"):tr("مفتوحة حتى ","Open until ")),
       left>1 && h("span",{className:"num"},LTR(win.end),tr(" (باقي "+left+" أيام)"," ("+left+" days left)")),
       h("span",{className:"sub"},tr("عملاء اشتروا حليب أطفال أو حفاضات أو أدوية أطفال خلال آخر 60 يومًا — اعرض عليهم شراء كمية","Customers who bought infant milk, diapers or infant medicines in the last 60 days — offer a bulk purchase"))),
@@ -472,7 +488,8 @@ function Infant({tr,toast,onCount}){
       : h("table",{className:"tbl"},
           h("thead",null,h("tr",null,
             h("th",null,tr("العميل","Customer")),h("th",null,tr("الجوال","Phone")),h("th",null,tr("الأصناف","Items")),
-            h("th",{className:"hide-sm"},tr("إنفاق 60 يوم","60-day spend")),h("th",{className:"hide-sm"},tr("آخر شراء","Last purchase")),
+            h("th",{className:"hide-sm"},h("button",{className:"linkbtn",onClick:()=>sortBtn("amount")},tr("المبلغ المدفوع (60 يوم)","Amount paid (60 days)")+arrow("amount"))),
+            h("th",{className:"hide-sm"},h("button",{className:"linkbtn",onClick:()=>sortBtn("date")},tr("آخر شراء","Last purchase")+arrow("date"))),
             h("th",{className:"hide-sm"},tr("الفرع","Branch")),h("th",null,""))),
           h("tbody",null,list.map(r=>h("tr",{key:r.customer_code},
             h("td",null,h("div",null,r.customer_name||"—"),h("div",{className:"sub num"},r.customer_code)),
