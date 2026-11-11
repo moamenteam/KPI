@@ -266,3 +266,16 @@ html[data-ui="clay"] .modal .box,html[data-ui="clay"] .modal .card{background:#f
   html[data-ui="clay"] body{background:#fff;animation:none} html[data-ui="clay"] body::before{display:none}
   html[data-ui="clay"] .card{background:#fff;border:1px solid #ddd;box-shadow:none;animation:none}
 }
+
+/* ---------- sound button (theme.js) ---------- */
+.fb-sound{position:fixed;inset-inline-start:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:50;width:46px;height:46px;border-radius:50%;
+  display:grid;place-items:center;cursor:pointer;border:1px solid rgba(255,255,255,.85);background:rgba(255,255,255,.85);color:#7A7396;
+  box-shadow:0 14px 30px -14px rgba(91,75,216,.6),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -4px 10px rgba(123,108,246,.12);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:transform .25s cubic-bezier(.22,.9,.32,1.15),background .25s,color .25s}
+.fb-sound:hover{transform:translateY(-2px) scale(1.05)}
+.fb-sound:active{transform:scale(.94)}
+.fb-sound.on{background:linear-gradient(135deg,#A596FA,#7B6CF6 55%,#5B4BD8);color:#fff;border-color:transparent;animation:fb-sound-beat 2s ease-in-out infinite}
+.fb-sound:focus-visible{outline:3px solid rgba(123,108,246,.45);outline-offset:3px}
+@keyframes fb-sound-beat{0%,100%{box-shadow:0 14px 30px -14px rgba(91,75,216,.8),0 0 0 0 rgba(123,108,246,.35)}50%{box-shadow:0 14px 30px -14px rgba(91,75,216,.8),0 0 0 8px rgba(123,108,246,0)}}
+@media (prefers-reduced-motion: reduce){ .fb-sound,.fb-sound.on{animation:none;transition:none} }
+@media print{ .fb-sound{display:none} }
