@@ -446,6 +446,62 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
 // rank by score, then by sales achievement to date (breaks ties while sales points are capped mid-month)
 const byScore = (a,b) => ((b.total??-1)-(a.total??-1)) || ((b.salesAch??-1)-(a.salesAch??-1));
 
+/* ---------- monthly report rows ----------
+   One row per pharmacist/branch per KPI, plus a TOTAL row with rank and stars.
+   Saved to kpi_month_results (read by the monthly e-mail) and used by "Download Excel". */
+const rnum = x => x==null||!isFinite(Number(x))? null : Math.round(Number(x)*10000)/10000;
+function rowVals(r){
+  if(r.k.code==="expire") return {unit:"share", actual:r.ratio, target:Number(r.k.threshold)};
+  if(r.contrib) return {unit:"share", actual:r.mix, target:r.mixTarget};
+  if(r.unit==="rate"||r.k.rule==="visit"||r.k.rule==="rate") return {unit:"rate", actual:r.actual, target:r.target};
+  if(r.perPh){ const L=(r.byPh||[]).filter(x=>x.r.ach!=null); return {unit:"orders", actual:L.reduce((a,x)=>a+(Number(x.r.actual)||0),0), target:L.reduce((a,x)=>a+(Number(x.r.target)||0),0)}; }
+  if(r.k.code==="online") return {unit:"orders", actual:r.actual, target:r.target};
+  return {unit:"sar", actual:r.actual, target:r.target};
+}
+function reportRows(D,E,mk){
+  const out=[];
+  const phs=D.pharmacists.filter(p=>scored(p)&&E.shares(p.id,mk).length);
+  const P=phs.map(p=>{ const sh=E.shares(p.id,mk).sort((a,b)=>b.share-a.share); return {p,sh,s:E.pharmacistScore(p.id,mk)}; }).sort((a,b)=>byScore(a.s,b.s));
+  P.forEach((x,i)=>{ const base={month:mk, subject_type:"pharmacist", subject_id:x.p.id, subject_name:x.p.full_name,
+      branch_id:(x.sh[0]||{}).branch_id||null, branch_name:x.sh.map(s=>bname(D.branches,s.branch_id)).join(" / ")};
+    x.s.rows.forEach(r=>{ const v=rowVals(r); out.push({...base, kpi_code:r.k.code, kpi_name:r.k.name_en, unit:v.unit, weight:rnum(r.k.weight),
+      actual:rnum(v.actual), target:rnum(v.target), ach:rnum(r.ach), points:rnum(r.pts)}); });
+    out.push({...base, kpi_code:"TOTAL", kpi_name:"Total", unit:"points", weight:100, points:rnum(x.s.total), rank:x.s.total==null?null:i+1, stars:starsOf(x.s.total)}); });
+  const B=D.branches.map(b=>({b,s:E.branchScore(b.id,mk)})).filter(x=>x.s.phs.length||x.s.total!=null).sort((a,b)=>byScore(a.s,b.s));
+  B.forEach((x,i)=>{ const base={month:mk, subject_type:"branch", subject_id:x.b.id, subject_name:x.b.name, branch_id:x.b.id, branch_name:x.b.name};
+    x.s.rows.forEach(r=>{ const v=rowVals(r); out.push({...base, kpi_code:r.k.code, kpi_name:r.k.name_en, unit:v.unit, weight:rnum(r.k.weight),
+      actual:rnum(v.actual), target:rnum(v.target), ach:rnum(r.ach), points:rnum(r.pts)}); });
+    out.push({...base, kpi_code:"TOTAL", kpi_name:"Total", unit:"points", weight:100, points:rnum(x.s.total), rank:x.s.total==null?null:i+1, stars:starsOf(x.s.total)}); });
+  return out;
+}
+async function saveMonthResults(D,E,mk){
+  const rows=reportRows(D,E,mk); if(!rows.length) return {n:0};
+  const del=await sb.from("kpi_month_results").delete().eq("month",mk); if(del.error) throw new Error(del.error.message);
+  const r=await sb.from("kpi_month_results").insert(rows); if(r.error) throw new Error(r.error.message);
+  return {n:rows.length};
+}
+/* Excel file in the browser (same layout as the e-mailed one) */
+function downloadReport(D,E,mk,scope,branchId,lang){
+  const ar=lang==="ar"; const T=(en,a)=>ar?a:en;
+  const rows=reportRows(D,E,mk).filter(r=>scope==="company"||r.branch_id===branchId);
+  const fmtV=(u,v)=> v==null? "" : (u==="rate"||u==="share")? Math.round(v*1000)/10+"%" : Math.round(v*100)/100;
+  const tot=rows.filter(r=>r.kpi_code==="TOTAL");
+  const sumP=tot.filter(r=>r.subject_type==="pharmacist").map(r=>({[T("Rank","الترتيب")]:r.rank,[T("Pharmacist","الصيدلي")]:r.subject_name,[T("Branch","الفرع")]:r.branch_name,[T("Score / 100","النقاط / 100")]:r.points==null?"":Math.round(r.points*10)/10,[T("Stars","النجوم")]:r.stars?"★".repeat(r.stars):""}));
+  const sumB=tot.filter(r=>r.subject_type==="branch").map(r=>({[T("Rank","الترتيب")]:r.rank,[T("Branch","الفرع")]:r.subject_name,[T("Score / 100","النقاط / 100")]:r.points==null?"":Math.round(r.points*10)/10,[T("Stars","النجوم")]:r.stars?"★".repeat(r.stars):""}));
+  const det=t=>rows.filter(r=>r.subject_type===t&&r.kpi_code!=="TOTAL").map(r=>({[T(t==="branch"?"Branch":"Pharmacist",t==="branch"?"الفرع":"الصيدلي")]:r.subject_name,
+    ...(t==="pharmacist"?{[T("Branch","الفرع")]:r.branch_name}:{}),[T("KPI","المؤشر")]:r.kpi_name,[T("Weight","الوزن")]:r.weight,
+    [T("Actual","الفعلي")]:fmtV(r.unit,r.actual),[T("Target","الهدف")]:fmtV(r.unit,r.target),[T("Achievement","التحقق")]:r.ach==null?"":Math.round(r.ach*1000)/10+"%",[T("Points","النقاط")]:r.points==null?"":Math.round(r.points*100)/100}));
+  const wb=XLSX.utils.book_new(); if(ar) wb.Workbook={Views:[{RTL:true}]};
+  const add=(name,data)=>{ if(!data.length) return; const ws=XLSX.utils.json_to_sheet(data); ws["!cols"]=Object.keys(data[0]).map(k=>({wch:Math.max(10,k.length+2,...data.map(d=>String(d[k]??"").length+2))})); XLSX.utils.book_append_sheet(wb,ws,name); };
+  if(scope==="company") add(T("Branches","الفروع"),sumB);
+  add(T("Pharmacists","الصيادلة"),sumP);
+  if(scope==="company") add(T("Branch details","تفاصيل الفروع"),det("branch"));
+  else add(T("Branch details","تفاصيل الفرع"),det("branch"));
+  add(T("Pharmacist details","تفاصيل الصيادلة"),det("pharmacist"));
+  const label=scope==="company"?"Company":bname(D.branches,branchId);
+  XLSX.writeFile(wb,`KPI ${mk.slice(0,7)} - ${label}.xlsx`);
+}
+
 /* ---------- small components ---------- */
 function Spark({points}){ const w=300,h=44; const vals=points.map(p=>p??0); const max=Math.max(1,...vals);
   const pt=(v,i)=>`${(i/(points.length-1))*w},${h-4-(v/max)*(h-8)}`;
@@ -1037,6 +1093,72 @@ function JulebImport({t,D,reload,toast}){
   </div>;
 }
 /* ================= DATA (admin): snapshots ================= */
+/* ================= MONTHLY REPORTS (super admin) ================= */
+function ReportsPanel({D,E,toast,lang}){
+  const L=(en,a)=>lang==="ar"?a:en;
+  const [rows,setRows]=useState(null); const [log,setLog]=useState([]); const [saved,setSaved]=useState(null);
+  const blank={name:"",email:"",scope:"company",branch_id:"",lang:lang==="ar"?"ar":"en"};
+  const [f,setF]=useState(blank); const [busy,setBusy]=useState(false); const [mk,setMk]=useState(addMonths(thisMonth(),-1));
+  const load=useCallback(async()=>{
+    const r=await sb.from("report_recipients").select("*").order("created_at"); if(r.error) toast(r.error.message); setRows(r.data||[]);
+    const g=await sb.from("report_log").select("*").order("sent_at",{ascending:false}).limit(20); setLog(g.data||[]);
+    const s=await sb.from("kpi_month_results").select("month,saved_at").order("saved_at",{ascending:false}).limit(1); setSaved((s.data||[])[0]||null);
+  },[]);
+  useEffect(()=>{ load(); },[load]);
+  const validEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
+  const add=async()=>{ if(!f.name.trim()||!validEmail||(f.scope==="branch"&&!f.branch_id)) return; setBusy(true);
+    const r=await sb.from("report_recipients").insert({name:f.name.trim(),email:f.email.trim().toLowerCase(),scope:f.scope,branch_id:f.scope==="branch"?f.branch_id:null,lang:f.lang});
+    toast(r.error?r.error.message:L("Saved","تم الحفظ")); if(!r.error){ setF(blank); load(); } setBusy(false); };
+  const toggle=async x=>{ const r=await sb.from("report_recipients").update({active:!x.active}).eq("id",x.id); if(r.error) toast(r.error.message); load(); };
+  const del=async x=>{ if(!confirm(L("Remove ","حذف ")+x.name+"?")) return; const r=await sb.from("report_recipients").delete().eq("id",x.id); if(r.error) toast(r.error.message); load(); };
+  const saveNow=async()=>{ setBusy(true); try{ const a=await saveMonthResults(D,E,mk); toast(L(`Saved ${a.n} result rows for `,`تم حفظ ${a.n} صف لشهر `)+mk.slice(0,7)); load(); }catch(e){ toast(String(e.message||e)); } setBusy(false); };
+  const mailTo=async x=>{ const sc=x.scope==="company"?(x.lang==="ar"?"الشركة":"Company"):bname(D.branches,x.branch_id);
+    const subj=x.lang==="ar"? `تقرير مؤشرات الأداء — ${mk.slice(0,7)} — ${sc}` : `KPI report — ${mk.slice(0,7)} — ${sc}`;
+    const body=x.lang==="ar"? `مرحبًا ${x.name}،\n\nمرفق تقرير مؤشرات الأداء لشهر ${mk.slice(0,7)} (${sc}).\n\nFirst Brand KPI` : `Hello ${x.name},\n\nAttached is the KPI report for ${mk.slice(0,7)} (${sc}).\n\nFirst Brand KPI`;
+    window.location.href=`mailto:${encodeURIComponent(x.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+    await sb.from("report_log").insert({month:mk, recipient_id:x.id, email:x.email, scope:x.scope, branch_name:x.scope==="branch"?bname(D.branches,x.branch_id):null, status:"sent manually"});
+    setTimeout(load,800); };
+  const scopeName=x=> x.scope==="company"? L("Whole company","الشركة كاملة") : bname(D.branches,x.branch_id);
+  return <div className="card grid">
+    <div className="row" style={{justifyContent:"space-between"}}><h2>{L("Monthly reports","التقارير الشهرية")}</h2>
+      <span className="chip">{L("Manual sending","إرسال يدوي")}</span></div>
+    <div className="muted small">{L("Choose the month, then for each recipient: ① Download Excel ② E-mail opens your mail app with the address and subject filled in — attach the downloaded file and send. The whole-company file has branches + all pharmacists; a branch file has that branch + its pharmacists only. Scores are the same as the dashboard.",
+      "اختر الشهر، ثم لكل مستلم: ① تنزيل Excel ② زر البريد يفتح تطبيق البريد بالعنوان والموضوع جاهزين — أرفق الملف الذي نزّلته وأرسل. ملف الشركة فيه الفروع وكل الصيادلة، وملف الفرع فيه الفرع وصيادلته فقط. النتائج نفس لوحة المتابعة.")}</div>
+
+    <div className="row" style={{alignItems:"flex-end"}}>
+      <label className="f">{L("Name","الاسم")}<input value={f.name} onChange={e=>setF({...f,name:e.target.value})} placeholder={L("CEO","الرئيس التنفيذي")}/></label>
+      <label className="f">{L("E-mail","البريد الإلكتروني")}<input type="email" dir="ltr" value={f.email} onChange={e=>setF({...f,email:e.target.value})} placeholder="name@company.com"/></label>
+      <label className="f">{L("Report","التقرير")}<select value={f.scope==="company"?"company":f.branch_id} onChange={e=>setF(e.target.value==="company"?{...f,scope:"company",branch_id:""}:{...f,scope:"branch",branch_id:e.target.value})}>
+        <option value="company">{L("Whole company","الشركة كاملة")}</option>
+        {D.branches.map(b=><option key={b.id} value={b.id}>{L("Branch: ","فرع: ")}{b.name}</option>)}</select></label>
+      <label className="f" style={{maxWidth:130}}>{L("Language","اللغة")}<select value={f.lang} onChange={e=>setF({...f,lang:e.target.value})}><option value="ar">العربية</option><option value="en">English</option></select></label>
+      <button className="btn" disabled={busy||!f.name.trim()||!validEmail} onClick={add}>{L("Add recipient","إضافة مستلم")}</button>
+    </div>
+    {f.email && !validEmail && <div className="err">{L("Enter a valid e-mail address","أدخل بريدًا إلكترونيًا صحيحًا")}</div>}
+
+    {rows==null? <div className="empty">…</div> : rows.length===0? <div className="empty">{L("No recipients yet. Add the first one above.","لا يوجد مستلمون بعد. أضف أول مستلم بالأعلى.")}</div> :
+    <div style={{overflowX:"auto"}}><table><thead><tr><th>{L("Name","الاسم")}</th><th>{L("E-mail","البريد")}</th><th>{L("Report","التقرير")}</th><th>{L("Language","اللغة")}</th><th>{L("Active","فعّال")}</th><th></th></tr></thead><tbody>
+      {rows.map(x=><tr key={x.id} style={x.active?null:{opacity:.5}}><td><strong>{x.name}</strong></td><td dir="ltr" className="small">{x.email}</td><td>{scopeName(x)}</td><td className="small">{x.lang==="ar"?"العربية":"English"}</td>
+        <td><input type="checkbox" checked={x.active} onChange={()=>toggle(x)} style={{width:18,height:18}}/></td>
+        <td className="row" style={{gap:6,flexWrap:"nowrap"}}><button className="btn sec" style={{padding:"4px 10px"}} onClick={()=>downloadReport(D,E,mk,x.scope,x.branch_id,x.lang)}>⬇ {L("Download Excel","تنزيل Excel")}</button>
+          <button className="btn" style={{padding:"4px 10px"}} onClick={()=>mailTo(x)}>✉ {L("E-mail","بريد")}</button>
+          <button className="btn warn" style={{padding:"4px 8px"}} onClick={()=>del(x)}>×</button></td></tr>)}</tbody></table></div>}
+
+    <div className="row" style={{alignItems:"flex-end",borderTop:"1px solid var(--line)",paddingTop:12}}>
+      <label className="f" style={{maxWidth:180}}>{L("Month","الشهر")}<input type="month" value={mk.slice(0,7)} max={thisMonth().slice(0,7)} onChange={e=>e.target.value&&setMk(e.target.value+"-01")}/></label>
+      <button className="btn sec" onClick={()=>downloadReport(D,E,mk,"company",null,lang)}>⬇ {L("Download company Excel","تنزيل Excel للشركة")}</button>
+      <button className="btn sec" disabled={busy} onClick={saveNow}>{L("Save this month's results","حفظ نتائج هذا الشهر")}</button>
+      {saved && <span className="muted small">{L("Last saved: ","آخر حفظ: ")}{saved.month.slice(0,7)} · {new Date(saved.saved_at).toLocaleString(lang==="ar"?"ar-SA":"en-GB",{dateStyle:"short",timeStyle:"short"})}</span>}
+    </div>
+    <div className="muted small">{L("Upload the last Juleb report of the month before downloading, so the month's final days are included.",
+      "ارفع آخر تقرير جُلَب للشهر قبل التنزيل، حتى تدخل آخر أيام الشهر.")}</div>
+
+    {log.length>0 && <><h3>{L("Sent log","سجل الإرسال")}</h3><table><tbody>{log.map(g=><tr key={g.id}><td className="small">{new Date(g.sent_at).toLocaleString(lang==="ar"?"ar-SA":"en-GB",{dateStyle:"short",timeStyle:"short"})}</td>
+      <td className="small">{g.month.slice(0,7)}</td><td dir="ltr" className="small">{g.email}</td><td className="small">{g.scope==="company"?L("Company","الشركة"):g.branch_name}</td>
+      <td><span className={"chip"+(g.status==="sent"?"":" bad")}>{g.status}</span>{g.note&&<span className="muted small"> {g.note}</span>}</td></tr>)}</tbody></table></>}
+  </div>;
+}
+
 function Data({t,me,D,E,reload,toast,lang}){
   const [mk,setMk]=useState(thisMonth());
   const [hist,setHist]=useState(null);
@@ -1047,7 +1169,8 @@ function Data({t,me,D,E,reload,toast,lang}){
   return <div className="grid">
     <div className="row" style={{justifyContent:"space-between"}}><h1>{t.data}</h1><MonthPicker mk={mk} set={setMk} lang={lang}/></div>
     <div className="muted small">{t.dataHint}</div>
-    {(me.is_super||(me.pages||[]).includes("dataImport")) && <JulebImport t={t} D={D} reload={reload} toast={toast}/>}   {/* Admin → Accounts → KPI → Import Juleb report */}
+    {(me.is_super||(me.pages||[]).includes("dataImport")) && <JulebImport t={t} D={D} reload={reload} toast={toast}/>}
+    {me.is_super && <ReportsPanel D={D} E={E} toast={toast} lang={lang}/>}   {/* Admin → Accounts → KPI → Import Juleb report */}
     <div className="card"><h2 style={{marginBottom:8}}>{t.latest} · {monthLabel(mk,lang)}</h2>
       {latest.length===0? <div className="empty">{t.noData}</div> :
       <table><thead><tr><th>{t.kpi}</th><th>{t.branch}/{t.pharmacist}</th><th className="num">{t.value}</th><th>{t.asOf}</th><th>{t.source}</th><th></th></tr></thead><tbody>
@@ -1199,6 +1322,9 @@ function App(){
   },[]);
   useEffect(()=>{ if(!session){setMe(null);setD(null);return;} (async()=>{ const r=await sb.from("profiles").select("*").eq("id",session.user.id).single(); setMe(r.data||null); await reload(); })(); },[session]);
   const E=useMemo(()=>D?makeEngine(D):null,[D]);
+  // keep kpi_month_results up to date for the monthly e-mail (importers and super admins only)
+  useEffect(()=>{ if(!E||!D||!me) return; if(!(me.is_super||(me.pages||[]).includes("dataImport"))) return;
+    [addMonths(thisMonth(),-1), thisMonth()].forEach(m=>saveMonthResults(D,E,m).catch(e=>console.warn("month results not saved:",e.message))); },[E]);
 
   if(session===undefined) return null;
   if(!session) return <Login t={t} lang={lang} setLang={setLang}/>;
