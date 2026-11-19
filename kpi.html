@@ -1099,11 +1099,13 @@ function ReportsPanel({D,E,toast,lang}){
   const [rows,setRows]=useState(null); const [log,setLog]=useState([]); const [saved,setSaved]=useState(null);
   const blank={user_id:"",name:"",email:"",scope:"company",branch_id:"",lang:lang==="ar"?"ar":"en"};
   const [users,setUsers]=useState([]);   // system accounts (Admin → Accounts)
+  const [st,setSt]=useState(null);       // report_settings: automatic monthly / weekly e-mails
   const [f,setF]=useState(blank); const [busy,setBusy]=useState(false); const [mk,setMk]=useState(addMonths(thisMonth(),-1));
   const load=useCallback(async()=>{
-    const u=await sb.from("profiles").select("id,full_name,email,active,branch_id").order("full_name"); if(u.error) toast(u.error.message); setUsers((u.data||[]).filter(x=>x.email));
+    const u=await sb.from("profiles").select("id,full_name,email,active,branch_id,pharmacist_id").order("full_name"); if(u.error) toast(u.error.message); setUsers((u.data||[]).filter(x=>x.email));
     const r=await sb.from("report_recipients").select("*").order("created_at"); if(r.error) toast(r.error.message); setRows(r.data||[]);
-    const g=await sb.from("report_log").select("*").order("sent_at",{ascending:false}).limit(20); setLog(g.data||[]);
+    const g=await sb.from("report_log").select("*").order("sent_at",{ascending:false}).limit(40); setLog(g.data||[]);
+    const c=await sb.from("report_settings").select("*").eq("id",1).maybeSingle(); setSt(c.data||{monthly_enabled:true,weekly_enabled:true,weekly_lang:"ar"});
     const s=await sb.from("kpi_month_results").select("month,saved_at").order("saved_at",{ascending:false}).limit(1); setSaved((s.data||[])[0]||null);
   },[]);
   useEffect(()=>{ load(); },[load]);
@@ -1121,18 +1123,35 @@ function ReportsPanel({D,E,toast,lang}){
   const toggle=async x=>{ const r=await sb.from("report_recipients").update({active:!x.active}).eq("id",x.id); if(r.error) toast(r.error.message); load(); };
   const del=async x=>{ if(!confirm(L("Remove ","حذف ")+x.name+"?")) return; const r=await sb.from("report_recipients").delete().eq("id",x.id); if(r.error) toast(r.error.message); load(); };
   const saveNow=async()=>{ setBusy(true); try{ const a=await saveMonthResults(D,E,mk); toast(L(`Saved ${a.n} result rows for `,`تم حفظ ${a.n} صف لشهر `)+mk.slice(0,7)); load(); }catch(e){ toast(String(e.message||e)); } setBusy(false); };
-  const mailTo=async x=>{ const sc=x.scope==="company"?(x.lang==="ar"?"الشركة":"Company"):bname(D.branches,x.branch_id);
-    const subj=x.lang==="ar"? `تقرير مؤشرات الأداء — ${mk.slice(0,7)} — ${sc}` : `KPI report — ${mk.slice(0,7)} — ${sc}`;
-    const body=x.lang==="ar"? `مرحبًا ${x.name}،\n\nمرفق تقرير مؤشرات الأداء لشهر ${mk.slice(0,7)} (${sc}).\n\nFirst Brand KPI` : `Hello ${x.name},\n\nAttached is the KPI report for ${mk.slice(0,7)} (${sc}).\n\nFirst Brand KPI`;
-    window.location.href=`mailto:${encodeURIComponent(x.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
-    await sb.from("report_log").insert({month:mk, recipient_id:x.id, email:x.email, scope:x.scope, branch_name:x.scope==="branch"?bname(D.branches,x.branch_id):null, status:"sent manually"});
-    setTimeout(load,800); };
+  // e-mail goes out from the server (kpi-report function, same Gmail as HR) with the Excel attached
+  const callReport=async(body,what)=>{ setBusy(true);
+    try{ await saveMonthResults(D,E,body.month);   // make sure the saved results are the latest
+      const r=await sb.functions.invoke("kpi-report",{body});
+      if(r.error) throw new Error((r.error.context&&await r.error.context.text?.())||r.error.message);
+      const o=r.data||{}; toast(o.skipped&&!o.sent&&!o.failed&&o.errors&&o.errors.length? o.errors[0]
+        : L(`${what}: sent ${o.sent||0}`,`${what}: تم إرسال ${o.sent||0}`)+(o.failed?L(`, failed ${o.failed} — `,`، فشل ${o.failed} — `)+(o.errors||[]).join(" | "):""));
+    }catch(e){ toast(String(e.message||e)); }
+    setBusy(false); load(); };
+  const sendOne=x=>{ if(confirm(L(`Send the ${mk.slice(0,7)} report to ${x.email} now?`,`إرسال تقرير ${mk.slice(0,7)} إلى ${x.email} الآن؟`))) callReport({mode:"monthly",recipient_id:x.id,month:mk},x.name); };
+  const wk=thisMonth();
+  const weeklyList=D.pharmacists.filter(p=>scored(p)).map(p=>({p,u:users.find(u=>u.pharmacist_id===p.id)}));
+  const sendWeekly=(ph)=>{ const who=ph?ph.full_name:L("all pharmacists","كل الصيادلة");
+    if(confirm(L(`Send this month's KPIs to ${who} now?`,`إرسال مؤشرات هذا الشهر إلى ${who} الآن؟`))) callReport({mode:"weekly",month:wk,...(ph?{pharmacist_id:ph.id}:{})},L("Weekly","الأسبوعي")); };
+  const saveSt=async patch=>{ const n={...st,...patch,updated_at:new Date().toISOString()}; setSt(n);
+    const r=await sb.from("report_settings").upsert({id:1,monthly_enabled:n.monthly_enabled,weekly_enabled:n.weekly_enabled,weekly_lang:n.weekly_lang,updated_at:n.updated_at}); toast(r.error?r.error.message:L("Saved","تم الحفظ")); };
   const scopeName=x=> x.scope==="company"? L("Whole company","الشركة كاملة") : bname(D.branches,x.branch_id);
   return <div className="card grid">
     <div className="row" style={{justifyContent:"space-between"}}><h2>{L("Monthly reports","التقارير الشهرية")}</h2>
-      <span className="chip">{L("Manual sending","إرسال يدوي")}</span></div>
-    <div className="muted small">{L("Choose the month, then for each recipient: ① Download Excel ② E-mail opens your mail app with the address and subject filled in — attach the downloaded file and send. The whole-company file has branches + all pharmacists; a branch file has that branch + its pharmacists only. Pick recipients from the system users (their e-mail follows Admin → Accounts), or add an outside e-mail. Scores are the same as the dashboard.",
-      "اختر الشهر، ثم لكل مستلم: ① تنزيل Excel ② زر البريد يفتح تطبيق البريد بالعنوان والموضوع جاهزين — أرفق الملف الذي نزّلته وأرسل. ملف الشركة فيه الفروع وكل الصيادلة، وملف الفرع فيه الفرع وصيادلته فقط. اختر المستلم من مستخدمي النظام (بريده يتبع الإدارة ← الحسابات)، أو أضف بريدًا خارجيًا. النتائج نفس لوحة المتابعة.")}</div>
+      <span className="chip">{L("Automatic e-mail","إرسال تلقائي بالبريد")}</span></div>
+    {st && <div className="grid" style={{gap:8,background:"var(--soft, rgba(124,108,242,.06))",borderRadius:12,padding:12}}>
+      <label className="row" style={{gap:8}}><input type="checkbox" checked={!!st.monthly_enabled} onChange={e=>saveSt({monthly_enabled:e.target.checked})} style={{width:18,height:18}}/>
+        <span><strong>{L("Monthly report","التقرير الشهري")}</strong> — {L("to the recipients below (company or branch), on the 2nd of each month at 9:00 AM, for the previous month","للمستلمين بالأسفل (الشركة أو الفرع)، يوم 2 من كل شهر الساعة 9:00 صباحًا، عن الشهر السابق")}</span></label>
+      <label className="row" style={{gap:8}}><input type="checkbox" checked={!!st.weekly_enabled} onChange={e=>saveSt({weekly_enabled:e.target.checked})} style={{width:18,height:18}}/>
+        <span><strong>{L("Weekly to each pharmacist","أسبوعيًا لكل صيدلي")}</strong> — {L("his own KPIs this month so far, every Sunday at 9:00 AM (no ranking, only his own numbers)","مؤشراته هو فقط لهذا الشهر حتى تاريخه، كل يوم أحد الساعة 9:00 صباحًا (بدون ترتيب، أرقامه فقط)")}</span>
+        <select value={st.weekly_lang} onChange={e=>saveSt({weekly_lang:e.target.value})} style={{width:"auto"}}><option value="ar">العربية</option><option value="en">English</option></select></label>
+    </div>}
+    <div className="muted small">{L("E-mails go out from the system with the Excel file attached, like the HR e-mails. ✉ Send now sends the chosen month's report to one recipient straight away. The whole-company file has branches + all pharmacists; a branch file has that branch + its pharmacists only. Pick recipients from the system users (their e-mail follows Admin → Accounts), or add an outside e-mail. Scores are the same as the dashboard.",
+      "تُرسل الرسائل من النظام ومعها ملف Excel مرفق، مثل رسائل الموارد البشرية. زر ✉ إرسال الآن يرسل تقرير الشهر المختار لمستلم واحد فورًا. ملف الشركة فيه الفروع وكل الصيادلة، وملف الفرع فيه الفرع وصيادلته فقط. اختر المستلم من مستخدمي النظام (بريده يتبع الإدارة ← الحسابات)، أو أضف بريدًا خارجيًا. النتائج نفس لوحة المتابعة.")}</div>
 
     <div className="row" style={{alignItems:"flex-end"}}>
       <label className="f">{L("User","المستخدم")}<select value={f.user_id} onChange={e=>pickUser(e.target.value)}>
@@ -1156,7 +1175,7 @@ function ReportsPanel({D,E,toast,lang}){
       {rows.map(R).map(x=><tr key={x.id} style={x.active?null:{opacity:.5}}><td><strong>{x.linked?"👤 ":""}{x.name}</strong>{!x.linked&&<span className="muted small"> {L("(external)","(خارجي)")}</span>}</td><td dir="ltr" className="small">{x.email}</td><td>{scopeName(x)}</td><td className="small">{x.lang==="ar"?"العربية":"English"}</td>
         <td><input type="checkbox" checked={x.active} onChange={()=>toggle(x)} style={{width:18,height:18}}/></td>
         <td className="row" style={{gap:6,flexWrap:"nowrap"}}><button className="btn sec" style={{padding:"4px 10px"}} onClick={()=>downloadReport(D,E,mk,x.scope,x.branch_id,x.lang)}>⬇ {L("Download Excel","تنزيل Excel")}</button>
-          <button className="btn" style={{padding:"4px 10px"}} onClick={()=>mailTo(x)}>✉ {L("E-mail","بريد")}</button>
+          <button className="btn" style={{padding:"4px 10px"}} disabled={busy||!x.active} onClick={()=>sendOne(x)}>✉ {L("Send now","إرسال الآن")}</button>
           <button className="btn warn" style={{padding:"4px 8px"}} onClick={()=>del(x)}>×</button></td></tr>)}</tbody></table></div>}
 
     <div className="row" style={{alignItems:"flex-end",borderTop:"1px solid var(--line)",paddingTop:12}}>
@@ -1165,12 +1184,19 @@ function ReportsPanel({D,E,toast,lang}){
       <button className="btn sec" disabled={busy} onClick={saveNow}>{L("Save this month's results","حفظ نتائج هذا الشهر")}</button>
       {saved && <span className="muted small">{L("Last saved: ","آخر حفظ: ")}{saved.month.slice(0,7)} · {new Date(saved.saved_at).toLocaleString(lang==="ar"?"ar-SA":"en-GB",{dateStyle:"short",timeStyle:"short"})}</span>}
     </div>
-    <div className="muted small">{L("Upload the last Juleb report of the month before downloading, so the month's final days are included.",
-      "ارفع آخر تقرير جُلَب للشهر قبل التنزيل، حتى تدخل آخر أيام الشهر.")}</div>
+    <div className="muted small">{L("The e-mails use the results saved when the KPI page is opened after a Juleb upload. Upload the month's last Juleb report before the 2nd, and the week's report before Sunday 9 AM.",
+      "الرسائل تستخدم النتائج المحفوظة عند فتح صفحة المؤشرات بعد رفع تقرير جُلَب. ارفع آخر تقرير للشهر قبل يوم 2، وتقرير الأسبوع قبل الأحد 9 صباحًا.")}</div>
+
+    <div className="row" style={{justifyContent:"space-between",borderTop:"1px solid var(--line)",paddingTop:12}}><h3 style={{margin:0}}>{L("Weekly e-mail to pharmacists","البريد الأسبوعي للصيادلة")}</h3>
+      <button className="btn sec" disabled={busy} onClick={()=>sendWeekly(null)}>✉ {L("Send to all now","إرسال للجميع الآن")}</button></div>
+    <div style={{overflowX:"auto"}}><table><thead><tr><th>{L("Pharmacist","الصيدلي")}</th><th>{L("Account e-mail","بريد الحساب")}</th><th></th></tr></thead><tbody>
+      {weeklyList.map(({p,u})=><tr key={p.id}><td><strong>{p.full_name}</strong></td>
+        <td dir="ltr" className="small">{u&&u.email? u.email : <span className="err">{L("no login account linked","لا يوجد حساب مرتبط")}</span>}{u&&u.active===false&&<span className="muted small"> ({L("inactive","غير فعّال")})</span>}</td>
+        <td><button className="btn sec" style={{padding:"4px 10px"}} disabled={busy||!u||!u.email||u.active===false} onClick={()=>sendWeekly(p)}>✉ {L("Send now","إرسال الآن")}</button></td></tr>)}</tbody></table></div>
 
     {log.length>0 && <><h3>{L("Sent log","سجل الإرسال")}</h3><table><tbody>{log.map(g=><tr key={g.id}><td className="small">{new Date(g.sent_at).toLocaleString(lang==="ar"?"ar-SA":"en-GB",{dateStyle:"short",timeStyle:"short"})}</td>
-      <td className="small">{g.month.slice(0,7)}</td><td dir="ltr" className="small">{g.email}</td><td className="small">{g.scope==="company"?L("Company","الشركة"):g.branch_name}</td>
-      <td><span className={"chip"+(g.status==="sent"?"":" bad")}>{g.status}</span>{g.note&&<span className="muted small"> {g.note}</span>}</td></tr>)}</tbody></table></>}
+      <td className="small">{g.month.slice(0,7)}</td><td className="small">{g.name||""}</td><td dir="ltr" className="small">{g.email}</td><td className="small">{g.kind==="weekly"?L("Weekly","أسبوعي"):g.scope==="company"?L("Company","الشركة"):g.branch_name}{g.sent_by?<span className="muted"> · {g.sent_by==="auto"?L("auto","تلقائي"):L("manual","يدوي")}</span>:null}</td>
+      <td><span className={"chip"+(String(g.status).startsWith("sent")?"":" bad")}>{g.status}</span>{g.note&&<span className="muted small"> {g.note}</span>}</td></tr>)}</tbody></table></>}
   </div>;
 }
 
