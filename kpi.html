@@ -1097,18 +1097,27 @@ function JulebImport({t,D,reload,toast}){
 function ReportsPanel({D,E,toast,lang}){
   const L=(en,a)=>lang==="ar"?a:en;
   const [rows,setRows]=useState(null); const [log,setLog]=useState([]); const [saved,setSaved]=useState(null);
-  const blank={name:"",email:"",scope:"company",branch_id:"",lang:lang==="ar"?"ar":"en"};
+  const blank={user_id:"",name:"",email:"",scope:"company",branch_id:"",lang:lang==="ar"?"ar":"en"};
+  const [users,setUsers]=useState([]);   // system accounts (Admin → Accounts)
   const [f,setF]=useState(blank); const [busy,setBusy]=useState(false); const [mk,setMk]=useState(addMonths(thisMonth(),-1));
   const load=useCallback(async()=>{
+    const u=await sb.from("profiles").select("id,full_name,email,active,branch_id").order("full_name"); if(u.error) toast(u.error.message); setUsers((u.data||[]).filter(x=>x.email));
     const r=await sb.from("report_recipients").select("*").order("created_at"); if(r.error) toast(r.error.message); setRows(r.data||[]);
     const g=await sb.from("report_log").select("*").order("sent_at",{ascending:false}).limit(20); setLog(g.data||[]);
     const s=await sb.from("kpi_month_results").select("month,saved_at").order("saved_at",{ascending:false}).limit(1); setSaved((s.data||[])[0]||null);
   },[]);
   useEffect(()=>{ load(); },[load]);
+  const acc=id=>users.find(u=>u.id===id);
+  // linked recipients always use the account's current name and e-mail
+  const R=x=>{ const u=x.user_id&&acc(x.user_id); return u?{...x,name:u.full_name||x.name,email:u.email||x.email,linked:true}:x; };
+  const isOther=f.user_id==="other";
+  const pickUser=id=>{ if(id==="other"||!id) return setF({...f,user_id:id,name:"",email:""}); const u=acc(id); setF({...f,user_id:id,name:u.full_name||u.email,email:u.email}); };
   const validEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
-  const add=async()=>{ if(!f.name.trim()||!validEmail||(f.scope==="branch"&&!f.branch_id)) return; setBusy(true);
-    const r=await sb.from("report_recipients").insert({name:f.name.trim(),email:f.email.trim().toLowerCase(),scope:f.scope,branch_id:f.scope==="branch"?f.branch_id:null,lang:f.lang});
-    toast(r.error?r.error.message:L("Saved","تم الحفظ")); if(!r.error){ setF(blank); load(); } setBusy(false); };
+  const ready=!!f.user_id && !!f.name.trim() && validEmail && (f.scope==="company"||!!f.branch_id);
+  const add=async()=>{ if(!ready) return; setBusy(true);
+    const r=await sb.from("report_recipients").insert({user_id:isOther?null:f.user_id,name:f.name.trim(),email:f.email.trim().toLowerCase(),scope:f.scope,branch_id:f.scope==="branch"?f.branch_id:null,lang:f.lang});
+    const dup=r.error&&r.error.code==="23505";
+    toast(dup?L("This user already gets this report","هذا المستخدم مضاف لهذا التقرير بالفعل"):r.error?r.error.message:L("Saved","تم الحفظ")); if(!r.error){ setF(blank); load(); } setBusy(false); };
   const toggle=async x=>{ const r=await sb.from("report_recipients").update({active:!x.active}).eq("id",x.id); if(r.error) toast(r.error.message); load(); };
   const del=async x=>{ if(!confirm(L("Remove ","حذف ")+x.name+"?")) return; const r=await sb.from("report_recipients").delete().eq("id",x.id); if(r.error) toast(r.error.message); load(); };
   const saveNow=async()=>{ setBusy(true); try{ const a=await saveMonthResults(D,E,mk); toast(L(`Saved ${a.n} result rows for `,`تم حفظ ${a.n} صف لشهر `)+mk.slice(0,7)); load(); }catch(e){ toast(String(e.message||e)); } setBusy(false); };
@@ -1122,23 +1131,29 @@ function ReportsPanel({D,E,toast,lang}){
   return <div className="card grid">
     <div className="row" style={{justifyContent:"space-between"}}><h2>{L("Monthly reports","التقارير الشهرية")}</h2>
       <span className="chip">{L("Manual sending","إرسال يدوي")}</span></div>
-    <div className="muted small">{L("Choose the month, then for each recipient: ① Download Excel ② E-mail opens your mail app with the address and subject filled in — attach the downloaded file and send. The whole-company file has branches + all pharmacists; a branch file has that branch + its pharmacists only. Scores are the same as the dashboard.",
-      "اختر الشهر، ثم لكل مستلم: ① تنزيل Excel ② زر البريد يفتح تطبيق البريد بالعنوان والموضوع جاهزين — أرفق الملف الذي نزّلته وأرسل. ملف الشركة فيه الفروع وكل الصيادلة، وملف الفرع فيه الفرع وصيادلته فقط. النتائج نفس لوحة المتابعة.")}</div>
+    <div className="muted small">{L("Choose the month, then for each recipient: ① Download Excel ② E-mail opens your mail app with the address and subject filled in — attach the downloaded file and send. The whole-company file has branches + all pharmacists; a branch file has that branch + its pharmacists only. Pick recipients from the system users (their e-mail follows Admin → Accounts), or add an outside e-mail. Scores are the same as the dashboard.",
+      "اختر الشهر، ثم لكل مستلم: ① تنزيل Excel ② زر البريد يفتح تطبيق البريد بالعنوان والموضوع جاهزين — أرفق الملف الذي نزّلته وأرسل. ملف الشركة فيه الفروع وكل الصيادلة، وملف الفرع فيه الفرع وصيادلته فقط. اختر المستلم من مستخدمي النظام (بريده يتبع الإدارة ← الحسابات)، أو أضف بريدًا خارجيًا. النتائج نفس لوحة المتابعة.")}</div>
 
     <div className="row" style={{alignItems:"flex-end"}}>
-      <label className="f">{L("Name","الاسم")}<input value={f.name} onChange={e=>setF({...f,name:e.target.value})} placeholder={L("CEO","الرئيس التنفيذي")}/></label>
-      <label className="f">{L("E-mail","البريد الإلكتروني")}<input type="email" dir="ltr" value={f.email} onChange={e=>setF({...f,email:e.target.value})} placeholder="name@company.com"/></label>
+      <label className="f">{L("User","المستخدم")}<select value={f.user_id} onChange={e=>pickUser(e.target.value)}>
+        <option value="">{L("— choose a user —","— اختر مستخدمًا —")}</option>
+        {users.map(u=><option key={u.id} value={u.id}>{(u.full_name||u.email)+(u.active===false?L(" (inactive)"," (غير فعّال)"):"")} · {u.email}</option>)}
+        <option value="other">{L("Other e-mail (not a system user)…","بريد آخر (ليس مستخدمًا بالنظام)…")}</option></select></label>
+      {isOther ? <>
+        <label className="f">{L("Name","الاسم")}<input value={f.name} onChange={e=>setF({...f,name:e.target.value})} placeholder={L("CEO","الرئيس التنفيذي")}/></label>
+        <label className="f">{L("E-mail","البريد الإلكتروني")}<input type="email" dir="ltr" value={f.email} onChange={e=>setF({...f,email:e.target.value})} placeholder="name@company.com"/></label>
+      </> : f.user_id ? <label className="f">{L("E-mail","البريد الإلكتروني")}<input dir="ltr" value={f.email} readOnly style={{opacity:.7}}/></label> : null}
       <label className="f">{L("Report","التقرير")}<select value={f.scope==="company"?"company":f.branch_id} onChange={e=>setF(e.target.value==="company"?{...f,scope:"company",branch_id:""}:{...f,scope:"branch",branch_id:e.target.value})}>
         <option value="company">{L("Whole company","الشركة كاملة")}</option>
         {D.branches.map(b=><option key={b.id} value={b.id}>{L("Branch: ","فرع: ")}{b.name}</option>)}</select></label>
       <label className="f" style={{maxWidth:130}}>{L("Language","اللغة")}<select value={f.lang} onChange={e=>setF({...f,lang:e.target.value})}><option value="ar">العربية</option><option value="en">English</option></select></label>
-      <button className="btn" disabled={busy||!f.name.trim()||!validEmail} onClick={add}>{L("Add recipient","إضافة مستلم")}</button>
+      <button className="btn" disabled={busy||!ready} onClick={add}>{L("Add recipient","إضافة مستلم")}</button>
     </div>
-    {f.email && !validEmail && <div className="err">{L("Enter a valid e-mail address","أدخل بريدًا إلكترونيًا صحيحًا")}</div>}
+    {isOther && f.email && !validEmail && <div className="err">{L("Enter a valid e-mail address","أدخل بريدًا إلكترونيًا صحيحًا")}</div>}
 
     {rows==null? <div className="empty">…</div> : rows.length===0? <div className="empty">{L("No recipients yet. Add the first one above.","لا يوجد مستلمون بعد. أضف أول مستلم بالأعلى.")}</div> :
     <div style={{overflowX:"auto"}}><table><thead><tr><th>{L("Name","الاسم")}</th><th>{L("E-mail","البريد")}</th><th>{L("Report","التقرير")}</th><th>{L("Language","اللغة")}</th><th>{L("Active","فعّال")}</th><th></th></tr></thead><tbody>
-      {rows.map(x=><tr key={x.id} style={x.active?null:{opacity:.5}}><td><strong>{x.name}</strong></td><td dir="ltr" className="small">{x.email}</td><td>{scopeName(x)}</td><td className="small">{x.lang==="ar"?"العربية":"English"}</td>
+      {rows.map(R).map(x=><tr key={x.id} style={x.active?null:{opacity:.5}}><td><strong>{x.linked?"👤 ":""}{x.name}</strong>{!x.linked&&<span className="muted small"> {L("(external)","(خارجي)")}</span>}</td><td dir="ltr" className="small">{x.email}</td><td>{scopeName(x)}</td><td className="small">{x.lang==="ar"?"العربية":"English"}</td>
         <td><input type="checkbox" checked={x.active} onChange={()=>toggle(x)} style={{width:18,height:18}}/></td>
         <td className="row" style={{gap:6,flexWrap:"nowrap"}}><button className="btn sec" style={{padding:"4px 10px"}} onClick={()=>downloadReport(D,E,mk,x.scope,x.branch_id,x.lang)}>⬇ {L("Download Excel","تنزيل Excel")}</button>
           <button className="btn" style={{padding:"4px 10px"}} onClick={()=>mailTo(x)}>✉ {L("E-mail","بريد")}</button>
