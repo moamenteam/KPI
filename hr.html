@@ -234,13 +234,16 @@ function LeaveTab({me,leaves,acts,reload,toast}){
   const [f,setF] = useState(blank);
   const [file,setFile] = useState(null);
   const [busy,setBusy] = useState(false);
+  const [paid,setPaid] = useState(0);   // days HR converted to cash this year
   useEffect(()=>{ sb.from("hr_leave_entitlements").select("annual_days").eq("profile_id",me.id).eq("year",year).maybeSingle()
-    .then(({data})=>setEnt(data?data.annual_days:null)); },[me.id,leaves.length]);
+    .then(({data})=>setEnt(data?data.annual_days:null));
+    sb.from("hr_leave_payouts").select("days").eq("profile_id",me.id).eq("year",year)
+    .then(({data})=>setPaid((data||[]).reduce((t,x)=>t+num(x.days),0))); },[me.id,leaves.length]);
   const mine = leaves.filter(l=>l.profile_id===me.id);
   const annualThisYear = mine.filter(l=>l.leave_type==="annual" && l.start_date.startsWith(String(year)));
   const taken = annualThisYear.filter(l=>l.stage==="approved").reduce((s,l)=>s+l.days,0);
   const pend = annualThisYear.filter(l=>SEQ.includes(l.stage)).reduce((s,l)=>s+l.days,0);
-  const remaining = ent==null ? null : Math.max(ent-taken-pend,0);
+  const remaining = ent==null ? null : Math.max(ent-taken-pend-paid,0);
   const days = f.from && f.to && f.to>=f.from ? dayDiff(f.from,f.to) : 0;
   let warn = "";
   if (f.to < f.from) warn = tr("تاريخ النهاية قبل تاريخ البداية","End date is before start date");
@@ -264,10 +267,11 @@ function LeaveTab({me,leaves,acts,reload,toast}){
     const {error} = await sb.rpc("hr_leave_cancel",{p_id:id}); if(error) toast(error.message,true); else { toast(tr("تم الإلغاء","Cancelled")); reload(); } };
   return <>
     <div className="card grid2">
-      <div className="stat"><b>{ent==null?"—":ent}</b><span>{tr(`الرصيد السنوي ${year}`,`Annual balance ${year}`)}</span></div>
+      <div className="stat"><b>{ent==null?"—":ent}</b><span>{tr(`استحقاق السنة ${year}`,`Yearly entitlement ${year}`)}</span></div>
       <div className="stat"><b>{taken}</b><span>{tr("أيام مستخدمة (معتمدة)","Days taken (approved)")}</span></div>
       <div className="stat"><b>{pend}</b><span>{tr("أيام في انتظار الموافقة","Days awaiting approval")}</span></div>
-      <div className="stat"><b style={{color:"var(--teal)"}}>{remaining==null?"—":remaining}</b><span>{tr("المتبقي","Remaining")}</span></div>
+      {paid>0 && <div className="stat"><b>{paid}</b><span>{tr("أيام صُرفت نقدًا","Days paid out in cash")}</span></div>}
+      <div className="stat"><b style={{color:"var(--teal)"}}>{remaining==null?"—":remaining}</b><span>{tr("الرصيد المتبقي","Remaining balance")}</span></div>
     </div>
     <div className="card">
       <h2>{tr("طلب إجازة جديد","New leave request")}</h2>
@@ -339,7 +343,7 @@ function ApprovalsTab({me,leaves,acts,pmap,reload,toast}){
 }
 
 /* ---------- HR: balances + leave record ---------- */
-function HrLeaveTab({people,leaves,acts,pmap,toast}){
+function HrLeaveTab({me,people,leaves,acts,pmap,toast}){
   const tr = useT();
   const Y = new Date().getFullYear();
   const [year,setYear] = useState(Y);
@@ -347,8 +351,13 @@ function HrLeaveTab({people,leaves,acts,pmap,toast}){
   const [edit,setEdit] = useState({});
   const [def,setDef] = useState("30");
   const [fs,setFs] = useState("all");
-  const load = () => sb.from("hr_leave_entitlements").select("*").eq("year",year).then(({data})=>{
-    const m={}; (data||[]).forEach(e=>m[e.profile_id]=e.annual_days); setEnts(m); setEdit({}); });
+  const [pays,setPays] = useState([]);          // hr_leave_payouts for this year
+  const [po,setPo] = useState(null);            // open "convert to cash" form {pid,days,amount,date,note}
+  const load = () => {
+    sb.from("hr_leave_entitlements").select("*").eq("year",year).then(({data})=>{
+      const m={}; (data||[]).forEach(e=>m[e.profile_id]=e.annual_days); setEnts(m); setEdit({}); });
+    sb.from("hr_leave_payouts").select("*").eq("year",year).order("paid_on",{ascending:false}).then(({data,error})=>{ if(error) toast(error.message,true); setPays(data||[]); });
+  };
   useEffect(()=>{load();},[year]);
   const save = async pid => {
     const v = edit[pid]; if (v===undefined || v==="") return;
@@ -363,6 +372,17 @@ function HrLeaveTab({people,leaves,acts,pmap,toast}){
   };
   const usedOf = pid => leaves.filter(l=>l.profile_id===pid && l.leave_type==="annual" && l.start_date.startsWith(String(year)) && l.stage==="approved").reduce((s,l)=>s+l.days,0);
   const pendOf = pid => leaves.filter(l=>l.profile_id===pid && l.leave_type==="annual" && l.start_date.startsWith(String(year)) && SEQ.includes(l.stage)).reduce((s,l)=>s+l.days,0);
+  const paidOf = pid => pays.filter(x=>x.profile_id===pid).reduce((t,x)=>t+num(x.days),0);
+  const leftOf = pid => ents[pid]===undefined ? null : Math.max(ents[pid]-usedOf(pid)-pendOf(pid)-paidOf(pid),0);
+  const openPay = p => setPo({pid:p.id, name:p.full_name, days:String(leftOf(p.id)||""), amount:"", date:todayStr(), note:""});
+  const savePay = async () => {
+    const d=num(po.days); if(!(d>0)) return toast(tr("أدخل عدد الأيام","Enter the number of days"),true);
+    const left=leftOf(po.pid); if(left!=null && d>left) return toast(tr(`المتبقي ${left} يوم فقط`,`Only ${left} day(s) remaining`),true);
+    const {error} = await sb.from("hr_leave_payouts").insert({profile_id:po.pid, year, days:d, amount:po.amount===""?null:num(po.amount), paid_on:po.date||todayStr(), note:po.note.trim()||null, created_by_name:me?.full_name||null});
+    if (error) return toast(error.message,true); toast(tr("تم تسجيل الصرف","Payout recorded")); setPo(null); load();
+  };
+  const delPay = async x => { if(!confirm(tr("حذف هذا السجل؟ ستعود الأيام إلى الرصيد.","Delete this record? The days go back to the balance."))) return;
+    const {error} = await sb.from("hr_leave_payouts").delete().eq("id",x.id); if(error) return toast(error.message,true); load(); };
   const list = leaves.filter(l => fs==="all" ? true : fs==="pending" ? SEQ.includes(l.stage) : l.stage===fs);
   return <>
     <div className="card">
@@ -375,12 +395,37 @@ function HrLeaveTab({people,leaves,acts,pmap,toast}){
         </div>
       </div>
       <div className="tw"><table>
-        <thead><tr><th>{tr("الموظف","Employee")}</th><th>{tr("الفرع","Branch")}</th><th className="num">{tr("الرصيد","Balance")}</th><th className="num">{tr("مستخدم","Taken")}</th><th className="num">{tr("معلّق","Pending")}</th><th className="num">{tr("متبقي","Left")}</th><th></th></tr></thead>
-        <tbody>{people.map(p=>{ const e=ents[p.id]; const u=usedOf(p.id), pd=pendOf(p.id);
+        <thead><tr><th>{tr("الموظف","Employee")}</th><th>{tr("الفرع","Branch")}</th><th className="num">{tr("الاستحقاق السنوي","Yearly entitlement")}</th><th className="num">{tr("مستخدم (معتمد)","Taken (approved)")}</th><th className="num">{tr("معلّق","Pending")}</th><th className="num">{tr("صُرف نقدًا","Paid in cash")}</th><th className="num">{tr("الرصيد المتبقي","Remaining balance")}</th><th></th></tr></thead>
+        <tbody>{people.map(p=>{ const e=ents[p.id]; const u=usedOf(p.id), pd=pendOf(p.id), pc=paidOf(p.id), lf=leftOf(p.id);
           return <tr key={p.id}><td>{p.full_name}</td><td className="muted">{p.branch||"—"}</td>
             <td className="num"><input type="number" style={{width:90}} value={edit[p.id]!==undefined?edit[p.id]:(e??"")} placeholder="—" onChange={ev=>setEdit({...edit,[p.id]:ev.target.value})}/></td>
-            <td className="num">{u}</td><td className="num">{pd}</td><td className="num"><b>{e===undefined?"—":Math.max(e-u-pd,0)}</b></td>
-            <td>{edit[p.id]!==undefined && <button className="btn sm" onClick={()=>save(p.id)}>{tr("حفظ","Save")}</button>}</td></tr>; })}
+            <td className="num">{u}</td><td className="num">{pd}</td><td className="num">{pc||"—"}</td>
+            <td className="num"><b style={{color:"var(--teal)"}}>{lf==null?"—":lf}</b></td>
+            <td className="row" style={{gap:6,flexWrap:"nowrap"}}>{edit[p.id]!==undefined && <button className="btn sm" onClick={()=>save(p.id)}>{tr("حفظ","Save")}</button>}
+              {lf>0 && <button className="btn sec sm" onClick={()=>openPay(p)}>💰 {tr("صرف نقدي","Convert to cash")}</button>}</td></tr>; })}
+        </tbody></table></div>
+      <div className="small muted" style={{marginTop:8}}>{tr("الرصيد المتبقي = الاستحقاق − المستخدم المعتمد − المعلّق − ما صُرف نقدًا. تُخصم الإجازة بمجرد اعتمادها النهائي حتى لو لم يبدأ تاريخها بعد.",
+        "Remaining = entitlement − approved taken − pending − paid in cash. Leave is deducted as soon as it is fully approved, even before its dates start.")}</div>
+    </div>
+    {po && <div className="card grid" style={{gap:10}}>
+      <h2 style={{margin:0}}>💰 {tr("صرف الأيام غير المستخدمة نقدًا","Convert unused days to cash")} — {po.name} ({year})</h2>
+      <div className="small muted">{tr("هذا تسجيل فقط — لا يتم أي تحويل مالي تلقائيًا. تُخصم الأيام من رصيد السنة.","Record only — no payment is made automatically. The days are deducted from this year's balance.")}</div>
+      <div className="grid2">
+        <label className="f">{tr("عدد الأيام","Days")}<input type="number" min="0" step="0.5" value={po.days} onChange={e=>setPo({...po,days:e.target.value})}/></label>
+        <label className="f">{tr("المبلغ (ريال) — اختياري","Amount (SAR) — optional")}<input type="number" min="0" value={po.amount} onChange={e=>setPo({...po,amount:e.target.value})}/></label>
+        <label className="f">{tr("تاريخ الصرف","Paid on")}<input type="date" value={po.date} onChange={e=>setPo({...po,date:e.target.value})}/></label>
+        <label className="f">{tr("ملاحظة","Note")}<input value={po.note} onChange={e=>setPo({...po,note:e.target.value})} placeholder={tr("مثال: صرف رصيد 2026 مع راتب ديسمبر","e.g. 2026 balance paid with December salary")}/></label>
+      </div>
+      <div className="row"><button className="btn" onClick={savePay}>{tr("تسجيل الصرف","Record payout")}</button><button className="btn sec" onClick={()=>setPo(null)}>{tr("إلغاء","Cancel")}</button></div>
+    </div>}
+    <div className="card">
+      <h2 style={{marginTop:0}}>{tr(`سجل صرف الأيام نقدًا ${year}`,`Cash-out log ${year}`)}</h2>
+      <div className="tw"><table>
+        <thead><tr><th>{tr("التاريخ","Date")}</th><th>{tr("الموظف","Employee")}</th><th>{tr("الفرع","Branch")}</th><th className="num">{tr("أيام","Days")}</th><th className="num">{tr("المبلغ","Amount")}</th><th>{tr("ملاحظة","Note")}</th><th>{tr("سجّله","Recorded by")}</th><th></th></tr></thead>
+        <tbody>{pays.map(x=><tr key={x.id}><td>{x.paid_on}</td><td>{pmap[x.profile_id]?.full_name||"—"}</td><td className="muted">{pmap[x.profile_id]?.branch||"—"}</td>
+          <td className="num">{x.days}</td><td className="num">{x.amount==null?"—":Number(x.amount).toLocaleString("en-US")}</td><td className="small">{x.note||""}</td><td className="small muted">{x.created_by_name||""}</td>
+          <td><button className="btn red sm" onClick={()=>delPay(x)}>×</button></td></tr>)}
+        {pays.length===0 && <tr><td colSpan="8" className="empty">{tr("لا يوجد صرف مسجّل لهذه السنة","No payouts recorded for this year")}</td></tr>}
         </tbody></table></div>
     </div>
     <div className="card">
@@ -811,7 +856,7 @@ function App(){
         {active==="requests" && <RequestsTab me={me} srs={srs} reload={load} toast={toast}/>}
         {active==="salary" && <SalaryTab me={me} lang={lang}/>}
         {active==="approvals" && <ApprovalsTab me={me} leaves={leaves} acts={acts} pmap={pmap} reload={load} toast={toast}/>}
-        {active==="hrLeave" && <HrLeaveTab people={people} leaves={leaves} acts={acts} pmap={pmap} toast={toast}/>}
+        {active==="hrLeave" && <HrLeaveTab me={me} people={people} leaves={leaves} acts={acts} pmap={pmap} toast={toast}/>}
         {active==="hrReq" && <HrRequestsTab srs={srs} pmap={pmap} reload={load} toast={toast}/>}
         {active==="payroll" && <PayrollTab people={people} toast={toast} lang={lang}/>}
       </>}
