@@ -357,14 +357,14 @@ function makeEngine(D){ // D = {kpis, branches, pharmacists, assignments, target
   const tgtA=(code,mk,bid,pid)=>{ for(const c of alias(code)){ const v=tgt(c,mk,bid,pid); if(v) return v; } return null; };
   const snapA=(code,mk,bid,pid)=>{ for(const c of alias(code)){ const v=snap(c,mk,bid,pid); if(v) return v; } return null; };
   // pharmacist target = the pharmacist's own target if set. Otherwise from the branch target:
-  //  • lab: the branch figure is the target for EACH pharmacist (not split)
-  //  • website orders (and others): the branch target is SHARED — split between its pharmacists by days worked
-  //    e.g. Kharsh Q4 151 → 50.3 a month for the branch → ≈ 25 per pharmacist (2 pharmacists)
+  //  • lab and website orders: the branch figure is the target for EACH pharmacist (not split, not averaged)
+  //    e.g. Kharsh Q4 151 → 50.3 a month → every pharmacist in Kharsh has 50.3 orders as his own target
+  //  • others: the branch target is SHARED — split between its pharmacists by days worked
   //  On-call staff get a pro-rata part from each branch they worked in.
-  const phTarget=(code,pid,mk)=>{ let own=tgtA(code,mk,null,pid);
-    if(own && code==="online" && shares(pid,mk).some(x=>Math.abs((tgtA(code,mk,x.branch_id,null)||-1)-own)<0.01)) own=null;   // branch total copied onto the pharmacist → split it
+  const PER_PH=[...LAB,"online"];
+  const phTarget=(code,pid,mk)=>{ const own=tgtA(code,mk,null,pid);
     if(own) return {t:own};
-    const each=LAB.includes(code); let sum=0;
+    const each=PER_PH.includes(code); let sum=0;
     shares(pid,mk).forEach(x=>{ const bt=tgtA(code,mk,x.branch_id,null); if(!bt) return;
       if(each){ sum+=bt*Math.min(1,x.share); return; }
       const tot=D.pharmacists.filter(scored).reduce((a,p)=>a+(shares(p.id,mk).find(s=>s.branch_id===x.branch_id)?.share||0),0)||x.share;
