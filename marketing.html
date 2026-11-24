@@ -434,6 +434,7 @@ function Infant({tr,toast,onCount}){
 
   const branches=useMemo(()=>[...new Set((rows||[]).map(r=>r.branch).filter(Boolean))].sort(),[rows]);
   const lp=r=>String(r.last_purchase||"").slice(0,10);
+  const dataTo=useMemo(()=>(rows||[]).reduce((m,r)=>lp(r)>m?lp(r):m,""),[rows]);   // latest sale loaded
   const SORTS={amount_desc:(a,b)=>(Number(b.spent_60d)||0)-(Number(a.spent_60d)||0), amount_asc:(a,b)=>(Number(a.spent_60d)||0)-(Number(b.spent_60d)||0),
                date_desc:(a,b)=>lp(b).localeCompare(lp(a)), date_asc:(a,b)=>lp(a).localeCompare(lp(b))};
   const list=(rows||[]).filter(r=>(!branch||r.branch===branch) && (!lpFrom||lp(r)>=lpFrom) && (!lpTo||lp(r)<=lpTo)
@@ -456,7 +457,7 @@ function Infant({tr,toast,onCount}){
         h("option",{value:"date_asc"},tr("آخر شراء: الأقدم أولًا","Last purchase: oldest first")))),
       (lpFrom||lpTo) && h("button",{className:"btn sm",onClick:()=>{setLpFrom("");setLpTo("");}},tr("مسح التاريخ","Clear dates")),
       h("span",{className:"badge b-due"},tr("مفتوحة طوال الشهر","Open all month")),
-      h("span",{className:"sub"},tr("تتجدد القائمة في ","List resets on "),h("span",{className:"num"},LTR(addDays(win.end,1)))),
+      dataTo && h("span",{className:"sub"},tr("المبيعات حتى ","Sales up to "),h("span",{className:"num"},LTR(dataTo))),
       h("span",{className:"sub"},tr("عملاء اشتروا من قسم الأم والطفل خلال آخر 60 يومًا (لديهم أطفال) — بدون من يشتري حليب أطفال بأكثر من 350 ريال شهريًا. اعرض عليهم شراء كمية","Customers who bought Mom & Baby products in the last 60 days (they have children), excluding those already buying over 350 SAR of milk a month — offer a bulk purchase"))),
     h("div",{className:"card scroll"},
       rows===null ? h("div",{className:"empty"},"…")
