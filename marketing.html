@@ -116,8 +116,6 @@ const SB_URL = "https://occubmnoepgdysbyacgj.supabase.co";
 let SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9jY3VibW5vZXBnZHlzYnlhY2dqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg4NjYzMTksImV4cCI6MjEwNDQ0MjMxOX0.tATa_FtKbo6MMgaJX4XqrUqJeYnT3RSu9A03dt8fIyc";
 const TZ = "Asia/Riyadh";
 const COUPON_MIN = 300;          // a single cash bill must be MORE than this (set in the SQL view too)
-const INFANT_DAYS = [9, 26, 30]; // the infant list OPENS on these days (30 → last day in February)
-const INFANT_LEN  = 3;           // ...and stays open this many days, counting the opening day (9–11, 26–28, 30–1st)
 /* Per-account tab access, set in Home → Admin → Accounts & permissions.
    pages keys: "marketing" = list access, "mk_set" = tabs chosen explicitly, "mk_<tab>" = tab shown. */
 const MK_LIST_TABS = ["refill","coupon","infant","log"];
@@ -140,21 +138,9 @@ const daysBetween = (a,b) => Math.round((new Date(b+"T00:00:00Z")-new Date(a+"T0
 const monthStr = () => todayStr().slice(0,7);
 const lastDayOf = (y,m) => new Date(Date.UTC(y,m,0)).getUTCDate(); // m = 1..12
 const ymd = (y,m,d) => `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-/* opening days of a month (a day the month doesn't have → its last day, e.g. 30 → 28 Feb) */
-function infantStarts(y,m){ const last=lastDayOf(y,m); return [...new Set(INFANT_DAYS.map(d=>Math.min(d,last)))].map(d=>ymd(y,m,d)); }
-/* windows containing date s (from this and last month's opening days) */
-function infantHits(s){ const [y,m]=s.split("-").map(Number); const py=m===1?y-1:y, pm=m===1?12:m-1;
-  return [...infantStarts(py,pm),...infantStarts(y,m)].map(st=>({start:st,end:addDays(st,INFANT_LEN-1)})).filter(w=>w.start<=s&&s<=w.end); }
-/* the open window containing s, or null. Overlapping/back-to-back windows (e.g. 26–28 Feb + 28 Feb–2 Mar) merge into one. */
-function infantWindow(s){
-  if(!infantHits(s).length) return null;
-  let start=s, end=s;
-  while(infantHits(addDays(start,-1)).length) start=addDays(start,-1);
-  while(infantHits(addDays(end,1)).length) end=addDays(end,1);
-  return {start,end};
-}
-const isInfantDay = s => !!infantWindow(s);
-function nextInfantDay(s){ for(let i=1;i<=40;i++){ const d=addDays(s,i); if(isInfantDay(d)) return d; } return addDays(s,40); }
+/* Infant list is open ALL month: the window is the whole calendar month (1st → last day).
+   A customer contacted this month is hidden until next month. */
+function infantWindow(s){ const [y,m]=s.split("-").map(Number); return {start:ymd(y,m,1), end:ymd(y,m,lastDayOf(y,m))}; }
 function waPhone(p){
   if(!p) return "";
   let d=String(p).replace(/\D/g,"");
@@ -423,8 +409,7 @@ function Coupon({tr,toast,onCount}){
 }
 
 /* ================= MODULE 3: INFANT =================
-   Opens on the 9th, 26th and 30th and stays open INFANT_LEN days (counting the opening day).
-   A customer contacted once during an open window is not shown again until the next window. */
+   Open all month. A customer contacted this month is not shown again until next month. */
 function Infant({tr,toast,onCount}){
   const t=todayStr();
   const win=infantWindow(t); const open=!!win;
@@ -457,15 +442,6 @@ function Infant({tr,toast,onCount}){
   const sortBtn=(col)=>{ const d=col+"_desc", a=col+"_asc"; setSort(sort===d?a:d); };
   const arrow=col=> sort===col+"_desc"?" ▼":sort===col+"_asc"?" ▲":"";
 
-  if(!open){
-    const nx=nextInfantDay(t); const nw=infantWindow(nx);
-    return h("div",{className:"card closed"},
-      h("div",{className:"sub"},tr("قائمة مستلزمات الأطفال تفتح أيام 9 و26 و30 من كل شهر، وتبقى مفتوحة "+INFANT_LEN+" أيام",
-                                 "The infant list opens on the 9th, 26th and 30th of each month and stays open for "+INFANT_LEN+" days")),
-      h("div",{className:"big num"},LTR(nx),nw&&nw.end!==nx?h("span",{className:"sub"}," → ",LTR(nw.end)):null),
-      h("div",{className:"sub"},tr("تفتح بعد ","Opens in ")+daysBetween(t,nx)+tr(" يوم"," days")));
-  }
-  const left=daysBetween(t,win.end)+1;
 
   return h(React.Fragment,null,
     h("div",{className:"bar"},
@@ -479,12 +455,12 @@ function Infant({tr,toast,onCount}){
         h("option",{value:"date_desc"},tr("آخر شراء: الأحدث أولًا","Last purchase: newest first")),
         h("option",{value:"date_asc"},tr("آخر شراء: الأقدم أولًا","Last purchase: oldest first")))),
       (lpFrom||lpTo) && h("button",{className:"btn sm",onClick:()=>{setLpFrom("");setLpTo("");}},tr("مسح التاريخ","Clear dates")),
-      h("span",{className:"badge "+(left===1?"b-over":"b-due")},left===1?tr("آخر يوم — تُغلق الليلة","Last day — closes tonight"):tr("مفتوحة حتى ","Open until ")),
-      left>1 && h("span",{className:"num"},LTR(win.end),tr(" (باقي "+left+" أيام)"," ("+left+" days left)")),
+      h("span",{className:"badge b-due"},tr("مفتوحة طوال الشهر","Open all month")),
+      h("span",{className:"sub"},tr("تتجدد القائمة في ","List resets on "),h("span",{className:"num"},LTR(addDays(win.end,1)))),
       h("span",{className:"sub"},tr("عملاء اشتروا من قسم الأم والطفل خلال آخر 60 يومًا (لديهم أطفال) — بدون من يشتري حليب أطفال بأكثر من 350 ريال شهريًا. اعرض عليهم شراء كمية","Customers who bought Mom & Baby products in the last 60 days (they have children), excluding those already buying over 350 SAR of milk a month — offer a bulk purchase"))),
     h("div",{className:"card scroll"},
       rows===null ? h("div",{className:"empty"},"…")
-      : !list.length ? h("div",{className:"empty"},tr("تم التواصل مع كل العملاء في هذه الفترة، أو لا توجد مشتريات أطفال حديثة.","Every customer has been contacted in this window, or there are no recent infant purchases."))
+      : !list.length ? h("div",{className:"empty"},tr("تم التواصل مع كل العملاء هذا الشهر، أو لا توجد مشتريات أطفال حديثة.","Every customer has been contacted this month, or there are no recent infant purchases."))
       : h("table",{className:"tbl"},
           h("thead",null,h("tr",null,
             h("th",null,tr("العميل","Customer")),h("th",null,tr("الجوال","Phone")),h("th",null,tr("الأصناف","Items")),
@@ -760,7 +736,6 @@ function App(){
       state==="out" && h("div",{style:{marginTop:12}},h("a",{className:"btn pri",href:"./index.html"},tr("تسجيل الدخول","Sign in"))))));
   }
 
-  const infantOpen=isInfantDay(todayStr());
   const LABEL={
     refill:tr("إعادة الصرف","Refill"),
     coupon:tr("كوبونات فاتورة +"+COUPON_MIN,"Coupons: bill "+COUPON_MIN+"+"),
@@ -773,8 +748,7 @@ function App(){
     h("div",{className:"wrap"},
       h("div",{className:"tabs",role:"tablist"},TABS.map(([k,label])=>h("button",{key:k,role:"tab","aria-selected":tab===k,className:tab===k?"on":"",onClick:()=>setTab(k)},
         label,
-        k==="infant" && !infantOpen ? h("span",{className:"n"},tr("مغلق","Closed"))
-        : counts[k]!=null && !["log","chronic"].includes(k) ? h("span",{className:"n"},counts[k]) : null))),
+        counts[k]!=null && !["log","chronic"].includes(k) ? h("span",{className:"n"},counts[k]) : null))),
       can("refill") && tab==="refill" && h(Refill,{tr,toast,onCount:setCount("refill"),ar:catArMap}),
       can("coupon") && tab==="coupon" && h(Coupon,{tr,toast,onCount:setCount("coupon")}),
       can("infant") && tab==="infant" && h(Infant,{tr,toast,onCount:setCount("infant")}),
