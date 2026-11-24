@@ -1152,7 +1152,7 @@ function ReportsPanel({D,E,toast,lang}){
       <label className="row" style={{gap:8}}><input type="checkbox" checked={!!st.monthly_enabled} onChange={e=>saveSt({monthly_enabled:e.target.checked})} style={{width:18,height:18}}/>
         <span><strong>{L("Monthly report","التقرير الشهري")}</strong> — {L("to the recipients below (company or branch), on the 2nd of each month at 9:00 AM, for the previous month","للمستلمين بالأسفل (الشركة أو الفرع)، يوم 2 من كل شهر الساعة 9:00 صباحًا، عن الشهر السابق")}</span></label>
       <label className="row" style={{gap:8}}><input type="checkbox" checked={!!st.weekly_enabled} onChange={e=>saveSt({weekly_enabled:e.target.checked})} style={{width:18,height:18}}/>
-        <span><strong>{L("Weekly to each pharmacist","أسبوعيًا لكل صيدلي")}</strong> — {L("his own KPIs this month so far, every Sunday at 9:00 AM (no ranking, only his own numbers)","مؤشراته هو فقط لهذا الشهر حتى تاريخه، كل يوم أحد الساعة 9:00 صباحًا (بدون ترتيب، أرقامه فقط)")}</span>
+        <span><strong>{L("Weekly (Saturday)","أسبوعيًا (السبت)")}</strong> — {L("every Saturday at 9:00 AM: each pharmacist gets his own KPIs this month so far with advice on how to improve (no ranking), and the recipients below get the up-to-date company / branch performance with recommended actions","كل يوم سبت الساعة 9:00 صباحًا: كل صيدلي يستلم مؤشراته هو لهذا الشهر حتى تاريخه مع نصائح لتحسينها (بدون ترتيب)، والمستلمون بالأسفل يستلمون أداء الشركة / الفرع المحدّث مع الإجراءات المقترحة")}</span>
         <select value={st.weekly_lang} onChange={e=>saveSt({weekly_lang:e.target.value})} style={{width:"auto"}}><option value="ar">العربية</option><option value="en">English</option></select></label>
     </div>}
     <div className="muted small">{L("E-mails go out from the system with the Excel file attached, like the HR e-mails. ✉ Send now sends the chosen month's report to one recipient straight away. The whole-company file has branches + all pharmacists; a branch file has that branch + its pharmacists only. Pick recipients from the system users (their e-mail follows Admin → Accounts), or add an outside e-mail. Scores are the same as the dashboard.",
@@ -1189,11 +1189,11 @@ function ReportsPanel({D,E,toast,lang}){
       <button className="btn sec" disabled={busy} onClick={saveNow}>{L("Save this month's results","حفظ نتائج هذا الشهر")}</button>
       {saved && <span className="muted small">{L("Last saved: ","آخر حفظ: ")}{saved.month.slice(0,7)} · {new Date(saved.saved_at).toLocaleString(lang==="ar"?"ar-SA":"en-GB",{dateStyle:"short",timeStyle:"short"})}</span>}
     </div>
-    <div className="muted small">{L("The e-mails use the results saved when the KPI page is opened after a Juleb upload. Upload the month's last Juleb report before the 2nd, and the week's report before Sunday 9 AM.",
-      "الرسائل تستخدم النتائج المحفوظة عند فتح صفحة المؤشرات بعد رفع تقرير جُلَب. ارفع آخر تقرير للشهر قبل يوم 2، وتقرير الأسبوع قبل الأحد 9 صباحًا.")}</div>
+    <div className="muted small">{L("The e-mails use the results saved when the KPI page is opened after a Juleb upload. Upload the month's last Juleb report before the 2nd, and the week's report before Saturday 9 AM.",
+      "الرسائل تستخدم النتائج المحفوظة عند فتح صفحة المؤشرات بعد رفع تقرير جُلَب. ارفع آخر تقرير للشهر قبل يوم 2، وتقرير الأسبوع قبل السبت 9 صباحًا.")}</div>
 
-    <div className="row" style={{justifyContent:"space-between",borderTop:"1px solid var(--line)",paddingTop:12}}><h3 style={{margin:0}}>{L("Weekly e-mail to pharmacists","البريد الأسبوعي للصيادلة")}</h3>
-      <button className="btn sec" disabled={busy} onClick={()=>sendWeekly(null)}>✉ {L("Send to all now","إرسال للجميع الآن")}</button></div>
+    <div className="row" style={{justifyContent:"space-between",borderTop:"1px solid var(--line)",paddingTop:12}}><h3 style={{margin:0}}>{L("Weekly e-mail (Saturday)","البريد الأسبوعي (السبت)")}</h3>
+      <button className="btn sec" disabled={busy} onClick={()=>sendWeekly(null)}>✉ {L("Send to all now (pharmacists + recipients)","إرسال للجميع الآن (الصيادلة + المستلمين)")}</button></div>
     <div style={{overflowX:"auto"}}><table><thead><tr><th>{L("Pharmacist","الصيدلي")}</th><th>{L("Account e-mail","بريد الحساب")}</th><th></th></tr></thead><tbody>
       {weeklyList.map(({p,u})=><tr key={p.id}><td><strong>{p.full_name}</strong></td>
         <td dir="ltr" className="small">{u&&u.email? u.email : <span className="err">{L("no login account linked","لا يوجد حساب مرتبط")}</span>}{u&&u.active===false&&<span className="muted small"> ({L("inactive","غير فعّال")})</span>}</td>
